@@ -12,15 +12,15 @@
 - Cross-agent documentation (`AGENTS.md`, `CLAUDE.md`, `.agents/skills/strata-ui/`, `docs/*`).
 - `@strata/design-tokens` (`tokens.json`, Strata 3-layer neon SVG icon, CSS/JS/Kotlin token generator).
 - `@strata/finance-core` (11 transaction types, safe calculator parser, Net Worth, Safe-to-Spend, Promo Radar, NPER Goal Envelopes, 2-way FIFO Debt Ledger, Yearly Wrapped + 9 passing Vitest/Golden tests).
-- `@strata/api-contract` (base Zod schemas & enums).
-- `@strata/web` (Next.js 15.5.29 + Tailwind v4 runnable PWA shell with Expressive Neobank tokens, RU/EN, Light/Dark, Privacy Blur, CSP/security headers, `/api/v1/health`).
+- `@strata/api-contract` (base Zod v4 schemas & enums).
+- `@strata/web` (Next.js 16 + Tailwind v4 runnable PWA shell with Expressive Neobank tokens, RU/EN, Light/Dark, Privacy Blur, CSP/security headers, `/api/v1/health`).
 - GitHub Actions CI (`ci.yml`) & 3-day Supabase keepalive workflow (`supabase-keepalive.yml`).
-- Verified cleanly with `npm run build:tokens && npm run typecheck && npm run lint && npm run test && npm run build`.
+- Verified cleanly with `npm run build:tokens && npm run typecheck && npm run lint && npm run test && npm run build && npm audit --omit=dev --audit-level=high`.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
-- **Supabase:** project `strata` (`ref`: `tsqnmgtbmofemqzdjrih`, region `eu-north-1`, org `Диплом`, Free tier)
-- **Vercel:** pending GitHub import (`apps/web`, Turborepo)
+- **Supabase:** project `strata` (`ref`: `tsqnmgtbmofemqzdjrih`, region `eu-north-1`, Free tier)
+- **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
 - **PR 2:** Supabase SQL migrations (all tables, RLS, indexes, triggers, `get_admin_telemetry()`), Hono OpenAPI 3.1 router (`/api/v1/[[...route]]`), `/api/docs`, and base `/sync` endpoints.

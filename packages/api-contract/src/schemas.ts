@@ -40,27 +40,27 @@ export const ThemeSchema = z.enum(["light", "dark", "system"]);
 export type Theme = z.infer<typeof ThemeSchema>;
 
 export const SyncFieldsSchema = z.object({
-  id: z.string().uuid(),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
-  deleted_at: z.string().datetime().nullable(),
+  id: z.uuid(),
+  created_at: z.iso.datetime(),
+  updated_at: z.iso.datetime(),
+  deleted_at: z.iso.datetime().nullable(),
 });
 
 export const HealthResponseSchema = z.object({
   status: z.literal("ok"),
   app: z.literal("strata"),
   version: z.string(),
-  timestamp: z.string().datetime(),
+  timestamp: z.iso.datetime(),
 });
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
 
 export const FeatureFlagSchema = z.object({
   key: z.string().min(1),
   enabled: z.boolean(),
-  starts_at: z.string().datetime().nullable(),
-  ends_at: z.string().datetime().nullable(),
+  starts_at: z.iso.datetime().nullable(),
+  ends_at: z.iso.datetime().nullable(),
   admin_preview: z.boolean(),
-  config: z.record(z.unknown()),
-  updated_at: z.string().datetime(),
+  config: z.record(z.string(), z.unknown()),
+  updated_at: z.iso.datetime(),
 });
 export type FeatureFlag = z.infer<typeof FeatureFlagSchema>;

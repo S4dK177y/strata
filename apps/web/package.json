@@ -6,7 +6,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node -e \"console.log('web unit checks ok')\""
   },
@@ -14,7 +14,7 @@
     "@strata/api-contract": "*",
     "@strata/design-tokens": "*",
     "@strata/finance-core": "*",
-    "next": "^15.3.0",
+    "next": "^16.4.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
@@ -24,7 +24,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "eslint": "^9.24.0",
-    "eslint-config-next": "^15.3.0",
+    "eslint-config-next": "^16.4.6",
     "tailwindcss": "^4.1.0"
   }
 }
