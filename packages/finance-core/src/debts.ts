@@ -54,7 +54,7 @@ export function computeDebtsLedger(
     repaidMap.set(target.id, (repaidMap.get(target.id) ?? 0) + tx.amountMinor);
   }
 
-  // Pass 2: FIFO keyword fallback for legacy / imported / push transactions without debtId
+  // Pass 2: FIFO keyword fallback for Android push / manual transactions without debtId
   const unlinkedPools: Record<"lent" | "borrowed", number> = { lent: 0, borrowed: 0 };
   const unlinkedByDirection: { lent: Transaction[]; borrowed: Transaction[] } = {
     lent: [],

@@ -18,3 +18,5 @@ Always read `docs/DESIGN_SYSTEM.md` and `packages/design-tokens/tokens.json` bef
    - Minimum `44px` touch targets, comfortable bottom navigation on mobile (`Overview`, `Operations`, `+`, `Capital`, `Plans`), collapsible sidebar on desktop (`>= lg`).
 5. **i18n:**
    - Every visible label, aria-label, and toast must exist in both `src/messages/ru.json` and `src/messages/en.json`.
+6. **Proven UI Libraries:**
+   - Use popular, well-maintained, `npm audit`-clean accessible UI libraries (`Radix UI` / `shadcn/ui` primitives, `lucide-react`, `vaul`, `sonner`, `recharts`, `motion`) wrapped in `apps/web/src/components/ui/` and styled via `--strata-*` tokens instead of hand-rolling dialogs, drawers, selects, popovers, toasts, or charts from scratch.

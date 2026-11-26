@@ -16,3 +16,13 @@
    - NEVER use raw hex codes or default Tailwind color scales (`gray-*`, `slate-*`, `indigo-*`) in feature components once UI primitives are wired; reference CSS tokens via utilities or helper classes (`.strata-hero`, `.strata-glass`, `.strata-money`).
    - Every monetary output MUST carry the `.strata-money` class so `tabular-nums` and global `.privacy-blur` work uniformly across the entire app.
    - Brand icon is `packages/design-tokens/assets/strata-icon.svg` (3 floating isometric neon-emerald/cyan/indigo layers).
+
+## 4. UI Component Library Strategy
+- Do not hand-roll accessible overlays, dialogs, drawers, popovers, selects, toasts, charts, or icon sets from scratch.
+- Prefer popular, well-maintained, `npm audit`-clean libraries wrapped in `apps/web/src/components/ui/` and styled exclusively with `--strata-*` CSS variables:
+  - **Primitives:** Radix UI / shadcn/ui patterns
+  - **Icons:** `lucide-react`
+  - **Mobile Bottom Drawers:** `vaul`
+  - **Toasts:** `sonner`
+  - **Charts:** `recharts`
+  - **Animations:** `motion` / `framer-motion`

@@ -8,12 +8,17 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node -e \"console.log('web unit checks ok')\""
+    "test": "vitest run"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.6.3",
+    "@scalar/hono-api-reference": "^0.12.25",
     "@strata/api-contract": "*",
     "@strata/design-tokens": "*",
     "@strata/finance-core": "*",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.2",
+    "hono": "^4.13.22",
     "next": "^16.4.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"

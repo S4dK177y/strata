@@ -41,7 +41,7 @@ All calculations live in `packages/finance-core` and operate on **integer minor 
 
 ## 5. 2-Way Debt Ledger (FIFO)
 - Strictly separates `lent` (repaid by `debt_received_back`) and `borrowed` (repaid by `debt_paid_back`).
-- Matches directly by `tx.debtId`, with FIFO fallback by `counterparty` substring match in `tx.comment` for imported/push transactions.
+- Matches directly by `tx.debtId`, with FIFO fallback by `counterparty` substring match in `tx.comment` for Android push / manual transactions without `debtId`.
 
 ## 6. Yearly Wrapped
 - Financial titles (6 tiers by `totalIncome` & `savingsRate`), top 5 categories, calendar extremes, max purchase in work hours, passive income equivalents (coffee, shawarma, subscriptions), discipline rank, favorite card, cost of 1 day of life, Anti-fuckup filtered volume (`transfer + transit_in + transit_out + all 4 debt types + 2 * compensation`), autonomy months, and 2-way Debt Hall of Fame.

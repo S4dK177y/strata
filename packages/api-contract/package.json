@@ -11,9 +11,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit",
-    "lint": "node -e \"console.log('api-contract lint ok')\""
+    "lint": "node -e \"console.log('api-contract lint ok')\"",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^1.6.3",
+    "hono": "^4.13.22",
     "zod": "^4.6.7"
   }
 }

@@ -1,0 +1,85 @@
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { createPublicSupabaseClient, resolveRequestAuth } from "@/lib/supabase/server";
+import { createFeatureFlagsRouter } from "./routes/feature-flags";
+import { createHealthRouter } from "./routes/health";
+import { createMeRouter } from "./routes/me";
+import { createSyncRouter } from "./routes/sync";
+import type { ApiDependencies, ApiEnv } from "./types";
+
+const defaultDeps: ApiDependencies = {
+  resolveAuth: resolveRequestAuth,
+  getPublicClient: createPublicSupabaseClient,
+};
+
+export function createApiApp(deps: ApiDependencies = defaultDeps) {
+  const app = new OpenAPIHono<ApiEnv>({
+    defaultHook: (result, c) => {
+      if (!result.success) {
+        return c.json(
+          {
+            error: "VALIDATION_ERROR",
+            message: "Request validation failed",
+            details: result.error.issues,
+          },
+          400
+        );
+      }
+      return undefined;
+    },
+  }).basePath("/api/v1");
+
+  app.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "JWT",
+    description: "Supabase access token JWT for native Android & API clients",
+  });
+
+  app.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
+    type: "apiKey",
+    in: "cookie",
+    name: "sb-access-token",
+    description: "Supabase SSR session cookie for Web PWA",
+  });
+
+  app.onError((err, c) => {
+    console.error("[strata-api] unhandled error:", err);
+    return c.json(
+      {
+        error: "INTERNAL_ERROR",
+        message: "Internal server error",
+      },
+      500
+    );
+  });
+
+  app.notFound((c) => {
+    return c.json(
+      {
+        error: "NOT_FOUND",
+        message: `Route ${c.req.method} ${c.req.path} not found`,
+      },
+      404
+    );
+  });
+
+  app.route("/", createHealthRouter(deps));
+  app.route("/", createFeatureFlagsRouter(deps));
+  app.route("/", createMeRouter(deps));
+  app.route("/", createSyncRouter(deps));
+
+  app.doc31("/openapi.json", {
+    openapi: "3.1.0",
+    info: {
+      title: "Strata REST API",
+      version: "0.1.0",
+      description:
+        "Privacy-first personal finance API shared by Strata Web PWA and native Android client. All money amounts use integer minor units (*_minor).",
+    },
+    servers: [{ url: "/", description: "Current host" }],
+  });
+
+  return app;
+}
+
+export const apiApp = createApiApp();

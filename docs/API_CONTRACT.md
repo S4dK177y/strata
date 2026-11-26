@@ -1,12 +1,19 @@
 # Strata — API Contract (OpenAPI 3.1)
 
-All shared Zod schemas live in `packages/api-contract`.
+All shared Zod v4 + OpenAPI schemas live in [`packages/api-contract`](../packages/api-contract).
 
 ## Conventions
-- **Base path:** `/api/v1` (implemented via Hono catch-all route in PR 2, with OpenAPI spec at `/api/v1/openapi.json` and interactive docs at `/api/docs`).
-- **Auth:** Cookie session (Web PWA) and `Authorization: Bearer <jwt>` (Android).
-- **Invite Gate:** When `registration_invite_only = true`, users without `invite_redeemed_at` (and non-admin) receive `403 { error: "INVITE_REQUIRED" }` on financial endpoints.
-- **Idempotency & Sync:**
-  - Client-generated UUIDs supported on all resource creates.
-  - `GET /api/v1/sync?since=<ISO>` & `POST /api/v1/sync/push` for Android offline delta sync (last-write-wins via `updated_at` + soft-delete `deleted_at`).
-- **Healthcheck:** `GET /api/v1/health` (public, lightweight check used by CI and Supabase keepalive).
+- **Base path:** `/api/v1` (single Hono OpenAPI 3.1 catch-all route at `apps/web/src/app/api/v1/[[...route]]/route.ts`).
+- **OpenAPI Spec & Docs:**
+  - `GET /api/v1/openapi.json` — generated OpenAPI `3.1.0` specification.
+  - `GET /api/docs` — interactive Scalar API reference UI (with route-scoped CSP permitting `https://cdn.jsdelivr.net`).
+- **Dual Auth:** Cookie session (`@supabase/ssr`, Web PWA) and `Authorization: Bearer <jwt>` (Android / API clients), validated via `getClaims()` / `getUser()`. User queries always execute through a user-scoped Supabase client so Postgres RLS is enforced.
+- **Standardized Errors:** `{ error: string, message: string, details?: unknown }`.
+- **Invite Gate:** When `registration_invite_only = true`, authenticated non-admin users with `invite_redeemed_at IS NULL` receive `403 { error: "INVITE_REQUIRED", message: "..." }` on financial endpoints (while `/api/v1/me` remains accessible so clients can display the invite gate screen).
+
+## Implemented Endpoints (PR 2)
+- `GET /api/v1/health` *(public)* — lightweight service & DB keepalive ping (`db: "ok" | "unconfigured" | "error"`).
+- `GET /api/v1/feature-flags` *(public / optional auth)* — returns active cloud feature flags (filters out disabled `admin_preview` flags for non-admins).
+- `GET /api/v1/me` *(auth required, bypasses invite gate)* — returns current user's `profile`, `email`, and `invite_required` flag.
+- `GET /api/v1/sync?since=<ISO>&limit=<1..1000>` *(auth + invite gate)* — incremental delta pull across all 9 user financial tables (`accounts`, `savings_rules`, `categories`, `goals`, `goal_transfers`, `recurring_payments`, `recurring_payment_marks`, `debts`, `transactions`), including soft-delete tombstones (`deleted_at IS NOT NULL`) and `has_more` pagination indicator.
+- `POST /api/v1/sync/push` *(auth + invite gate)* — accepts up to 500 offline mutations (`upsert` | `delete`), sorts them in FK dependency order, enforces `user_id` server-side, resolves conflicts via **Last-Write-Wins (LWW)** on `updated_at` (`applied` | `conflict_server_wins` | `rejected`), and applies soft deletes.

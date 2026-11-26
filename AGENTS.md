@@ -41,9 +41,13 @@ Before making changes in any new chat or session:
    - `registration_invite_only` feature flag defaults to `true` (enforced for both Email and Google OAuth).
 5. **Android & Offline Sync-Readiness:**
    - Every user-owned table has client-friendly `id UUID`, `created_at`, `updated_at` (trigger-maintained), and `deleted_at` (soft delete).
-   - `transactions` carries `status` (`confirmed` | `draft`), `source`, and `external_hash`.
+   - `transactions` carries `status` (`confirmed` | `draft`), `source` (`web` | `android` | `android_push` — CSV/XLSX import is intentionally excluded from scope), and `external_hash`.
    - Every API change updates Zod schemas in `packages/api-contract` so OpenAPI 3.1 stays authoritative.
 6. **i18n & No Personal Hardcoding:**
    - All UI copy must use `ru` and `en` translation dictionaries — no hardcoded personal accounts/categories for all users.
 7. **End-of-Task Rule:**
    - After completing any feature or PR, ALWAYS update `docs/STATUS.md` with what was implemented, verified, and what comes next.
+8. **Prefer Proven, Secure Libraries (Do Not Reinvent the Wheel):**
+   - Use popular, well-maintained, `npm audit`-clean open-source libraries instead of building complex primitives from scratch.
+   - For UI/design: prefer Radix UI / shadcn/ui primitives, `lucide-react` icons, `vaul` mobile drawers, `sonner` toasts, `recharts` charts, and `motion`/`framer-motion` animations — wrapped in `apps/web/src/components/ui/` and themed exclusively via `--strata-*` semantic design tokens.
+   - For backend/API/validation: prefer `hono`, `@hono/zod-openapi`, `@scalar/hono-api-reference`, `@supabase/ssr`, and `zod`.
