@@ -68,17 +68,35 @@ export function CapitalClient({
 
   // Dialog states
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [accountFormSeq, setAccountFormSeq] = useState(0);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
   const [deletingAccountBusy, setDeletingAccountBusy] = useState(false);
 
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [categoryFormSeq, setCategoryFormSeq] = useState(0);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [defaultCategoryKind, setDefaultCategoryKind] = useState<"expense" | "income">(
     "expense"
   );
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [deletingCategoryBusy, setDeletingCategoryBusy] = useState(false);
+
+  const openAccountForm = (acc: Account | null) => {
+    setEditingAccount(acc);
+    setAccountFormSeq((n) => n + 1);
+    setAccountDialogOpen(true);
+  };
+
+  const openCategoryForm = (
+    cat: Category | null,
+    kind: "expense" | "income" = "expense"
+  ) => {
+    setEditingCategory(cat);
+    setDefaultCategoryKind(kind);
+    setCategoryFormSeq((n) => n + 1);
+    setCategoryDialogOpen(true);
+  };
 
   const refreshData = useCallback(async () => {
     try {
@@ -256,25 +274,12 @@ export function CapitalClient({
         </div>
 
         {activeTab === "accounts" ? (
-          <Button
-            type="button"
-            onClick={() => {
-              setEditingAccount(null);
-              setAccountDialogOpen(true);
-            }}
-          >
+          <Button type="button" onClick={() => openAccountForm(null)}>
             <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
             {t.capital.addAccount}
           </Button>
         ) : (
-          <Button
-            type="button"
-            onClick={() => {
-              setEditingCategory(null);
-              setDefaultCategoryKind("expense");
-              setCategoryDialogOpen(true);
-            }}
-          >
+          <Button type="button" onClick={() => openCategoryForm(null, "expense")}>
             <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
             {t.capital.addCategory}
           </Button>
@@ -292,32 +297,32 @@ export function CapitalClient({
 
         <TabsContent value="accounts" className="space-y-5">
           {/* Accounts KPI strip */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Card className="p-4">
-              <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+            <Card className="min-w-0 p-3.5 sm:p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
                 {t.capital.liquidSummary}
               </div>
-              <div className="mt-1.5 text-lg font-bold text-[var(--strata-text-primary)]">
+              <div className="mt-1.5 truncate text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
                 <AmountText minor={accountSummary.liquidMinor} currency={baseCurrency} />
               </div>
             </Card>
 
-            <Card className="p-4">
-              <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+            <Card className="min-w-0 p-3.5 sm:p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
                 {t.capital.savingsSummary}
               </div>
-              <div className="mt-1.5 text-lg font-bold text-[var(--strata-money-income)]">
+              <div className="mt-1.5 truncate text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
                 <AmountText minor={accountSummary.savingsMinor} currency={baseCurrency} />
               </div>
             </Card>
 
-            <Card className="p-4">
-              <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+            <Card className="min-w-0 p-3.5 sm:p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
                 {t.capital.creditDebtSummary}
               </div>
               <div
                 className={cn(
-                  "mt-1.5 text-lg font-bold",
+                  "mt-1.5 truncate text-base font-bold sm:text-lg",
                   accountSummary.creditDebtMinor > 0
                     ? "text-[var(--strata-money-expense)]"
                     : "text-[var(--strata-text-primary)]"
@@ -327,11 +332,11 @@ export function CapitalClient({
               </div>
             </Card>
 
-            <Card className="p-4">
-              <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+            <Card className="min-w-0 p-3.5 sm:p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
                 {t.capital.accountsCount}
               </div>
-              <div className="strata-mono mt-1.5 text-lg font-bold text-[var(--strata-text-primary)]">
+              <div className="strata-mono mt-1.5 text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
                 {accountSummary.activeCount}
               </div>
             </Card>
@@ -354,13 +359,7 @@ export function CapitalClient({
             <Card className="space-y-3 py-10 text-center">
               <p className="text-sm text-[var(--strata-text-muted)]">{t.dashboard.noAccounts}</p>
               <div>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setEditingAccount(null);
-                    setAccountDialogOpen(true);
-                  }}
-                >
+                <Button type="button" onClick={() => openAccountForm(null)}>
                   <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
                   {t.capital.addAccount}
                 </Button>
@@ -388,13 +387,13 @@ export function CapitalClient({
                     key={acc.id}
                     className={cn("space-y-3 p-4 sm:p-5", !acc.is_active && "opacity-65")}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-3.5">
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
                           <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                         </div>
 
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <Link
                               href={`/operations?account=${acc.id}`}
@@ -416,7 +415,7 @@ export function CapitalClient({
                         </div>
                       </div>
 
-                      <div className="text-right text-lg font-extrabold text-[var(--strata-text-primary)]">
+                      <div className="shrink-0 whitespace-nowrap text-right text-base font-extrabold text-[var(--strata-text-primary)] sm:text-lg">
                         <AmountText minor={balanceMinor} currency={acc.currency} />
                       </div>
                     </div>
@@ -437,7 +436,7 @@ export function CapitalClient({
                         </div>
                         <div className="h-1.5 overflow-hidden rounded-full bg-[var(--strata-bg-surface)]">
                           <div
-                            className="h-full rounded-full transition-all"
+                            className="h-full rounded-full transition-all duration-500 ease-out"
                             style={{
                               width: `${Math.round(creditUtilRatio * 100)}%`,
                               backgroundColor:
@@ -452,7 +451,7 @@ export function CapitalClient({
                       </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center justify-end gap-1.5 border-t border-[var(--strata-border-subtle)] pt-3">
+                    <div className="flex flex-wrap items-center justify-start gap-1.5 border-t border-[var(--strata-border-subtle)] pt-3 sm:justify-end">
                       {acc.is_active ? (
                         <Button
                           type="button"
@@ -469,10 +468,7 @@ export function CapitalClient({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setEditingAccount(acc);
-                          setAccountDialogOpen(true);
-                        }}
+                        onClick={() => openAccountForm(acc)}
                       >
                         <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
                         {t.common.edit}
@@ -525,11 +521,7 @@ export function CapitalClient({
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => {
-                  setEditingCategory(null);
-                  setDefaultCategoryKind("expense");
-                  setCategoryDialogOpen(true);
-                }}
+                onClick={() => openCategoryForm(null, "expense")}
               >
                 <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
                 {t.common.add}
@@ -579,10 +571,7 @@ export function CapitalClient({
                             variant="ghost"
                             size="icon"
                             aria-label={t.common.edit}
-                            onClick={() => {
-                              setEditingCategory(cat);
-                              setCategoryDialogOpen(true);
-                            }}
+                            onClick={() => openCategoryForm(cat)}
                           >
                             <Pencil className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                           </Button>
@@ -616,7 +605,7 @@ export function CapitalClient({
                           </div>
                           <div className="h-1.5 overflow-hidden rounded-full bg-[var(--strata-bg-surface)]">
                             <div
-                              className="h-full rounded-full transition-all"
+                              className="h-full rounded-full transition-all duration-500 ease-out"
                               style={{
                                 width: `${Math.round(ratio * 100)}%`,
                                 backgroundColor: isOver
@@ -651,11 +640,7 @@ export function CapitalClient({
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => {
-                  setEditingCategory(null);
-                  setDefaultCategoryKind("income");
-                  setCategoryDialogOpen(true);
-                }}
+                onClick={() => openCategoryForm(null, "income")}
               >
                 <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
                 {t.common.add}
@@ -702,10 +687,7 @@ export function CapitalClient({
                           variant="ghost"
                           size="icon"
                           aria-label={t.common.edit}
-                          onClick={() => {
-                            setEditingCategory(cat);
-                            setCategoryDialogOpen(true);
-                          }}
+                          onClick={() => openCategoryForm(cat)}
                         >
                           <Pencil className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                         </Button>
@@ -731,6 +713,7 @@ export function CapitalClient({
 
       <AccountFormDialog
         open={accountDialogOpen}
+        formSeq={accountFormSeq}
         onOpenChange={setAccountDialogOpen}
         baseCurrency={baseCurrency}
         account={editingAccount}
@@ -739,6 +722,7 @@ export function CapitalClient({
 
       <CategoryFormDialog
         open={categoryDialogOpen}
+        formSeq={categoryFormSeq}
         onOpenChange={setCategoryDialogOpen}
         baseCurrency={baseCurrency}
         category={editingCategory}

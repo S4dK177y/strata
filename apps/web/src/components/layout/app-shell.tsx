@@ -90,9 +90,9 @@ function AppShellInner({
   ];
 
   return (
-    <div className="min-h-screen lg:flex">
+    <div className="min-h-screen overflow-x-clip lg:flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
+      <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:overflow-y-auto lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
         <div className="space-y-5">
           <Link href="/" className="flex items-center gap-3 rounded-2xl p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -179,7 +179,7 @@ function AppShellInner({
       </aside>
 
       {/* Main area */}
-      <div className="flex-1 pb-24 lg:pb-10">
+      <div className="min-w-0 flex-1 pb-28 lg:pb-10">
         <header className="sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-3 backdrop-blur-xl lg:px-8">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-2.5 lg:hidden">
@@ -208,32 +208,32 @@ function AppShellInner({
       {/* Mobile bottom nav */}
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-2 py-1.5 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] lg:hidden"
       >
         <Link
           href="/"
           className={cn(
-            "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
             pathname === "/"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <LayoutDashboard className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-          <span>{t.nav.overview}</span>
+          <LayoutDashboard className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <span className="max-w-full truncate">{t.nav.overview}</span>
         </Link>
 
         <Link
           href="/operations"
           className={cn(
-            "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
             pathname.startsWith("/operations")
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-          <span>{t.nav.operations}</span>
+          <ArrowLeftRight className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <span className="max-w-full truncate">{t.nav.operations}</span>
         </Link>
 
         <button
@@ -241,7 +241,7 @@ function AppShellInner({
           onClick={() => openQuickAdd()}
           aria-label={t.nav.addOperation}
           title={t.nav.addOperation}
-          className="mx-auto flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-[var(--strata-shadow-neon)] transition hover:brightness-110 active:scale-95"
+          className="mx-auto flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-[var(--strata-shadow-neon)] transition hover:brightness-110 active:scale-95"
         >
           <Plus className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
         </button>
@@ -249,27 +249,27 @@ function AppShellInner({
         <Link
           href="/capital"
           className={cn(
-            "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
             pathname.startsWith("/capital")
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <Wallet className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-          <span>{t.nav.capital}</span>
+          <Wallet className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <span className="max-w-full truncate">{t.nav.capital}</span>
         </Link>
 
         <Link
           href="/settings"
           className={cn(
-            "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
             pathname === "/settings"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <Settings className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-          <span>{t.nav.settings}</span>
+          <Settings className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <span className="max-w-full truncate">{t.nav.settings}</span>
         </Link>
       </nav>
     </div>

@@ -27,6 +27,7 @@ import {
 
 interface AccountFormDialogProps {
   open: boolean;
+  formSeq?: number;
   onOpenChange: (open: boolean) => void;
   baseCurrency: string;
   account?: Account | null;
@@ -321,6 +322,7 @@ function AccountFormBody({
 
 export function AccountFormDialog({
   open,
+  formSeq = 0,
   onOpenChange,
   baseCurrency,
   account,
@@ -337,7 +339,7 @@ export function AccountFormDialog({
       dismissible={!submitting}
     >
       <AccountFormBody
-        key={account?.id ?? "new"}
+        key={`${account?.id ?? "new"}-${formSeq}`}
         baseCurrency={baseCurrency}
         account={account}
         onClose={() => onOpenChange(false)}

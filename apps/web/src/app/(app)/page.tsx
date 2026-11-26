@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Account, Category, Debt, Transaction } from "@strata/api-contract";
 import { OverviewClient } from "@/components/dashboard/overview-client";
-import { AppShell } from "@/components/layout/app-shell";
 import { getServerSessionGate } from "@/lib/auth/session-gate";
 
 export const dynamic = "force-dynamic";
@@ -9,14 +8,8 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const gate = await getServerSessionGate();
 
-  if (gate.status === "unauthenticated") {
+  if (gate.status !== "ready") {
     redirect("/login");
-  }
-  if (gate.status === "needs_invite") {
-    redirect("/invite");
-  }
-  if (gate.status === "needs_onboarding") {
-    redirect("/onboarding");
   }
 
   const now = new Date();
@@ -56,13 +49,7 @@ export default async function HomePage() {
   const transactions = (txRes.data ?? []) as Transaction[];
 
   return (
-    <AppShell
-      profile={gate.profile}
-      email={gate.email}
-      initialAccounts={accounts}
-      initialCategories={categories}
-      initialDebts={debts}
-    >
+    <div className="strata-page-enter">
       <OverviewClient
         profile={gate.profile}
         accounts={accounts}
@@ -72,6 +59,6 @@ export default async function HomePage() {
         currentYear={now.getFullYear()}
         currentMonth={now.getMonth() + 1}
       />
-    </AppShell>
+    </div>
   );
 }

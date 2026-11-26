@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Profile } from "@strata/api-contract";
 import { createCookieSupabaseClient, type AppSupabaseClient } from "@/lib/supabase/server";
 import { maybeBootstrapAdmin } from "./bootstrap-admin";
@@ -43,7 +44,7 @@ export function sanitizeNextPath(raw: string | null | undefined): string {
   return trimmed;
 }
 
-export async function getServerSessionGate(): Promise<ServerSessionGate> {
+export const getServerSessionGate = cache(async (): Promise<ServerSessionGate> => {
   let supabase: AppSupabaseClient | null = null;
   try {
     supabase = await createCookieSupabaseClient();
@@ -73,8 +74,6 @@ export async function getServerSessionGate(): Promise<ServerSessionGate> {
     return { status: "unauthenticated" };
   }
 
-  await maybeBootstrapAdmin({ userId, email });
-
   const [profileRes, flagRes] = await Promise.all([
     supabase
       .from("profiles")
@@ -92,7 +91,14 @@ export async function getServerSessionGate(): Promise<ServerSessionGate> {
     return { status: "unauthenticated" };
   }
 
-  const profile = serializeProfileRow(profileRes.data);
+  let profile = serializeProfileRow(profileRes.data);
+  if (profile.role !== "admin") {
+    const promoted = await maybeBootstrapAdmin({ userId, email });
+    if (promoted) {
+      profile = { ...profile, role: "admin" };
+    }
+  }
+
   const inviteOnlyEnabled = flagRes.data?.enabled ?? true;
   const inviteRequired = computeInviteRequired(inviteOnlyEnabled, profile);
 
@@ -105,4 +111,4 @@ export async function getServerSessionGate(): Promise<ServerSessionGate> {
   }
 
   return { status: "ready", userId, email, profile, supabase };
-}
+});

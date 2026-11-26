@@ -35,6 +35,7 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("strata-theme");var m=document.querySelector('meta[name="color-scheme"]');var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(m){m.content=(t==="light"||t==="dark")?t:"light dark";}var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);}catch(e){}})();`;

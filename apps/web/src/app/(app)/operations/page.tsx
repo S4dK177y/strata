@@ -6,7 +6,6 @@ import {
   type Category,
   type Transaction,
 } from "@strata/api-contract";
-import { AppShell } from "@/components/layout/app-shell";
 import { OperationsClient } from "@/components/operations/operations-client";
 import { getServerSessionGate } from "@/lib/auth/session-gate";
 
@@ -19,9 +18,9 @@ export default async function OperationsPage({
 }) {
   const gate = await getServerSessionGate();
 
-  if (gate.status === "unauthenticated") redirect("/login");
-  if (gate.status === "needs_invite") redirect("/invite");
-  if (gate.status === "needs_onboarding") redirect("/onboarding");
+  if (gate.status !== "ready") {
+    redirect("/login");
+  }
 
   const resolvedParams = await searchParams;
   const rawAccount =
@@ -83,12 +82,7 @@ export default async function OperationsPage({
   const total = txRes.count ?? initialTransactions.length;
 
   return (
-    <AppShell
-      profile={gate.profile}
-      email={gate.email}
-      initialAccounts={accounts}
-      initialCategories={categories}
-    >
+    <div className="strata-page-enter">
       <OperationsClient
         baseCurrency={gate.profile.base_currency}
         accounts={accounts}
@@ -102,6 +96,6 @@ export default async function OperationsPage({
         initialTypeFilter={parsedType.success ? parsedType.data : ""}
         initialStatusFilter={parsedStatus.success ? parsedStatus.data : ""}
       />
-    </AppShell>
+    </div>
   );
 }

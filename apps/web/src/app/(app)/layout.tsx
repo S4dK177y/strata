@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
-import type { Account, Category, Transaction } from "@strata/api-contract";
-import { CapitalClient } from "@/components/capital/capital-client";
+import type { ReactNode } from "react";
+import type { Account, Category, Debt } from "@strata/api-contract";
 import { AppShell } from "@/components/layout/app-shell";
 import { getServerSessionGate } from "@/lib/auth/session-gate";
 
 export const dynamic = "force-dynamic";
 
-export default async function CapitalPage({
-  searchParams,
+export default async function AuthenticatedLayout({
+  children,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  children: ReactNode;
 }) {
   const gate = await getServerSessionGate();
 
@@ -17,40 +17,31 @@ export default async function CapitalPage({
   if (gate.status === "needs_invite") redirect("/invite");
   if (gate.status === "needs_onboarding") redirect("/onboarding");
 
-  const resolvedParams = await searchParams;
-  const initialTab =
-    resolvedParams.tab === "categories" ? "categories" : "accounts";
-
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-
-  const [accountsRes, categoriesRes, txRes] = await Promise.all([
+  const [accountsRes, categoriesRes, debtsRes] = await Promise.all([
     gate.supabase
       .from("accounts")
       .select("*")
-      .eq("user_id", gate.profile.id)
+      .eq("user_id", gate.userId)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true }),
     gate.supabase
       .from("categories")
       .select("*")
-      .eq("user_id", gate.profile.id)
+      .eq("user_id", gate.userId)
       .is("deleted_at", null)
       .order("kind", { ascending: true })
       .order("sort_order", { ascending: true }),
     gate.supabase
-      .from("transactions")
+      .from("debts")
       .select("*")
-      .eq("user_id", gate.profile.id)
-      .eq("status", "confirmed")
+      .eq("user_id", gate.userId)
       .is("deleted_at", null),
   ]);
 
   const accounts = (accountsRes.data ?? []) as Account[];
   const categories = (categoriesRes.data ?? []) as Category[];
-  const transactions = (txRes.data ?? []) as Transaction[];
+  const debts = (debtsRes.data ?? []) as Debt[];
 
   return (
     <AppShell
@@ -58,16 +49,9 @@ export default async function CapitalPage({
       email={gate.email}
       initialAccounts={accounts}
       initialCategories={categories}
+      initialDebts={debts}
     >
-      <CapitalClient
-        baseCurrency={gate.profile.base_currency}
-        initialTab={initialTab}
-        initialAccounts={accounts}
-        initialCategories={categories}
-        initialTransactions={transactions}
-        currentYear={currentYear}
-        currentMonth={currentMonth}
-      />
+      {children}
     </AppShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -23,6 +24,57 @@ interface ModalDialogProps {
   dismissible?: boolean;
   maxWidthClassName?: string;
   children: ReactNode;
+}
+
+let supportsDisplayTransition: boolean | undefined;
+
+function canTransitionDisplay(): boolean {
+  if (supportsDisplayTransition !== undefined) return supportsDisplayTransition;
+  if (
+    typeof window === "undefined" ||
+    !window.CSS?.supports?.("transition-behavior", "allow-discrete") ||
+    !document.body
+  ) {
+    return false;
+  }
+  const probe = document.createElement("div");
+  probe.style.cssText =
+    "transition: display 1s allow-discrete !important; display: block;";
+  document.body.appendChild(probe);
+  void getComputedStyle(probe).display;
+  probe.style.display = "none";
+  supportsDisplayTransition = getComputedStyle(probe).display === "block";
+  probe.remove();
+  return supportsDisplayTransition;
+}
+
+function supportsTopLayerExit(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    Boolean(window.CSS?.supports?.("overlay", "auto")) &&
+    canTransitionDisplay()
+  );
+}
+
+async function closeTopLayer(dialog: HTMLDialogElement): Promise<void> {
+  if (!dialog.open) return;
+
+  if (!supportsTopLayerExit()) {
+    dialog.setAttribute("data-closing", "");
+    const animations = dialog.getAnimations({ subtree: true });
+    if (animations.length > 0) {
+      await Promise.race([
+        Promise.allSettled(animations.map((a) => a.finished)),
+        new Promise((resolve) => setTimeout(resolve, 600)),
+      ]);
+    }
+    if (!dialog.hasAttribute("data-closing")) return;
+    dialog.removeAttribute("data-closing");
+  }
+
+  if (dialog.open) {
+    dialog.close();
+  }
 }
 
 function isPointerOutsideDialog(e: PointerEvent, dialog: HTMLDialogElement): boolean {
@@ -50,17 +102,22 @@ export function ModalDialog({
   const descriptionId = useId();
   const { t } = useI18n();
 
+  const requestClose = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
 
     if (open) {
+      dialog.removeAttribute("data-closing");
       if (!dialog.open) {
         dialog.showModal();
       }
       setPortalEl(dialog);
     } else if (dialog.open) {
-      dialog.close();
+      void closeTopLayer(dialog);
     }
   }, [open]);
 
@@ -69,13 +126,15 @@ export function ModalDialog({
     if (!dialog) return;
 
     const handleClose = () => {
+      dialog.removeAttribute("data-closing");
       dialog.returnValue = "";
       onOpenChange(false);
     };
 
     const handleCancel = (e: Event) => {
-      if (!dismissible) {
-        e.preventDefault();
+      e.preventDefault();
+      if (dismissible) {
+        onOpenChange(false);
       }
     };
 
@@ -101,7 +160,7 @@ export function ModalDialog({
     };
     const onPointerUp = (e: PointerEvent) => {
       if (pressedOutside && isPointerOutsideDialog(e, dialog)) {
-        dialog.close();
+        onOpenChange(false);
       }
       pressedOutside = false;
     };
@@ -112,7 +171,7 @@ export function ModalDialog({
       dialog.removeEventListener("pointerdown", onPointerDown);
       dialog.removeEventListener("pointerup", onPointerUp);
     };
-  }, [dismissible]);
+  }, [dismissible, onOpenChange]);
 
   const closedByProps = {
     closedby: dismissible ? "any" : "closerequest",
@@ -153,7 +212,7 @@ export function ModalDialog({
 
           <button
             type="button"
-            onClick={() => onOpenChange(false)}
+            onClick={requestClose}
             aria-label={t.common.close}
             className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)] transition hover:text-[var(--strata-text-primary)]"
           >
@@ -161,8 +220,8 @@ export function ModalDialog({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
-          {open ? children : null}
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-5 sm:pb-5">
+          {children}
         </div>
       </DialogPortalContext.Provider>
     </dialog>

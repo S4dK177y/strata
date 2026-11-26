@@ -50,6 +50,7 @@ export function QuickAddProvider({
 }: QuickAddProviderProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [openSeq, setOpenSeq] = useState(0);
   const [preset, setPreset] = useState<QuickAddPreset | null>(null);
   const [overrideAccounts, setOverrideAccounts] = useState<Account[] | null>(null);
   const [overrideCategories, setOverrideCategories] = useState<Category[] | null>(null);
@@ -85,6 +86,7 @@ export function QuickAddProvider({
   const openQuickAdd = useCallback(
     (nextPreset?: QuickAddPreset) => {
       setPreset(nextPreset ?? null);
+      setOpenSeq((n) => n + 1);
       setOpen(true);
       if (!isHydrated) {
         void fetchReferenceData();
@@ -162,6 +164,7 @@ export function QuickAddProvider({
       {children}
       <QuickAddDialog
         open={open}
+        openSeq={openSeq}
         onOpenChange={setOpen}
         baseCurrency={baseCurrency}
         accounts={accounts}

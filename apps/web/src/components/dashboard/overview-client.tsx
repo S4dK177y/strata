@@ -97,13 +97,13 @@ export function OverviewClient({
   return (
     <div className="space-y-6">
       {/* Open Aurora Balance Header */}
-      <section className="strata-aurora-hero space-y-6 rounded-[28px] p-6 sm:p-8">
+      <section className="strata-aurora-hero space-y-6 rounded-[28px] p-5 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <div className="text-xs font-medium text-[var(--strata-text-secondary)]">
               {t.dashboard.netWorth}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 onClick={togglePrivacyBlur}
@@ -117,7 +117,7 @@ export function OverviewClient({
                   <Eye className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                 )}
               </button>
-              <div className="text-3xl font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-5xl">
+              <div className="min-w-0 truncate text-[28px] leading-tight font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-5xl">
                 <AmountText
                   minor={metrics.netWorth}
                   currency={profile.base_currency}
@@ -147,46 +147,46 @@ export function OverviewClient({
         </div>
 
         {/* 3 Frosted Squircle Quick Action Tiles */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => openQuickAdd()}
-            className="strata-frosted flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center transition hover:brightness-105 active:scale-[0.98]"
+            className="strata-frosted flex min-h-20 min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-[22px] p-2.5 text-center transition duration-200 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:p-3"
           >
             <Plus
-              className="h-5 w-5 text-[var(--strata-text-primary)]"
+              className="h-5 w-5 shrink-0 text-[var(--strata-text-primary)]"
               strokeWidth={1.75}
               aria-hidden="true"
             />
-            <span className="text-xs font-medium text-[var(--strata-text-primary)]">
+            <span className="max-w-full truncate text-xs font-medium text-[var(--strata-text-primary)]">
               {t.nav.quickAdd}
             </span>
           </button>
 
           <Link
             href="/operations"
-            className="strata-frosted flex min-h-20 flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center transition hover:brightness-105"
+            className="strata-frosted flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-[22px] p-2.5 text-center transition duration-200 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:p-3"
           >
             <ArrowLeftRight
-              className="h-5 w-5 text-[var(--strata-text-primary)]"
+              className="h-5 w-5 shrink-0 text-[var(--strata-text-primary)]"
               strokeWidth={1.75}
               aria-hidden="true"
             />
-            <span className="text-xs font-medium text-[var(--strata-text-primary)]">
+            <span className="max-w-full truncate text-xs font-medium text-[var(--strata-text-primary)]">
               {t.nav.operations}
             </span>
           </Link>
 
           <Link
             href="/settings"
-            className="strata-frosted flex min-h-20 flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center transition hover:brightness-105"
+            className="strata-frosted flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-[22px] p-2.5 text-center transition duration-200 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:p-3"
           >
             <SlidersHorizontal
-              className="h-5 w-5 text-[var(--strata-text-primary)]"
+              className="h-5 w-5 shrink-0 text-[var(--strata-text-primary)]"
               strokeWidth={1.75}
               aria-hidden="true"
             />
-            <span className="text-xs font-medium text-[var(--strata-text-primary)]">
+            <span className="max-w-full truncate text-xs font-medium text-[var(--strata-text-primary)]">
               {t.nav.settings}
             </span>
           </Link>
@@ -194,12 +194,12 @@ export function OverviewClient({
       </section>
 
       {/* This Month Cashflow Snapshot */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card className="p-4">
-          <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+        <Card className="min-w-0 p-4">
+          <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
             {t.dashboard.monthIncome}
           </div>
-          <div className="mt-1 text-lg font-bold text-[var(--strata-money-income)]">
+          <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
             <AmountText
               minor={metrics.monthSummary.totalIncomeMinor}
               currency={profile.base_currency}
@@ -208,11 +208,11 @@ export function OverviewClient({
           </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+        <Card className="min-w-0 p-4">
+          <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
             {t.dashboard.monthExpense}
           </div>
-          <div className="mt-1 text-lg font-bold text-[var(--strata-money-expense)]">
+          <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
             <AmountText
               minor={
                 metrics.monthSummary.netExpenseMinor > 0
@@ -224,11 +224,11 @@ export function OverviewClient({
           </div>
         </Card>
 
-        <Card className="p-4">
-          <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+        <Card className="col-span-2 min-w-0 p-4 sm:col-span-1">
+          <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
             {t.dashboard.monthSaldo}
           </div>
-          <div className="mt-1 text-lg font-bold text-[var(--strata-text-primary)]">
+          <div className="mt-1 truncate text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
             <AmountText
               minor={metrics.monthSummary.netBalanceMinor}
               currency={profile.base_currency}
@@ -296,7 +296,7 @@ export function OverviewClient({
                       </div>
                     </div>
                   </div>
-                  <div className="shrink-0 text-right text-base font-bold text-[var(--strata-text-primary)]">
+                  <div className="shrink-0 whitespace-nowrap text-right text-base font-bold text-[var(--strata-text-primary)]">
                     <AmountText minor={balance} currency={acc.currency} />
                   </div>
                 </Link>
@@ -369,7 +369,7 @@ export function OverviewClient({
                     </div>
                   </div>
                   <div
-                    className="shrink-0 text-right text-base font-bold"
+                    className="shrink-0 whitespace-nowrap text-right text-base font-bold"
                     style={{ color: meta.colorVar }}
                   >
                     <AmountText

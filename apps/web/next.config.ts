@@ -41,6 +41,12 @@ const docsSecurityHeaders = [
 
 const nextConfig: NextConfig = {
   transpilePackages: ["@strata/finance-core", "@strata/api-contract", "@strata/design-tokens"],
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
   async headers() {
     return [
       {

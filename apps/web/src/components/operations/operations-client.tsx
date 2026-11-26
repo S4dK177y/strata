@@ -346,7 +346,7 @@ export function OperationsClient({
               <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             </Button>
 
-            <span className="min-w-36 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)]">
+            <span className="min-w-28 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)] sm:min-w-36">
               {periodLabel}
             </span>
 
@@ -376,12 +376,12 @@ export function OperationsClient({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
-            <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+          <div className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthIncome}
             </div>
-            <div className="mt-1 text-lg font-bold text-[var(--strata-money-income)]">
+            <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
               <AmountText
                 minor={periodSummary.totalIncomeMinor}
                 currency={baseCurrency}
@@ -390,11 +390,11 @@ export function OperationsClient({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
-            <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+          <div className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthExpense}
             </div>
-            <div className="mt-1 text-lg font-bold text-[var(--strata-money-expense)]">
+            <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
               <AmountText
                 minor={periodSummary.netExpenseMinor > 0 ? -periodSummary.netExpenseMinor : 0}
                 currency={baseCurrency}
@@ -402,11 +402,11 @@ export function OperationsClient({
             </div>
           </div>
 
-          <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
-            <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+          <div className="col-span-2 min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5 sm:col-span-1">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthSaldo}
             </div>
-            <div className="mt-1 text-lg font-bold text-[var(--strata-text-primary)]">
+            <div className="mt-1 truncate text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
               <AmountText
                 minor={periodSummary.netBalanceMinor}
                 currency={baseCurrency}
@@ -660,7 +660,7 @@ export function OperationsClient({
                         <button
                           type="button"
                           onClick={() => openQuickAdd({ transaction: tx })}
-                          className="cursor-pointer text-right text-sm font-bold sm:text-base"
+                          className="cursor-pointer whitespace-nowrap text-right text-sm font-bold sm:text-base"
                           style={{ color: meta.colorVar }}
                         >
                           <AmountText

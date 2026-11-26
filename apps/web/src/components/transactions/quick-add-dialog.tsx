@@ -58,6 +58,7 @@ export interface QuickAddPreset {
 
 interface QuickAddDialogProps {
   open: boolean;
+  openSeq?: number;
   onOpenChange: (open: boolean) => void;
   baseCurrency: string;
   accounts: Account[];
@@ -380,7 +381,7 @@ function QuickAddFormBody({
                   onClick={() => handleTypeChange(key)}
                   aria-pressed={active}
                   className={cn(
-                    "flex min-h-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2.5 text-xs font-semibold transition",
+                    "flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-semibold transition",
                     active
                       ? "bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)] shadow-sm"
                       : "text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
@@ -695,6 +696,7 @@ function QuickAddFormBody({
               type="datetime-local"
               value={occurredAtInput}
               onChange={(e) => setOccurredAtInput(e.target.value)}
+              className="min-w-0 max-w-full"
             />
           </div>
 
@@ -819,6 +821,7 @@ function QuickAddFormBody({
 
 export function QuickAddDialog({
   open,
+  openSeq = 0,
   onOpenChange,
   baseCurrency,
   accounts,
@@ -855,7 +858,7 @@ export function QuickAddDialog({
     }
   }
 
-  const formKey = preset?.transaction?.id ?? `${preset?.type ?? "expense"}-${preset?.accountFromId ?? ""}`;
+  const formKey = `${preset?.transaction?.id ?? preset?.type ?? "expense"}-${preset?.accountFromId ?? ""}-${openSeq}`;
 
   return (
     <>

@@ -14,6 +14,7 @@ import { cn, minorToEditableInput, parseAmountInputToMinor } from "@/lib/utils";
 
 interface CategoryFormDialogProps {
   open: boolean;
+  formSeq?: number;
   onOpenChange: (open: boolean) => void;
   baseCurrency: string;
   category?: Category | null;
@@ -259,6 +260,7 @@ function CategoryFormBody({
 
 export function CategoryFormDialog({
   open,
+  formSeq = 0,
   onOpenChange,
   baseCurrency,
   category,
@@ -276,7 +278,7 @@ export function CategoryFormDialog({
       dismissible={!submitting}
     >
       <CategoryFormBody
-        key={category?.id ?? `new-${defaultKind}`}
+        key={`${category?.id ?? `new-${defaultKind}`}-${formSeq}`}
         baseCurrency={baseCurrency}
         category={category}
         defaultKind={defaultKind}

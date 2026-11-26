@@ -75,14 +75,122 @@ dialog:modal {
   overscroll-behavior: contain;
 }
 
+dialog.strata-dialog {
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.24s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.strata-dialog {
+    transform: translateY(24px);
+  }
+
+  @media (min-width: 640px) {
+    dialog.strata-dialog {
+      transform: scale(0.96) translateY(8px);
+    }
+  }
+}
+
 dialog[open].strata-dialog {
   display: flex;
   flex-direction: column;
 }
 
-dialog::backdrop {
+dialog[open].strata-dialog:where(:not([data-closing])) {
+  opacity: 1;
+}
+
+@starting-style {
+  dialog[open].strata-dialog:where(:not([data-closing])) {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open].strata-dialog:where(:not([data-closing])) {
+    transform: translateY(0);
+  }
+
+  @starting-style {
+    dialog[open].strata-dialog:where(:not([data-closing])) {
+      transform: translateY(24px);
+    }
+  }
+
+  @media (min-width: 640px) {
+    dialog[open].strata-dialog:where(:not([data-closing])) {
+      transform: scale(1) translateY(0);
+    }
+
+    @starting-style {
+      dialog[open].strata-dialog:where(:not([data-closing])) {
+        transform: scale(0.96) translateY(8px);
+      }
+    }
+  }
+}
+
+dialog.strata-dialog::backdrop {
   overflow: hidden;
   overscroll-behavior: contain;
-  background: rgba(4, 6, 10, 0.58);
+  background-color: rgba(4, 6, 10, 0);
+  backdrop-filter: blur(0px);
+  transition-property: background-color, backdrop-filter, display, overlay;
+  transition-duration: 0.24s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+dialog[open].strata-dialog:where(:not([data-closing]))::backdrop {
+  background-color: rgba(4, 6, 10, 0.58);
   backdrop-filter: blur(6px);
+}
+
+@starting-style {
+  dialog[open].strata-dialog:where(:not([data-closing]))::backdrop {
+    background-color: rgba(4, 6, 10, 0);
+    backdrop-filter: blur(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.strata-dialog,
+  dialog.strata-dialog::backdrop {
+    transition-duration: 0.1s;
+  }
+}
+
+@keyframes strata-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes strata-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .strata-page-enter {
+    animation: strata-page-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .strata-skeleton {
+    animation: strata-skeleton-pulse 1.5s ease-in-out infinite;
+  }
 }

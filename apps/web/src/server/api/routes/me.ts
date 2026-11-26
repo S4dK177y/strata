@@ -131,8 +131,6 @@ export function createMeRouter(deps: ApiDependencies) {
       return c.json({ error: "UNAUTHORIZED", message: "Authentication required" }, 401);
     }
 
-    await maybeBootstrapAdmin({ userId: auth.userId, email: auth.email });
-
     const [profileRes, flagRes] = await Promise.all([
       auth.supabase
         .from("profiles")
@@ -161,7 +159,13 @@ export function createMeRouter(deps: ApiDependencies) {
       );
     }
 
-    const profile = serializeProfileRow(row);
+    let profile = serializeProfileRow(row);
+    if (profile.role !== "admin") {
+      const promoted = await maybeBootstrapAdmin({ userId: auth.userId, email: auth.email });
+      if (promoted) {
+        profile = { ...profile, role: "admin" };
+      }
+    }
     const inviteOnlyEnabled = flagRes.data?.enabled ?? true;
     const inviteRequired = computeInviteRequired(inviteOnlyEnabled, profile);
 
