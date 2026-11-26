@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   AccountCreateRequestSchema,
+  ActiveSessionSchema,
   CategoryCreateRequestSchema,
+  DeleteAccountRequestSchema,
   HealthResponseSchema,
+  MeResponseSchema,
   OnboardingCompleteRequestSchema,
   ProfileUpdateRequestSchema,
   RedeemInviteRequestSchema,
+  SessionListResponseSchema,
   SyncPullResponseSchema,
   SyncPushRequestSchema,
   TransactionCreateRequestSchema,
@@ -292,5 +296,69 @@ describe("@strata/api-contract", () => {
         status: "confirmed",
       }).success
     ).toBe(true);
+  });
+
+  it("validates PR 5 security schemas (sessions, account deletion, MeResponse defaults)", () => {
+    const session = ActiveSessionSchema.parse({
+      id: UUID_1,
+      is_current: true,
+      device_type: "desktop",
+      device_label: "Chrome · Linux",
+      browser: "Chrome 131",
+      os: "Linux",
+      ip: "203.0.113.42",
+      aal: "aal2",
+      created_at: "2026-11-26T10:00:00.000Z",
+      last_active_at: "2026-11-26T12:00:00.000Z",
+      not_after: null,
+    });
+    expect(session.is_current).toBe(true);
+
+    const sessionList = SessionListResponseSchema.parse({
+      sessions: [session],
+      current_session_id: UUID_1,
+    });
+    expect(sessionList.sessions).toHaveLength(1);
+
+    expect(
+      DeleteAccountRequestSchema.safeParse({ password: "" }).success
+    ).toBe(false);
+    expect(
+      DeleteAccountRequestSchema.safeParse({ password: "my-secret-password" }).success
+    ).toBe(true);
+    expect(
+      DeleteAccountRequestSchema.safeParse({
+        password: "my-secret-password",
+        totp_code: " 123456 ",
+      }).success
+    ).toBe(true);
+    expect(
+      DeleteAccountRequestSchema.safeParse({
+        password: "my-secret-password",
+        totp_code: "12ab56",
+      }).success
+    ).toBe(false);
+
+    const me = MeResponseSchema.parse({
+      profile: {
+        id: UUID_1,
+        role: "user",
+        display_name: "Alex",
+        locale: "ru",
+        base_currency: "RUB",
+        theme: "dark",
+        privacy_blur_default: false,
+        onboarding_completed: true,
+        invite_redeemed_at: "2026-11-26T10:00:00.000Z",
+        wrapped_settings: {},
+        created_at: "2026-11-26T10:00:00.000Z",
+        updated_at: "2026-11-26T10:00:00.000Z",
+      },
+      email: "alex@example.com",
+      invite_required: false,
+    });
+    expect(me.aal).toBe("aal1");
+    expect(me.mfa_enabled).toBe(false);
+    expect(me.mfa_required).toBe(false);
   });
 });

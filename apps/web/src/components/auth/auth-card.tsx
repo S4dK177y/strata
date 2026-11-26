@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -20,17 +20,28 @@ import { cn } from "@/lib/utils";
 interface AuthCardProps {
   safeNext: string;
   initialError?: string | null;
+  reason?: string | null;
+  deleted?: boolean;
   inviteOnlyEnabled: boolean;
 }
 
 export function AuthCard({
   safeNext,
   initialError,
+  reason,
+  deleted = false,
   inviteOnlyEnabled,
 }: AuthCardProps) {
   const router = useRouter();
   const { t } = useI18n();
   const { triggerAuthFlash } = useAuthTransition();
+
+  useEffect(() => {
+    if (reason === "session_revoked" || deleted) {
+      const supabase = createBrowserSupabaseClient();
+      void supabase.auth.signOut({ scope: "local" }).catch(() => {});
+    }
+  }, [reason, deleted]);
 
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "check_email">("signin");
   const [email, setEmail] = useState("");
@@ -102,6 +113,18 @@ export function AuthCard({
       if (error) {
         setAuthVisualState("idle");
         setFormError(mapAuthError(error.message));
+        return;
+      }
+
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aalData?.nextLevel === "aal2" && aalData.currentLevel !== "aal2") {
+        setAuthVisualState("entering");
+        const target =
+          safeNext !== "/"
+            ? `/mfa-verify?next=${encodeURIComponent(safeNext)}`
+            : "/mfa-verify";
+        router.push(target);
+        router.refresh();
         return;
       }
 
@@ -288,6 +311,22 @@ export function AuthCard({
                 </CardDescription>
               </CardHeader>
 
+              {deleted ? (
+                <div
+                  role="status"
+                  className="rounded-2xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-canvas)]/75 px-3.5 py-2.5 text-xs font-medium text-[var(--strata-text-secondary)]"
+                >
+                  {t.auth.accountDeletedNotice}
+                </div>
+              ) : reason === "session_revoked" ? (
+                <div
+                  role="status"
+                  className="rounded-2xl border border-[var(--strata-radar-warn)]/50 bg-[var(--strata-bg-canvas)]/75 px-3.5 py-2.5 text-xs font-medium text-[var(--strata-text-primary)]"
+                >
+                  {t.auth.sessionRevokedNotice}
+                </div>
+              ) : null}
+
               {formError ? (
                 <div
                   role="alert"
@@ -346,6 +385,22 @@ export function AuthCard({
                   {t.auth.welcomeSubtitle}
                 </CardDescription>
               </CardHeader>
+
+              {deleted ? (
+                <div
+                  role="status"
+                  className="rounded-2xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-canvas)]/75 px-3.5 py-2.5 text-xs font-medium text-[var(--strata-text-secondary)]"
+                >
+                  {t.auth.accountDeletedNotice}
+                </div>
+              ) : reason === "session_revoked" ? (
+                <div
+                  role="status"
+                  className="rounded-2xl border border-[var(--strata-radar-warn)]/50 bg-[var(--strata-bg-canvas)]/75 px-3.5 py-2.5 text-xs font-medium text-[var(--strata-text-primary)]"
+                >
+                  {t.auth.sessionRevokedNotice}
+                </div>
+              ) : null}
 
               {formError ? (
                 <div

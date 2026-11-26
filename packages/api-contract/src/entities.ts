@@ -23,6 +23,7 @@ import {
   WrappedSettingsSchema,
   z,
 } from "./common";
+import { AalLevelSchema } from "./security";
 
 export const ProfileSchema = z
   .object({
@@ -238,6 +239,9 @@ export const MeResponseSchema = z
     profile: ProfileSchema,
     email: z.string().nullable(),
     invite_required: z.boolean(),
+    aal: AalLevelSchema.default("aal1"),
+    mfa_enabled: z.boolean().default(false),
+    mfa_required: z.boolean().default(false),
   })
   .openapi("MeResponse");
 export type MeResponse = z.infer<typeof MeResponseSchema>;

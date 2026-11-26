@@ -1,6 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/database.types";
-import { getSupabaseEnv } from "@/lib/supabase/env";
+import { createServiceRoleSupabaseClient } from "@/lib/supabase/service";
 
 interface BootstrapAdminParams {
   userId: string;
@@ -12,10 +10,8 @@ export async function maybeBootstrapAdmin({
   email,
 }: BootstrapAdminParams): Promise<boolean> {
   const bootstrapEmail = process.env.ADMIN_BOOTSTRAP_EMAIL?.trim().toLowerCase();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const env = getSupabaseEnv();
 
-  if (!bootstrapEmail || !serviceRoleKey || !env || !email) {
+  if (!bootstrapEmail || !email) {
     return false;
   }
 
@@ -24,13 +20,10 @@ export async function maybeBootstrapAdmin({
   }
 
   try {
-    const serviceClient = createClient<Database>(env.url, serviceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    });
+    const serviceClient = createServiceRoleSupabaseClient();
+    if (!serviceClient) {
+      return false;
+    }
 
     const { data: profile, error: profileError } = await serviceClient
       .from("profiles")

@@ -4,11 +4,12 @@ Versioned migrations live in [`supabase/migrations/`](../supabase/migrations):
 - `20261126000001_initial_schema.sql` — 15 tables, constraints, triggers, composite & FK indexes, RLS, and RPCs.
 - `20261126000002_seed_defaults.sql` — idempotent seed for default `feature_flags`.
 - `20261126000003_harden_rpc_grants.sql` — explicit `REVOKE` of `anon` / `PUBLIC` `EXECUTE` privileges on `SECURITY DEFINER` functions.
+- `20261126000004_account_security_sessions.sql` — private session/MFA helpers (`private.current_session_id()`, `private.is_session_active()`, `private.is_mfa_satisfied()`, `private.is_session_mfa_allowed()`), `RESTRICTIVE` RLS policies enforcing instant session revocation & opt-in `aal2`, and user security RPCs.
 
 ## Global Conventions
 - **Money:** `BIGINT` (`*_minor` in kopecks/cents). `transactions.amount_minor > 0`. Interest rates use `NUMERIC(6, 5)`.
 - **Sync columns on all user tables:** `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`, `created_at TIMESTAMPTZ`, `updated_at TIMESTAMPTZ` (maintained by `public.set_updated_at()` `BEFORE UPDATE` trigger), `deleted_at TIMESTAMPTZ NULL`.
-- **RLS & Performance:** Enabled on all 15 tables (`TO authenticated` / `TO anon`), using `initPlan`-optimized `(SELECT auth.uid()) = user_id` predicates and composite `(user_id, updated_at)` + covering FK indexes.
+- **RLS & Performance:** Enabled on all 15 tables (`TO authenticated` / `TO anon`), using `initPlan`-optimized `(SELECT auth.uid()) = user_id` predicates, `RESTRICTIVE` session-activity & opt-in `aal2` predicates, and composite `(user_id, updated_at)` + covering FK indexes.
 - **Privacy by Design:** Admin role (`private.is_admin()`) has **zero** `SELECT` access to other users' financial tables (`accounts`, `savings_rules`, `categories`, `goals`, `goal_transfers`, `recurring_payments`, `recurring_payment_marks`, `debts`, `transactions`, `story_views`).
 
 ## Tables (15)
@@ -31,3 +32,7 @@ Versioned migrations live in [`supabase/migrations/`](../supabase/migrations):
 ## RPCs (`SECURITY DEFINER`, `SET search_path = ''`)
 - `public.get_admin_telemetry() RETURNS JSONB` — requires `private.is_admin()`, returns aggregate-only platform counts (zero PII / user-level financial rows).
 - `public.redeem_invite_code(p_code TEXT) RETURNS TIMESTAMPTZ` — atomically validates and consumes an invite code (`FOR UPDATE`) and stamps `profiles.invite_redeemed_at`.
+- `public.get_my_auth_state()` — returns current session activity, `session_id`, `current_aal`, `mfa_enrolled`, and `mfa_required` for the authenticated caller.
+- `public.get_my_sessions()` — requires active session + satisfied MFA, returns non-expired rows from `auth.sessions` for `auth.uid()` with `user_agent`, `ip`, `aal`, `refreshed_at`, and `is_current`.
+- `public.revoke_my_session(p_session_id UUID) RETURNS BOOLEAN` — revokes an owned session in `auth.sessions` (`not_after = now()`) and its `auth.refresh_tokens` (`revoked = true`).
+- `public.revoke_other_sessions() RETURNS INTEGER` — revokes all active sessions and refresh tokens for `auth.uid()` except the caller's current session.

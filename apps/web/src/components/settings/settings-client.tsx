@@ -2,13 +2,16 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Palette, ShieldCheck, User } from "lucide-react";
+import { Palette, User } from "lucide-react";
 import { toast } from "sonner";
-import type { Profile, Theme } from "@strata/api-contract";
+import type { AalLevel, Profile, Theme } from "@strata/api-contract";
 import { SUPPORTED_CURRENCIES } from "@/components/onboarding/starter-templates";
 import { usePrivacy } from "@/components/providers/privacy-provider";
+import { ActiveSessionsCard } from "@/components/settings/active-sessions-card";
+import { DangerZoneCard } from "@/components/settings/danger-zone-card";
+import { TotpSecurityCard } from "@/components/settings/totp-security-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -25,9 +28,13 @@ import { useI18n } from "@/lib/i18n/client";
 export function SettingsClient({
   profile,
   email,
+  initialMfaEnabled = false,
+  initialAal = "aal1",
 }: {
   profile: Profile;
   email: string | null;
+  initialMfaEnabled?: boolean;
+  initialAal?: AalLevel;
 }) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
@@ -37,6 +44,7 @@ export function SettingsClient({
   const [baseCurrency, setBaseCurrency] = useState(profile.base_currency);
   const [themeValue, setThemeValue] = useState<Theme>(profile.theme);
   const [privacyDefault, setPrivacyDefault] = useState(profile.privacy_blur_default);
+  const [mfaEnabled, setMfaEnabled] = useState(initialMfaEnabled);
   const [saving, setSaving] = useState(false);
 
   async function handleSave(e: FormEvent<HTMLFormElement>) {
@@ -56,6 +64,11 @@ export function SettingsClient({
       });
 
       if (!res.ok) {
+        if (res.status === 401) {
+          router.push("/login?reason=session_revoked");
+          router.refresh();
+          return;
+        }
         toast.error(t.errors.generic);
         return;
       }
@@ -82,7 +95,11 @@ export function SettingsClient({
         <Card className="space-y-5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <User className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+              <User
+                className="h-4 w-4 text-[var(--strata-text-muted)]"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
               {t.settings.profileSection}
             </CardTitle>
           </CardHeader>
@@ -149,7 +166,11 @@ export function SettingsClient({
         <Card className="space-y-5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Palette className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+              <Palette
+                className="h-4 w-4 text-[var(--strata-text-muted)]"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
               {t.settings.preferencesSection}
             </CardTitle>
           </CardHeader>
@@ -191,22 +212,15 @@ export function SettingsClient({
         </Card>
       </form>
 
-      <Card className="flex flex-wrap items-center justify-between gap-4">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ShieldCheck className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
-            {t.settings.securitySection}
-          </CardTitle>
-          <CardDescription>{email}</CardDescription>
-        </CardHeader>
+      <TotpSecurityCard
+        initialMfaEnabled={initialMfaEnabled}
+        initialAal={initialAal}
+        onMfaChanged={setMfaEnabled}
+      />
 
-        <form action="/auth/signout" method="post">
-          <Button type="submit" variant="outline">
-            <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-            {t.common.signOut}
-          </Button>
-        </form>
-      </Card>
+      <ActiveSessionsCard email={email} />
+
+      <DangerZoneCard mfaEnabled={mfaEnabled} />
     </div>
   );
 }

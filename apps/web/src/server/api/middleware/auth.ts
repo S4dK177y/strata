@@ -1,5 +1,25 @@
 import type { MiddlewareHandler } from "hono";
-import type { ApiDependencies, ApiEnv, ProfileGateState } from "../types";
+import type { ApiDependencies, ApiEnv, AuthSecurityState, ProfileGateState } from "../types";
+
+function parseAuthStateRow(
+  raw: unknown,
+  fallbackSessionId: string | null,
+  fallbackAal: "aal1" | "aal2" | null
+): AuthSecurityState | null {
+  const row = Array.isArray(raw) ? raw[0] : raw;
+  if (!row || typeof row !== "object") {
+    return null;
+  }
+
+  const record = row as Record<string, unknown>;
+  return {
+    session_active: Boolean(record.session_active),
+    session_id: typeof record.session_id === "string" ? record.session_id : fallbackSessionId,
+    current_aal: record.current_aal === "aal2" ? "aal2" : fallbackAal ?? "aal1",
+    mfa_enrolled: Boolean(record.mfa_enrolled),
+    mfa_required: Boolean(record.mfa_required),
+  };
+}
 
 export function createRequireAuth(deps: ApiDependencies): MiddlewareHandler<ApiEnv> {
   return async (c, next) => {
@@ -14,10 +34,59 @@ export function createRequireAuth(deps: ApiDependencies): MiddlewareHandler<ApiE
       );
     }
 
+    const { data, error } = await auth.supabase.rpc("get_my_auth_state");
+    if (error) {
+      return c.json(
+        {
+          error: "AUTH_STATE_LOOKUP_FAILED",
+          message: error.message || "Failed to verify session state",
+        },
+        500
+      );
+    }
+
+    const authState = parseAuthStateRow(data, auth.sessionId, auth.aal);
+    if (!authState || !authState.session_active) {
+      return c.json(
+        {
+          error: "SESSION_REVOKED",
+          message: "Session has been revoked or expired",
+        },
+        401
+      );
+    }
+
     c.set("auth", auth);
+    c.set("authState", authState);
     await next();
   };
 }
+
+export const requireMfaVerified: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  const auth = c.get("auth");
+  const authState = c.get("authState");
+  if (!auth || !authState) {
+    return c.json(
+      {
+        error: "UNAUTHORIZED",
+        message: "Authentication required",
+      },
+      401
+    );
+  }
+
+  if (authState.mfa_required) {
+    return c.json(
+      {
+        error: "MFA_REQUIRED",
+        message: "Two-factor authentication verification is required",
+      },
+      403
+    );
+  }
+
+  await next();
+};
 
 export async function evaluateInviteGate(
   auth: NonNullable<ApiEnv["Variables"]["auth"]>
@@ -70,6 +139,7 @@ export async function evaluateInviteGate(
 
 export const requireInviteGate: MiddlewareHandler<ApiEnv> = async (c, next) => {
   const auth = c.get("auth");
+  const authState = c.get("authState");
   if (!auth) {
     return c.json(
       {
@@ -77,6 +147,16 @@ export const requireInviteGate: MiddlewareHandler<ApiEnv> = async (c, next) => {
         message: "Authentication required",
       },
       401
+    );
+  }
+
+  if (authState?.mfa_required) {
+    return c.json(
+      {
+        error: "MFA_REQUIRED",
+        message: "Two-factor authentication verification is required",
+      },
+      403
     );
   }
 

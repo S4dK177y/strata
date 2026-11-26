@@ -8,9 +8,16 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; reason?: string; deleted?: string }>;
 }) {
+  const params = await searchParams;
+  const safeNext = sanitizeNextPath(params.next);
   const gate = await getServerSessionGate();
+
+  if (gate.status === "needs_mfa") {
+    const query = safeNext !== "/" ? `?next=${encodeURIComponent(safeNext)}` : "";
+    redirect(`/mfa-verify${query}`);
+  }
   if (gate.status === "needs_invite") {
     redirect("/invite");
   }
@@ -20,9 +27,6 @@ export default async function LoginPage({
   if (gate.status === "ready") {
     redirect("/");
   }
-
-  const params = await searchParams;
-  const safeNext = sanitizeNextPath(params.next);
 
   let inviteOnlyEnabled = true;
   const publicClient = createPublicSupabaseClient();
@@ -37,10 +41,15 @@ export default async function LoginPage({
     }
   }
 
+  const effectiveReason =
+    gate.status === "session_revoked" ? "session_revoked" : (params.reason ?? null);
+
   return (
     <AuthCard
       safeNext={safeNext}
       initialError={params.error ?? null}
+      reason={effectiveReason}
+      deleted={params.deleted === "1"}
       inviteOnlyEnabled={inviteOnlyEnabled}
     />
   );

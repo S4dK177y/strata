@@ -28,7 +28,9 @@ export async function GET(request: NextRequest) {
         }
 
         const gate = await getServerSessionGate();
-        if (gate.status === "needs_invite") {
+        if (gate.status === "needs_mfa") {
+          redirectTo.pathname = "/mfa-verify";
+        } else if (gate.status === "needs_invite") {
           redirectTo.pathname = "/invite";
         } else if (gate.status === "needs_onboarding") {
           redirectTo.pathname = "/onboarding";

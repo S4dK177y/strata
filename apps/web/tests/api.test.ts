@@ -325,6 +325,20 @@ function createMockClient(
       return new MockQueryBuilder(state, table, onWrite);
     },
     async rpc(fnName: string, args?: Record<string, unknown>) {
+      if (fnName === "get_my_auth_state") {
+        return {
+          data: [
+            {
+              session_active: true,
+              session_id: "99999999-9999-4999-8999-999999999999",
+              current_aal: "aal1",
+              mfa_enrolled: false,
+              mfa_required: false,
+            },
+          ],
+          error: null,
+        };
+      }
       if (fnName === "redeem_invite_code") {
         const cleanCode = String(args?.p_code ?? "").trim();
         const profile = state.profiles.find((p) => p.id === currentUserId);
@@ -374,6 +388,8 @@ function createTestHarness(state: MockDbState = createDefaultDbState()) {
           userId,
           email: "invited@strata.app",
           authMode: "bearer",
+          sessionId: "99999999-9999-4999-8999-999999999999",
+          aal: "aal1",
         };
       }
       if (auth === "Bearer token-uninvited") {
@@ -383,6 +399,8 @@ function createTestHarness(state: MockDbState = createDefaultDbState()) {
           userId,
           email: "uninvited@strata.app",
           authMode: "bearer",
+          sessionId: "99999999-9999-4999-8999-999999999999",
+          aal: "aal1",
         };
       }
       if (auth === "Bearer token-admin") {
@@ -392,6 +410,8 @@ function createTestHarness(state: MockDbState = createDefaultDbState()) {
           userId,
           email: "admin@strata.app",
           authMode: "bearer",
+          sessionId: "99999999-9999-4999-8999-999999999999",
+          aal: "aal1",
         };
       }
       return null;

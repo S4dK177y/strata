@@ -4,7 +4,7 @@ import {
   RedeemInviteRequestSchema,
   RedeemInviteResponseSchema,
 } from "@strata/api-contract";
-import { createRequireAuth } from "../middleware/auth";
+import { createRequireAuth, requireMfaVerified } from "../middleware/auth";
 import type { ApiDependencies, ApiEnv } from "../types";
 
 const AUTH_SECURITY: Array<Record<string, string[]>> = [{ bearerAuth: [] }, { cookieAuth: [] }];
@@ -65,7 +65,7 @@ export function createInvitesRouter(deps: ApiDependencies) {
   const router = new OpenAPIHono<ApiEnv>();
   const requireAuth = createRequireAuth(deps);
 
-  router.use("/invites/*", requireAuth);
+  router.use("/invites/*", requireAuth, requireMfaVerified);
 
   router.openapi(redeemInviteRoute, async (c) => {
     const auth = c.get("auth");

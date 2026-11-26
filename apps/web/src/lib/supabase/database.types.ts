@@ -796,7 +796,33 @@ export type Database = {
     }
     Functions: {
       get_admin_telemetry: { Args: never; Returns: Json }
+      get_my_auth_state: {
+        Args: never
+        Returns: {
+          current_aal: string
+          mfa_enrolled: boolean
+          mfa_required: boolean
+          session_active: boolean
+          session_id: string
+        }[]
+      }
+      get_my_sessions: {
+        Args: never
+        Returns: {
+          aal: string
+          created_at: string
+          id: string
+          ip: string
+          is_current: boolean
+          not_after: string
+          refreshed_at: string
+          updated_at: string
+          user_agent: string
+        }[]
+      }
       redeem_invite_code: { Args: { p_code: string }; Returns: string }
+      revoke_my_session: { Args: { p_session_id: string }; Returns: boolean }
+      revoke_other_sessions: { Args: never; Returns: number }
     }
     Enums: {
       [_ in never]: never

@@ -9,8 +9,8 @@
   - **PR 3 — Auth (Email & Password), Invite-code gate (`redeem_invite_code`), 3-step Onboarding, Theme & RU/EN switcher** ✅ **Completed & Verified**.
   - **PR 4 — Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator** ✅ **Completed & Verified**.
   - **PR 4.5 — UX & Auth Polish** *(soft-edge Privacy Blur, neutral duplicate-signup handling, password confirmation, sign-out on onboarding, per-route skeletons, alive login & View Transition screen switching)* ✅ **Completed & Verified**.
+  - **PR 5 — Account Security & Session Control** *(2FA TOTP via Supabase MFA with RLS/SSR/API enforcement, active session tracking & instant revocation with device/browser/OS/IP, permanent account deletion with password + TOTP confirmation)* ✅ **Completed & Verified**.
 - **Next Up:**
-  - **PR 5 — Account Security & Session Control** *(permanent profile deletion with password confirmation, 2FA TOTP via Supabase MFA, active session management with device/browser/IP & revoke)*.
   - **PR 6 — Dashboard, Interactive Spotlight Onboarding Tour, Export, `/admin`, Playwright E2E** *(interactive feature tour with step highlights/skip/replay + analytics, export & admin panel)*.
 
 ## Completed
@@ -42,6 +42,11 @@
   - Built native `<dialog>` modal/bottom-sheet primitive (`apps/web/src/components/ui/dialog.tsx` with `DialogPortalContext` for Radix `Select` top-layer support and accessible post-interaction error validation), curated monochrome icon registry (`src/lib/category-icons.ts`), and global `QuickAddProvider` + `QuickAddDialog` (all 11 types, inline calculator + operator toolbar, Swap transfers, `draft` support, `N` shortcut).
   - Implemented `/operations` (month switcher, `computePeriodSummary` KPI strip, search/type/account/category/status filters, date-grouped ledger, 1-click draft confirmation), `/capital` (Accounts & Categories tabs with live balances, credit limit utilization, monthly category spend progress, archive/restore, and soft delete), and upgraded `/` Overview (live Aurora Hero quick actions, Monthly Snapshot, Recent Operations).
   - Optimized page navigation (`apps/web/vercel.json` `arn1` region co-location with Supabase `eu-north-1`, shared `(app)/layout.tsx` + `loading.tsx` skeleton, React `cache()` on `getServerSessionGate()`, removed serial `maybeBootstrapAdmin()` call for existing admins, and `experimental.staleTimes` dynamic cache), polished responsive layouts (`360px` mobile safe-area & sticky `lg` sidebar), and added GPU-composited aurora drift + `@starting-style` / `allow-discrete` `<dialog>` top-layer animations.
+- **PR 5 (Account Security & Session Control):**
+  - Applied migration `20261126000004_account_security_sessions.sql` to live Supabase (`tsqnmgtbmofemqzdjrih`): `private.*` `SECURITY DEFINER` helpers, `RESTRICTIVE` RLS policies for instant session revocation and opt-in `aal2` enforcement, and `get_my_auth_state` / `get_my_sessions` / `revoke_my_session` / `revoke_other_sessions` RPCs (with `anon` `EXECUTE` revoked).
+  - Added `"surface.qr"` token in `@strata/design-tokens` and OpenAPI 3.1 security schemas in `@strata/api-contract` (`src/security.ts`, `MeResponseSchema` security status fields).
+  - Implemented `parseSessionUserAgent` (`userAgentFromString` + `StrataAndroid` support), `getServerSessionGate()` `session_revoked` & `needs_mfa` states, local-scoped `/auth/signout`, `401 SESSION_REVOKED` & `403 MFA_REQUIRED` middleware enforcement, and `/api/v1/security/{sessions,sessions/{id},sessions/revoke-others,delete-account}` endpoints (with password verification, conditional TOTP verification, ephemeral session cleanup, and last-admin protection).
+  - Built `/mfa-verify` (`MfaVerifyCard`), updated `/login` (`AuthCard` post-login `AAL2` redirect + `session_revoked` / `deleted` notices), and added `TotpSecurityCard`, `ActiveSessionsCard`, and `DangerZoneCard` in `/settings` with full RU/EN i18n.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
@@ -49,5 +54,4 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 5:** Account deletion, 2FA (TOTP), active sessions management (device/browser/IP & revoke).
 - **PR 6:** Dashboard analytics, interactive spotlight onboarding tour, Export, `/admin`, Playwright E2E.

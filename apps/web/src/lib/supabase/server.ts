@@ -11,6 +11,8 @@ export interface RequestAuthContext {
   userId: string;
   email: string | null;
   authMode: "bearer" | "cookie";
+  sessionId: string | null;
+  aal: "aal1" | "aal2" | null;
 }
 
 export function createPublicSupabaseClient(): AppSupabaseClient | null {
@@ -75,6 +77,17 @@ function extractBearerToken(request: Request): string | null {
   return match?.[1]?.trim() || null;
 }
 
+function extractClaimString(claims: Record<string, unknown>, key: string): string | null {
+  const val = claims[key];
+  return typeof val === "string" && val.trim().length > 0 ? val.trim() : null;
+}
+
+function extractAalClaim(claims: Record<string, unknown>): "aal1" | "aal2" | null {
+  const raw = extractClaimString(claims, "aal");
+  if (raw === "aal1" || raw === "aal2") return raw;
+  return null;
+}
+
 export async function resolveRequestAuth(request: Request): Promise<RequestAuthContext | null> {
   const bearerToken = extractBearerToken(request);
 
@@ -84,11 +97,14 @@ export async function resolveRequestAuth(request: Request): Promise<RequestAuthC
 
     const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(bearerToken);
     if (!claimsError && claimsData?.claims?.sub) {
+      const claims = claimsData.claims as Record<string, unknown>;
       return {
         supabase,
         userId: claimsData.claims.sub,
         email: typeof claimsData.claims.email === "string" ? claimsData.claims.email : null,
         authMode: "bearer",
+        sessionId: extractClaimString(claims, "session_id"),
+        aal: extractAalClaim(claims),
       };
     }
 
@@ -99,6 +115,8 @@ export async function resolveRequestAuth(request: Request): Promise<RequestAuthC
         userId: userData.user.id,
         email: userData.user.email ?? null,
         authMode: "bearer",
+        sessionId: null,
+        aal: null,
       };
     }
 
@@ -115,11 +133,14 @@ export async function resolveRequestAuth(request: Request): Promise<RequestAuthC
 
   const { data: claimsData, error: claimsError } = await cookieClient.auth.getClaims();
   if (!claimsError && claimsData?.claims?.sub) {
+    const claims = claimsData.claims as Record<string, unknown>;
     return {
       supabase: cookieClient,
       userId: claimsData.claims.sub,
       email: typeof claimsData.claims.email === "string" ? claimsData.claims.email : null,
       authMode: "cookie",
+      sessionId: extractClaimString(claims, "session_id"),
+      aal: extractAalClaim(claims),
     };
   }
 
@@ -130,6 +151,8 @@ export async function resolveRequestAuth(request: Request): Promise<RequestAuthC
       userId: userData.user.id,
       email: userData.user.email ?? null,
       authMode: "cookie",
+      sessionId: null,
+      aal: null,
     };
   }
 

@@ -1,3 +1,4 @@
+import type { AalLevel } from "@strata/api-contract";
 import type { AppSupabaseClient, RequestAuthContext } from "@/lib/supabase/server";
 
 export interface ProfileGateState {
@@ -6,9 +7,18 @@ export interface ProfileGateState {
   invite_required: boolean;
 }
 
+export interface AuthSecurityState {
+  session_active: boolean;
+  session_id: string | null;
+  current_aal: AalLevel;
+  mfa_enrolled: boolean;
+  mfa_required: boolean;
+}
+
 export interface ApiEnv {
   Variables: {
     auth?: RequestAuthContext;
+    authState?: AuthSecurityState;
     profileGate?: ProfileGateState;
   };
 }
@@ -16,4 +26,5 @@ export interface ApiEnv {
 export interface ApiDependencies {
   resolveAuth: (request: Request) => Promise<RequestAuthContext | null>;
   getPublicClient: () => AppSupabaseClient | null;
+  getServiceClient?: () => AppSupabaseClient | null;
 }

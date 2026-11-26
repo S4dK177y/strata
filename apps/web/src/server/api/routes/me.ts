@@ -12,7 +12,7 @@ import {
   serializeProfileRow,
 } from "@/lib/auth/profile-serializer";
 import type { Database } from "@/lib/supabase/database.types";
-import { createRequireAuth } from "../middleware/auth";
+import { createRequireAuth, requireMfaVerified } from "../middleware/auth";
 import type { ApiDependencies, ApiEnv } from "../types";
 
 const AUTH_SECURITY: Array<Record<string, string[]>> = [{ bearerAuth: [] }, { cookieAuth: [] }];
@@ -100,6 +100,14 @@ const patchMeRoute = createRoute({
         },
       },
     },
+    403: {
+      description: "MFA verification required",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
     404: {
       description: "Profile not found",
       content: {
@@ -124,9 +132,16 @@ export function createMeRouter(deps: ApiDependencies) {
   const requireAuth = createRequireAuth(deps);
 
   router.use("/me", requireAuth);
+  router.use("/me", async (c, next) => {
+    if (c.req.method !== "GET" && c.req.method !== "HEAD") {
+      return requireMfaVerified(c, next);
+    }
+    await next();
+  });
 
   router.openapi(getMeRoute, async (c) => {
     const auth = c.get("auth");
+    const authState = c.get("authState");
     if (!auth) {
       return c.json({ error: "UNAUTHORIZED", message: "Authentication required" }, 401);
     }
@@ -174,6 +189,9 @@ export function createMeRouter(deps: ApiDependencies) {
         profile,
         email: auth.email,
         invite_required: inviteRequired,
+        aal: authState?.current_aal ?? "aal1",
+        mfa_enabled: authState?.mfa_enrolled ?? false,
+        mfa_required: authState?.mfa_required ?? false,
       },
       200
     );
@@ -181,6 +199,7 @@ export function createMeRouter(deps: ApiDependencies) {
 
   router.openapi(patchMeRoute, async (c) => {
     const auth = c.get("auth");
+    const authState = c.get("authState");
     if (!auth) {
       return c.json({ error: "UNAUTHORIZED", message: "Authentication required" }, 401);
     }
@@ -270,6 +289,9 @@ export function createMeRouter(deps: ApiDependencies) {
         profile,
         email: auth.email,
         invite_required: inviteRequired,
+        aal: authState?.current_aal ?? "aal1",
+        mfa_enabled: authState?.mfa_enrolled ?? false,
+        mfa_required: authState?.mfa_required ?? false,
       },
       200
     );

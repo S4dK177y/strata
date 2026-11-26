@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   if (supabase) {
     const { data: claimsData } = await supabase.auth.getClaims();
     if (claimsData?.claims) {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
     }
   }
 

@@ -1,5 +1,5 @@
 import { cache } from "react";
-import type { Profile } from "@strata/api-contract";
+import type { AalLevel, Profile } from "@strata/api-contract";
 import { createCookieSupabaseClient, type AppSupabaseClient } from "@/lib/supabase/server";
 import { maybeBootstrapAdmin } from "./bootstrap-admin";
 import {
@@ -10,12 +10,21 @@ import {
 
 export type ServerSessionGate =
   | { status: "unauthenticated" }
+  | { status: "session_revoked" }
+  | {
+      status: "needs_mfa";
+      userId: string;
+      email: string | null;
+      supabase: AppSupabaseClient;
+    }
   | {
       status: "needs_invite";
       userId: string;
       email: string | null;
       profile: Profile;
       supabase: AppSupabaseClient;
+      mfaEnabled: boolean;
+      aal: AalLevel;
     }
   | {
       status: "needs_onboarding";
@@ -23,6 +32,8 @@ export type ServerSessionGate =
       email: string | null;
       profile: Profile;
       supabase: AppSupabaseClient;
+      mfaEnabled: boolean;
+      aal: AalLevel;
     }
   | {
       status: "ready";
@@ -30,6 +41,8 @@ export type ServerSessionGate =
       email: string | null;
       profile: Profile;
       supabase: AppSupabaseClient;
+      mfaEnabled: boolean;
+      aal: AalLevel;
     };
 
 export function sanitizeNextPath(raw: string | null | undefined): string {
@@ -38,7 +51,7 @@ export function sanitizeNextPath(raw: string | null | undefined): string {
   if (!trimmed.startsWith("/") || trimmed.startsWith("//")) {
     return "/";
   }
-  if (trimmed.startsWith("/auth/") || trimmed.startsWith("/login")) {
+  if (trimmed.startsWith("/auth/") || trimmed.startsWith("/login") || trimmed.startsWith("/mfa-verify")) {
     return "/";
   }
   return trimmed;
@@ -74,7 +87,8 @@ export const getServerSessionGate = cache(async (): Promise<ServerSessionGate> =
     return { status: "unauthenticated" };
   }
 
-  const [profileRes, flagRes] = await Promise.all([
+  const [authStateRes, profileRes, flagRes] = await Promise.all([
+    supabase.rpc("get_my_auth_state"),
     supabase
       .from("profiles")
       .select(PROFILE_SELECT_COLUMNS)
@@ -87,9 +101,25 @@ export const getServerSessionGate = cache(async (): Promise<ServerSessionGate> =
       .maybeSingle(),
   ]);
 
+  const rawAuthState = Array.isArray(authStateRes.data)
+    ? authStateRes.data[0]
+    : authStateRes.data;
+
+  if (!authStateRes.error && rawAuthState) {
+    if (!rawAuthState.session_active) {
+      return { status: "session_revoked" };
+    }
+    if (rawAuthState.mfa_required) {
+      return { status: "needs_mfa", userId, email, supabase };
+    }
+  }
+
   if (profileRes.error || !profileRes.data) {
     return { status: "unauthenticated" };
   }
+
+  const aal: AalLevel = rawAuthState?.current_aal === "aal2" ? "aal2" : "aal1";
+  const mfaEnabled = Boolean(rawAuthState?.mfa_enrolled);
 
   let profile = serializeProfileRow(profileRes.data);
   if (profile.role !== "admin") {
@@ -103,12 +133,12 @@ export const getServerSessionGate = cache(async (): Promise<ServerSessionGate> =
   const inviteRequired = computeInviteRequired(inviteOnlyEnabled, profile);
 
   if (inviteRequired) {
-    return { status: "needs_invite", userId, email, profile, supabase };
+    return { status: "needs_invite", userId, email, profile, supabase, mfaEnabled, aal };
   }
 
   if (!profile.onboarding_completed) {
-    return { status: "needs_onboarding", userId, email, profile, supabase };
+    return { status: "needs_onboarding", userId, email, profile, supabase, mfaEnabled, aal };
   }
 
-  return { status: "ready", userId, email, profile, supabase };
+  return { status: "ready", userId, email, profile, supabase, mfaEnabled, aal };
 });

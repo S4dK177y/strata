@@ -28,12 +28,20 @@ export async function GET(request: NextRequest) {
         }
 
         const gate = await getServerSessionGate();
-        if (gate.status === "needs_invite") {
+        if (gate.status === "needs_mfa") {
+          redirectTo.pathname = "/mfa-verify";
+          if (safeNext !== "/") {
+            redirectTo.searchParams.set("next", safeNext);
+          }
+        } else if (gate.status === "needs_invite") {
           redirectTo.pathname = "/invite";
         } else if (gate.status === "needs_onboarding") {
           redirectTo.pathname = "/onboarding";
         } else if (gate.status === "ready") {
           redirectTo.pathname = safeNext;
+        } else if (gate.status === "session_revoked") {
+          redirectTo.pathname = "/login";
+          redirectTo.searchParams.set("reason", "session_revoked");
         } else {
           redirectTo.pathname = "/login";
           redirectTo.searchParams.set("error", "auth_callback_failed");

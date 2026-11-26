@@ -11,11 +11,15 @@ All shared Zod v4 + OpenAPI schemas live in [`packages/api-contract`](../package
 - **Standardized Errors:** `{ error: string, message: string, details?: unknown }`.
 - **Invite Gate:** When `registration_invite_only = true`, authenticated non-admin users with `invite_redeemed_at IS NULL` receive `403 { error: "INVITE_REQUIRED", message: "..." }` on financial endpoints (while `/api/v1/me` remains accessible so clients can display the invite gate screen).
 
-## Implemented Endpoints (PR 2, PR 3 & PR 4)
+## Implemented Endpoints (PR 2, PR 3, PR 4 & PR 5)
 - `GET /api/v1/health` *(public)* — lightweight service & DB keepalive ping (`db: "ok" | "unconfigured" | "error"`).
 - `GET /api/v1/feature-flags` *(public / optional auth)* — returns active cloud feature flags (filters out disabled `admin_preview` flags for non-admins).
-- `GET /api/v1/me` *(auth required, bypasses invite gate)* — returns current user's `profile`, `email`, and `invite_required` flag (plus safe server-side `ADMIN_BOOTSTRAP_EMAIL` promotion).
-- `PATCH /api/v1/me` *(auth required, bypasses invite gate)* — updates user preferences (`display_name`, `locale`, `base_currency`, `theme`, `privacy_blur_default`, `onboarding_completed`, partial `wrapped_settings`) under RLS.
+- `GET /api/v1/me` *(auth + active session required, bypasses invite & MFA gates)* — returns current user's `profile`, `email`, `invite_required`, `aal`, `mfa_enabled`, and `mfa_required` (plus safe server-side `ADMIN_BOOTSTRAP_EMAIL` promotion).
+- `PATCH /api/v1/me` *(auth + MFA required, bypasses invite gate)* — updates user preferences (`display_name`, `locale`, `base_currency`, `theme`, `privacy_blur_default`, `onboarding_completed`, partial `wrapped_settings`) under RLS.
+- `GET /api/v1/security/sessions` *(auth + MFA required)* — lists active sessions (`auth.sessions`) with parsed device type/browser/OS (`userAgentFromString`), IP, `aal`, `last_active_at`, and `is_current`.
+- `DELETE /api/v1/security/sessions/{id}` *(auth + MFA required)* — revokes an active session immediately (`404 SESSION_NOT_FOUND` if missing; clears local cookie if revoking the current session).
+- `POST /api/v1/security/sessions/revoke-others` *(auth + MFA required)* — revokes all other active sessions for the current user.
+- `POST /api/v1/security/delete-account` *(auth + MFA required)* — verifies current password (plus 6-digit TOTP code when 2FA is enabled), guards against deleting the last administrator (`409 LAST_ADMIN_CANNOT_DELETE`), revokes all sessions globally, and permanently deletes `auth.users` (cascading all user data).
 - `POST /api/v1/invites/redeem` *(auth required, bypasses invite gate)* — calls `public.redeem_invite_code(p_code)` atomically; returns `400 INVALID_OR_EXPIRED_INVITE_CODE` on invalid/expired codes.
 - `POST /api/v1/onboarding/complete` *(auth + invite gate)* — creates starter `accounts` and `categories` and marks `profiles.onboarding_completed = true`.
 - `GET /api/v1/accounts`, `POST /api/v1/accounts`, `PATCH /api/v1/accounts/{id}`, `DELETE /api/v1/accounts/{id}` *(auth + invite gate)* — full CRUD + archive (`is_active`) + soft delete across all 5 account types (`debit`, `credit`, `cash`, `savings`, `deposit`).
