@@ -259,17 +259,47 @@ dialog[open].strata-dialog[data-closing]::backdrop {
 }
 
 .strata-frosted {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(24px) saturate(140%);
-  border: 1px solid rgba(15, 20, 25, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  backdrop-filter: blur(22px) saturate(165%);
+  border: 1px solid rgba(15, 20, 25, 0.09);
   box-shadow: var(--strata-shadow-card);
 }
 
 .dark .strata-frosted {
-  background: rgba(11, 14, 18, 0.72);
-  backdrop-filter: blur(26px) saturate(140%);
+  background: rgba(14, 17, 22, 0.64);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 48px -18px rgba(0, 0, 0, 0.78);
+}
+
+.strata-frosted-bar {
+  background: rgba(255, 255, 255, 0.76);
+  -webkit-backdrop-filter: blur(22px) saturate(165%);
+  backdrop-filter: blur(22px) saturate(165%);
+}
+
+.dark .strata-frosted-bar {
+  background: rgba(11, 14, 18, 0.66);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+}
+
+.strata-frosted-menu {
+  background: rgba(255, 255, 255, 0.84);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(15, 20, 25, 0.1);
+  box-shadow: 0 22px 50px -16px rgba(15, 20, 25, 0.22);
+}
+
+.dark .strata-frosted-menu {
+  background: rgba(16, 19, 25, 0.78);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 24px 56px -20px rgba(0, 0, 0, 0.82);
+  box-shadow: 0 24px 56px -16px rgba(0, 0, 0, 0.86);
 }
 
 .strata-curtain-layer {
@@ -528,22 +558,22 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   }
 }
 
-.strata-main-stage {
+html[data-vt-active="1"] .strata-main-stage {
   view-transition-name: strata-main;
 }
 
-.strata-vt-header {
+html[data-vt-active="1"] .strata-vt-header {
   view-transition-name: strata-header;
 }
 
 @media (max-width: 1023.98px) {
-  .strata-vt-bottom-nav {
+  html[data-vt-active="1"] .strata-vt-bottom-nav {
     view-transition-name: strata-bottom-nav;
   }
 }
 
 @media (min-width: 1024px) {
-  .strata-vt-sidebar {
+  html[data-vt-active="1"] .strata-vt-sidebar {
     view-transition-name: strata-sidebar;
   }
 }

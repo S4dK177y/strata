@@ -256,8 +256,8 @@ export function SettingsClient({
 
       <DataExportCard />
 
-      <Card className="flex flex-wrap items-center justify-between gap-4">
-        <div className="min-w-0 space-y-1">
+      <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2 text-base font-bold text-[var(--strata-text-primary)]">
             <Compass
               className="h-4 w-4 shrink-0 text-[var(--strata-text-muted)]"
@@ -268,14 +268,19 @@ export function SettingsClient({
           </div>
           <CardDescription>{t.tour.settingsSubtitle}</CardDescription>
         </div>
-        <Button type="button" variant="secondary" onClick={() => router.push("/?tour=1")}>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full shrink-0 sm:w-auto"
+          onClick={() => router.push("/?tour=1")}
+        >
           {t.tour.replayButton}
         </Button>
       </Card>
 
       {profile.role === "admin" ? (
-        <Card className="flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0 space-y-1">
+        <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-center gap-2 text-base font-bold text-[var(--strata-text-primary)]">
               <Shield
                 className="h-4 w-4 shrink-0 text-[var(--strata-accent-brand)]"
@@ -286,7 +291,7 @@ export function SettingsClient({
             </div>
             <CardDescription>{t.admin.subtitle}</CardDescription>
           </div>
-          <Button asChild variant="secondary">
+          <Button asChild variant="secondary" className="w-full shrink-0 sm:w-auto">
             <Link href="/admin">
               {t.admin.openConsole}
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />

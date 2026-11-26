@@ -160,13 +160,42 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await replayedDialog.getByRole("button", { name: /Done|Готово/i }).click();
     await expect(replayedDialog).toBeHidden();
 
-    // 6. Multi-device responsive checks (Mobile 360px, Tablet 768px, Desktop 1280px)
+    // 6. Multi-device responsive checks + frosted blur verification (Mobile 360px, Tablet 768px, Desktop 1280px)
+    await page.goto("/");
+    await page
+      .locator('button[aria-haspopup="menu"]:visible')
+      .first()
+      .click();
+    const profileMenu = page.getByRole("menu");
+    await expect(profileMenu).toBeVisible();
+    const menuCheck = await profileMenu.evaluate((el) => {
+      const style = window.getComputedStyle(el);
+      const backdrop =
+        style.backdropFilter || style.getPropertyValue("-webkit-backdrop-filter") || "";
+      return {
+        isBodyChild: el.parentElement === document.body,
+        backdrop,
+      };
+    });
+    expect(menuCheck.isBodyChild).toBe(true);
+    expect(menuCheck.backdrop).toContain("blur(");
+    await page.keyboard.press("Escape");
+    await expect(profileMenu).toBeHidden();
+
     for (const route of ["/", "/operations", "/capital", "/settings"]) {
       await page.goto(route);
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await page.waitForTimeout(100);
         await assertNoHorizontalOverflow(page);
+
+        if (route === "/settings" && vp.name === "mobile") {
+          const totpTitleBox = await page
+            .getByText(/Two-factor authentication|Двухфакторная аутентификация/i)
+            .first()
+            .boundingBox();
+          expect(totpTitleBox?.width ?? 0).toBeGreaterThanOrEqual(240);
+        }
       }
     }
 

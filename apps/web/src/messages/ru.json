@@ -242,6 +242,8 @@
     "netWorth": "Чистый капитал",
     "safeToSpend": "Свободно к трате",
     "safeToSpendNote": "С учётом активных ликвидных счетов и обязательств",
+    "periodNetMonth": "Итог за месяц",
+    "periodNetYear": "Итог за год",
     "accountsTitle": "Ваши счета",
     "manageAccounts": "Управлять",
     "noAccounts": "Счетов пока нет — добавьте первый счёт в разделе «Капитал».",

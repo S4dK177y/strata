@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
-  ArrowLeftRight,
   ArrowRight,
   ArrowUp,
   ArrowUpDown,
@@ -17,7 +16,6 @@ import {
   GripVertical,
   Plus,
   RotateCcw,
-  SlidersHorizontal,
   Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -174,10 +172,11 @@ export function OverviewClient({
 
   const periodLabel = useMemo(() => {
     if (periodMode === "year") return String(selectedYear);
-    return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+    const formatted = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
       month: "long",
       year: "numeric",
     }).format(new Date(selectedYear, selectedMonth - 1, 1));
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }, [periodMode, selectedYear, selectedMonth, locale]);
 
   const isCurrentPeriod =
@@ -515,109 +514,83 @@ export function OverviewClient({
 
   return (
     <div className="space-y-6">
-      {/* Pinned Open Aurora Balance Header */}
+      {/* Pinned Open Aurora Balance Header (Variant C) */}
       <section
         data-tour="hero-balance"
-        className="strata-aurora-hero space-y-6 rounded-[28px] p-5 sm:p-8"
+        className="strata-aurora-hero rounded-[28px] p-4 sm:p-6 lg:p-7"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="text-xs font-medium text-[var(--strata-text-secondary)]">
-              {t.dashboard.netWorth}
-            </div>
-            <div className="flex min-w-0 items-center gap-3">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-8">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2 lg:justify-start">
+              <span className="text-xs font-medium text-[var(--strata-text-secondary)]">
+                {t.dashboard.netWorth}
+              </span>
               <button
                 type="button"
                 onClick={togglePrivacyBlur}
                 aria-label={t.privacy.label}
                 aria-pressed={privacyBlur}
-                className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--strata-text-secondary)] transition hover:bg-black/5 hover:text-[var(--strata-text-primary)] dark:hover:bg-white/10"
+                className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--strata-text-secondary)] transition hover:bg-black/5 hover:text-[var(--strata-text-primary)] dark:hover:bg-white/10"
               >
                 {privacyBlur ? (
-                  <EyeOff className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                  <EyeOff className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                 ) : (
-                  <Eye className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                  <Eye className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                 )}
               </button>
-              <div className="min-w-0 overflow-visible break-words text-[26px] leading-tight font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-5xl">
+            </div>
+            <div className="mt-1 min-w-0 overflow-visible break-words text-[30px] leading-tight font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-4xl lg:text-[42px]">
+              <AmountText
+                minor={metrics.netWorth}
+                currency={profile.base_currency}
+                alwaysShowDecimals
+              />
+            </div>
+            <div className="mt-1.5 hidden text-xs text-[var(--strata-text-muted)] lg:block">
+              {t.dashboard.safeToSpendNote}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 border-t border-[var(--strata-border-subtle)] pt-3.5 lg:w-[440px] lg:shrink-0 lg:gap-3.5 lg:border-t-0 lg:pt-0">
+            <div className="rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 px-3.5 py-3 lg:px-5 lg:py-4">
+              <div className="truncate text-[11px] font-medium text-[var(--strata-text-secondary)] lg:text-xs">
+                {t.dashboard.safeToSpend}
+              </div>
+              <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] lg:mt-1.5 lg:text-xl">
+                <AmountText minor={metrics.safeToSpend} currency={profile.base_currency} />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 px-3.5 py-3 lg:px-5 lg:py-4">
+              <div className="truncate text-[11px] font-medium text-[var(--strata-text-secondary)] lg:text-xs">
+                {periodMode === "month"
+                  ? t.dashboard.periodNetMonth
+                  : t.dashboard.periodNetYear}
+              </div>
+              <div
+                className={cn(
+                  "mt-1 overflow-visible text-base font-bold lg:mt-1.5 lg:text-xl",
+                  metrics.periodSummary.netBalanceMinor > 0
+                    ? "text-[var(--strata-money-income)]"
+                    : metrics.periodSummary.netBalanceMinor < 0
+                      ? "text-[var(--strata-money-expense)]"
+                      : "text-[var(--strata-text-primary)]"
+                )}
+              >
                 <AmountText
-                  minor={metrics.netWorth}
+                  minor={metrics.periodSummary.netBalanceMinor}
                   currency={profile.base_currency}
-                  alwaysShowDecimals
+                  showSign
                 />
               </div>
             </div>
           </div>
-
-          <Link href="/capital?tab=categories">
-            <Badge className="strata-frosted border-[var(--strata-border-subtle)] px-3 py-1 transition hover:brightness-105">
-              {t.dashboard.categoriesCount}: {categories.length}
-            </Badge>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <span className="strata-frosted inline-flex items-center gap-2 overflow-visible rounded-full px-4 py-1.5 font-medium text-[var(--strata-text-primary)]">
-            <span className="text-[var(--strata-text-secondary)]">{t.dashboard.safeToSpend}:</span>
-            <AmountText
-              minor={metrics.safeToSpend}
-              currency={profile.base_currency}
-              className="font-bold"
-            />
-          </span>
-          <span className="text-[var(--strata-text-muted)]">{t.dashboard.safeToSpendNote}</span>
-        </div>
-
-        {/* 3 Frosted Squircle Quick Action Tiles */}
-        <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => openQuickAdd()}
-            className="strata-frosted flex min-h-20 min-w-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-[22px] p-2.5 text-center transition duration-200 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:p-3"
-          >
-            <Plus
-              className="h-5 w-5 shrink-0 text-[var(--strata-text-primary)]"
-              strokeWidth={1.75}
-              aria-hidden="true"
-            />
-            <span className="max-w-full truncate text-xs font-medium text-[var(--strata-text-primary)]">
-              {t.nav.quickAdd}
-            </span>
-          </button>
-
-          <Link
-            href="/operations"
-            className="strata-frosted flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-[22px] p-2.5 text-center transition duration-200 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:p-3"
-          >
-            <ArrowLeftRight
-              className="h-5 w-5 shrink-0 text-[var(--strata-text-primary)]"
-              strokeWidth={1.75}
-              aria-hidden="true"
-            />
-            <span className="max-w-full truncate text-xs font-medium text-[var(--strata-text-primary)]">
-              {t.nav.operations}
-            </span>
-          </Link>
-
-          <Link
-            href="/settings"
-            className="strata-frosted flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 rounded-[22px] p-2.5 text-center transition duration-200 hover:-translate-y-0.5 hover:brightness-105 active:scale-[0.98] sm:p-3"
-          >
-            <SlidersHorizontal
-              className="h-5 w-5 shrink-0 text-[var(--strata-text-primary)]"
-              strokeWidth={1.75}
-              aria-hidden="true"
-            />
-            <span className="max-w-full truncate text-xs font-medium text-[var(--strata-text-primary)]">
-              {t.nav.settings}
-            </span>
-          </Link>
         </div>
       </section>
 
       {/* Period Selector & Layout Customize Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
           <Button
             type="button"
             variant="secondary"
@@ -627,9 +600,20 @@ export function OverviewClient({
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
-          <span className="min-w-28 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)] sm:min-w-36">
-            {periodLabel}
-          </span>
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2 sm:flex-initial">
+            <span className="min-w-28 truncate px-1 text-center text-sm font-bold text-[var(--strata-text-primary)] sm:min-w-36">
+              {periodLabel}
+            </span>
+            {!isCurrentPeriod ? (
+              <button
+                type="button"
+                onClick={resetToCurrentPeriod}
+                className="min-h-8 shrink-0 cursor-pointer rounded-full border border-[var(--strata-border-subtle)] px-2.5 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:border-[var(--strata-border-strong)]"
+              >
+                {t.dashboard.analytics.currentPeriod}
+              </button>
+            ) : null}
+          </div>
           <Button
             type="button"
             variant="secondary"
@@ -639,19 +623,9 @@ export function OverviewClient({
           >
             <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           </Button>
-
-          {!isCurrentPeriod ? (
-            <button
-              type="button"
-              onClick={resetToCurrentPeriod}
-              className="ml-1 min-h-9 cursor-pointer rounded-full border border-[var(--strata-border-subtle)] px-3 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:border-[var(--strata-border-strong)]"
-            >
-              {t.dashboard.analytics.currentPeriod}
-            </button>
-          ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
           <div
             role="tablist"
             aria-label={t.dashboard.analytics.periodModeLabel}

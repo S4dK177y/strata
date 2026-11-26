@@ -350,12 +350,12 @@ export function TotpSecurityCard({
   return (
     <>
       <Card className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <CardHeader className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <KeyRound
-                  className="h-4 w-4 text-[var(--strata-text-muted)]"
+                  className="h-4 w-4 shrink-0 text-[var(--strata-text-muted)]"
                   strokeWidth={1.75}
                   aria-hidden="true"
                 />
@@ -376,6 +376,7 @@ export function TotpSecurityCard({
               type="button"
               variant="outline"
               disabled={loadingFactors}
+              className="w-full shrink-0 sm:w-auto"
               onClick={() => {
                 setDisableCode("");
                 setDisableError(null);
@@ -388,7 +389,12 @@ export function TotpSecurityCard({
               {t.settings.totp.disableButton}
             </Button>
           ) : (
-            <Button type="button" disabled={loadingFactors || enrolling} onClick={handleStartEnroll}>
+            <Button
+              type="button"
+              disabled={loadingFactors || enrolling}
+              onClick={handleStartEnroll}
+              className="w-full shrink-0 sm:w-auto"
+            >
               <ShieldCheck className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
               {t.settings.totp.enableButton}
             </Button>

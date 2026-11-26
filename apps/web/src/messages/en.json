@@ -242,6 +242,8 @@
     "netWorth": "Net Worth",
     "safeToSpend": "Safe to Spend",
     "safeToSpendNote": "Based on liquid accounts & credit obligations",
+    "periodNetMonth": "Month net",
+    "periodNetYear": "Year net",
     "accountsTitle": "Your accounts",
     "manageAccounts": "Manage",
     "noAccounts": "No accounts yet — add your first account in Capital.",

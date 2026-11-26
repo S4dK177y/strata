@@ -81,8 +81,9 @@ export function TransitionLink({
 
     e.preventDefault();
     notifyRouteChanged();
+    document.documentElement.dataset.vtActive = "1";
 
-    docWithVT.startViewTransition(
+    const transition = docWithVT.startViewTransition(
       () =>
         new Promise<void>((resolve) => {
           pendingTransitionResolve = resolve;
@@ -92,6 +93,15 @@ export function TransitionLink({
           router.push(hrefStr);
         })
     );
+
+    const clearVtFlag = () => {
+      delete document.documentElement.dataset.vtActive;
+    };
+    const fallbackTimer = window.setTimeout(clearVtFlag, 900);
+    transition.finished.finally(() => {
+      window.clearTimeout(fallbackTimer);
+      clearVtFlag();
+    });
   }
 
   return <Link href={href} onClick={handleClick} {...props} />;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -52,7 +53,9 @@ function ProfileQuickMenu({
   const { locale, setLocale, t } = useI18n();
   const { resolvedTheme, toggleCompactTheme } = useTheme();
   const [open, setOpen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -63,10 +66,21 @@ function ProfileQuickMenu({
   useEffect(() => {
     if (!open) return;
 
+    const updatePosition = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setMenuPos({
+        top: Math.round(rect.bottom + 8),
+        right: Math.max(12, Math.round(window.innerWidth - rect.right)),
+      });
+    };
+
     const handlePointerDown = (e: PointerEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -74,19 +88,39 @@ function ProfileQuickMenu({
 
     window.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", updatePosition, { passive: true });
+    window.addEventListener("scroll", updatePosition, { passive: true });
     return () => {
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition);
     };
   }, [open]);
+
+  function handleToggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setMenuPos({
+        top: Math.round(rect.bottom + 8),
+        right: Math.max(12, Math.round(window.innerWidth - rect.right)),
+      });
+    }
+    setOpen(true);
+  }
 
   const initial = (profile.display_name || email || "S").trim().charAt(0).toUpperCase();
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={t.nav.accountMenu}
@@ -105,88 +139,93 @@ function ProfileQuickMenu({
         )}
       </button>
 
-      {open ? (
-        <div
-          role="menu"
-          className="strata-frosted absolute right-0 mt-2 w-64 origin-top-right space-y-1.5 rounded-3xl p-2.5 shadow-2xl"
-        >
-          <div className="border-b border-[var(--strata-border-subtle)] px-2.5 py-2">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-bold text-[var(--strata-text-primary)]">
-                {profile.display_name || t.common.brand}
-              </span>
-              {profile.role === "admin" ? (
-                <Badge tone="brand">
-                  <Shield className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
-                  {t.common.adminBadge}
-                </Badge>
-              ) : null}
-            </div>
-            {email ? (
-              <div className="truncate text-xs text-[var(--strata-text-muted)]">{email}</div>
-            ) : null}
-          </div>
-
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => setLocale(locale === "ru" ? "en" : "ru", { syncServer: true })}
-            className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
-          >
-            <span className="flex items-center gap-2">
-              <Globe className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
-              {t.locale.label}
-            </span>
-            <span className="strata-mono rounded-lg bg-[var(--strata-bg-elevated)] px-2 py-0.5 text-[11px] font-bold text-[var(--strata-text-primary)]">
-              {locale.toUpperCase()}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => toggleCompactTheme({ syncServer: true })}
-            className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
-          >
-            <span className="flex items-center gap-2">
-              {resolvedTheme === "dark" ? (
-                <Sun className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
-              ) : (
-                <Moon className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
-              )}
-              {t.theme.label}
-            </span>
-            <span className="rounded-lg bg-[var(--strata-bg-elevated)] px-2 py-0.5 text-[11px] font-semibold text-[var(--strata-text-primary)]">
-              {resolvedTheme === "dark" ? t.theme.dark : t.theme.light}
-            </span>
-          </button>
-
-          {profile.role === "admin" ? (
-            <TransitionLink
-              href="/admin"
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className="flex min-h-10 w-full items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:bg-[var(--strata-bg-elevated)]"
+      {open && menuPos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={menuRef}
+              role="menu"
+              style={{ top: menuPos.top, right: menuPos.right }}
+              className="strata-frosted-menu fixed z-[60] w-64 origin-top-right space-y-1.5 rounded-3xl p-2.5"
             >
-              <Shield className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-              {t.nav.admin}
-            </TransitionLink>
-          ) : null}
+              <div className="border-b border-[var(--strata-border-subtle)] px-2.5 py-2">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-bold text-[var(--strata-text-primary)]">
+                    {profile.display_name || t.common.brand}
+                  </span>
+                  {profile.role === "admin" ? (
+                    <Badge tone="brand">
+                      <Shield className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+                      {t.common.adminBadge}
+                    </Badge>
+                  ) : null}
+                </div>
+                {email ? (
+                  <div className="truncate text-xs text-[var(--strata-text-muted)]">{email}</div>
+                ) : null}
+              </div>
 
-          <div className="border-t border-[var(--strata-border-subtle)] pt-1.5">
-            <form action="/auth/signout" method="post">
               <button
-                type="submit"
+                type="button"
                 role="menuitem"
-                className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-money-expense)] transition hover:bg-[var(--strata-bg-elevated)]"
+                onClick={() => setLocale(locale === "ru" ? "en" : "ru", { syncServer: true })}
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
               >
-                <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                {t.common.signOut}
+                <span className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                  {t.locale.label}
+                </span>
+                <span className="strata-mono rounded-lg bg-[var(--strata-bg-elevated)] px-2 py-0.5 text-[11px] font-bold text-[var(--strata-text-primary)]">
+                  {locale.toUpperCase()}
+                </span>
               </button>
-            </form>
-          </div>
-        </div>
-      ) : null}
+
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => toggleCompactTheme({ syncServer: true })}
+                className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
+              >
+                <span className="flex items-center gap-2">
+                  {resolvedTheme === "dark" ? (
+                    <Sun className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                  ) : (
+                    <Moon className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                  )}
+                  {t.theme.label}
+                </span>
+                <span className="rounded-lg bg-[var(--strata-bg-elevated)] px-2 py-0.5 text-[11px] font-semibold text-[var(--strata-text-primary)]">
+                  {resolvedTheme === "dark" ? t.theme.dark : t.theme.light}
+                </span>
+              </button>
+
+              {profile.role === "admin" ? (
+                <TransitionLink
+                  href="/admin"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:bg-[var(--strata-bg-elevated)]"
+                >
+                  <Shield className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  {t.nav.admin}
+                </TransitionLink>
+              ) : null}
+
+              <div className="border-t border-[var(--strata-border-subtle)] pt-1.5">
+                <form action="/auth/signout" method="post">
+                  <button
+                    type="submit"
+                    role="menuitem"
+                    className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-money-expense)] transition hover:bg-[var(--strata-bg-elevated)]"
+                  >
+                    <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                    {t.common.signOut}
+                  </button>
+                </form>
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
@@ -365,7 +404,7 @@ function AppShellInner({
       </header>
 
       {/* Mobile Minimal Top Bar */}
-      <header className="strata-vt-header sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-2.5 backdrop-blur-xl lg:hidden">
+      <header className="strata-vt-header strata-frosted-bar sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] px-4 py-2.5 lg:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
