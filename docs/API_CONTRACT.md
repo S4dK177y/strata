@@ -19,6 +19,7 @@ All shared Zod v4 + OpenAPI schemas live in [`packages/api-contract`](../package
 - `GET /api/v1/security/sessions` *(auth + MFA required)* — lists active sessions (`auth.sessions`) with parsed device type/browser/OS (`userAgentFromString`), IP, `aal`, `last_active_at`, and `is_current`.
 - `DELETE /api/v1/security/sessions/{id}` *(auth + MFA required)* — revokes an active session immediately (`404 SESSION_NOT_FOUND` if missing; clears local cookie if revoking the current session).
 - `POST /api/v1/security/sessions/revoke-others` *(auth + MFA required)* — revokes all other active sessions for the current user.
+- `POST /api/v1/security/verify-password` *(auth + MFA required)* — verifies current password in an ephemeral session (`403 INVALID_PASSWORD` on mismatch) for sensitive account flows like email change when 2FA is disabled.
 - `POST /api/v1/security/delete-account` *(auth + MFA required)* — verifies current password (plus 6-digit TOTP code when 2FA is enabled), guards against deleting the last administrator (`409 LAST_ADMIN_CANNOT_DELETE`), revokes all sessions globally, and permanently deletes `auth.users` (cascading all user data).
 - `POST /api/v1/invites/redeem` *(auth required, bypasses invite gate)* — calls `public.redeem_invite_code(p_code)` atomically; returns `400 INVALID_OR_EXPIRED_INVITE_CODE` on invalid/expired codes.
 - `POST /api/v1/onboarding/complete` *(auth + invite gate)* — creates starter `accounts` and `categories` and marks `profiles.onboarding_completed = true`.

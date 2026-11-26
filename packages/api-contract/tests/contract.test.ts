@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  AccentPaletteSchema,
   AccountCreateRequestSchema,
   ActiveSessionSchema,
   CategoryCreateRequestSchema,
@@ -15,6 +16,7 @@ import {
   TransactionCreateRequestSchema,
   TransactionSourceSchema,
   TransactionTypeSchema,
+  VerifyPasswordRequestSchema,
 } from "../src/index";
 
 const UUID_1 = "11111111-1111-4111-8111-111111111111";
@@ -360,5 +362,18 @@ describe("@strata/api-contract", () => {
     expect(me.aal).toBe("aal1");
     expect(me.mfa_enabled).toBe(false);
     expect(me.mfa_required).toBe(false);
+    expect(me.profile.accent).toBe("emerald");
+
+    expect(AccentPaletteSchema.options).toEqual([
+      "emerald",
+      "ocean",
+      "amethyst",
+      "sunset",
+      "graphite",
+    ]);
+    expect(ProfileUpdateRequestSchema.safeParse({ accent: "ocean" }).success).toBe(true);
+    expect(ProfileUpdateRequestSchema.safeParse({ accent: "neon-pink" }).success).toBe(false);
+    expect(VerifyPasswordRequestSchema.safeParse({ password: "secret" }).success).toBe(true);
+    expect(VerifyPasswordRequestSchema.safeParse({ password: "" }).success).toBe(false);
   });
 });

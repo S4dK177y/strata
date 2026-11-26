@@ -42,6 +42,14 @@
     "switchToLight": "Switch to light theme",
     "switchToDark": "Switch to dark theme"
   },
+  "accent": {
+    "label": "Accent palette",
+    "emerald": "Emerald",
+    "ocean": "Ocean",
+    "amethyst": "Amethyst",
+    "sunset": "Sunset",
+    "graphite": "Graphite"
+  },
   "locale": {
     "label": "Language",
     "ru": "Русский",
@@ -89,6 +97,7 @@
     "mfaCodeHint": "6 digits from Google Authenticator, 1Password, or another TOTP app.",
     "mfaSubmit": "Verify and continue",
     "mfaSubmitting": "Verifying code...",
+    "mfaAutoHint": "Verification starts automatically on the 6th digit",
     "mfaSwitchAccount": "Sign out and switch account"
   },
   "invite": {
@@ -150,6 +159,21 @@
     "emailReadOnly": "Account email",
     "saveProfile": "Save changes",
     "profileSaved": "Profile settings saved.",
+    "emailChange": {
+      "button": "Change",
+      "dialogTitle": "Change email address",
+      "dialogDescriptionPassword": "Enter your new email address and confirm with your current password.",
+      "dialogDescriptionMfa": "Enter your new email address and verify with a 6-digit code from your authenticator app.",
+      "currentLabel": "Current email",
+      "newEmailLabel": "New email",
+      "totpLabel": "2FA authenticator code",
+      "totpHint": "Once you enter the 6th digit, we will send the confirmation link.",
+      "submitButton": "Send confirmation",
+      "submitting": "Sending...",
+      "sentToast": "Email confirmation link sent.",
+      "updatedToast": "Account email updated.",
+      "pendingNotice": "Pending confirmation for {email}"
+    },
     "totp": {
       "title": "Two-factor authentication (2FA)",
       "subtitle": "Protect sign-ins with one-time 6-digit TOTP authenticator codes.",
@@ -393,6 +417,8 @@
     "invalidPassword": "Current password is incorrect.",
     "invalidMfaCode": "Invalid 6-digit verification code. Check your device clock and try again.",
     "mfaCodeRequired": "Enter the 6-digit code from your authenticator app.",
-    "lastAdminCannotDelete": "The only remaining administrator account cannot be deleted."
+    "lastAdminCannotDelete": "The only remaining administrator account cannot be deleted.",
+    "sameEmail": "New email matches your current email.",
+    "emailAlreadyInUse": "This email is already associated with another account."
   }
 }

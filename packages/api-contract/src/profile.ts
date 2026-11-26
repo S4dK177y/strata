@@ -1,4 +1,5 @@
 import {
+  AccentPaletteSchema,
   AccountTypeSchema,
   CategoryKindSchema,
   CurrencyCodeSchema,
@@ -18,6 +19,7 @@ export const ProfileUpdateRequestSchema = z
     locale: LocaleSchema.optional(),
     base_currency: CurrencyCodeSchema.optional(),
     theme: ThemeSchema.optional(),
+    accent: AccentPaletteSchema.optional(),
     privacy_blur_default: z.boolean().optional(),
     onboarding_completed: z.boolean().optional(),
     wrapped_settings: WrappedSettingsSchema.partial().optional(),
@@ -78,6 +80,7 @@ export const OnboardingCompleteRequestSchema = z
     locale: LocaleSchema,
     base_currency: CurrencyCodeSchema,
     theme: ThemeSchema,
+    accent: AccentPaletteSchema.default("emerald"),
     privacy_blur_default: z.boolean().default(false),
     accounts: z.array(OnboardingAccountInputSchema).max(20).default([]),
     categories: z.array(OnboardingCategoryInputSchema).max(40).default([]),

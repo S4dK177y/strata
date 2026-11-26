@@ -458,4 +458,38 @@ describe("PR 5 Account Security & Session Control", () => {
       `admin:deleteUser:${USER_ID}:soft=false`,
     ]);
   });
+
+  it("verifies current password via /api/v1/security/verify-password without leaving dangling sessions", async () => {
+    const validHarness = createSecurityHarness();
+    const okRes = await validHarness.app.request(
+      "http://localhost/api/v1/security/verify-password",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer test-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: "correct-password" }),
+      }
+    );
+    expect(okRes.status).toBe(200);
+    expect(await okRes.json()).toEqual({ verified: true });
+    expect(validHarness.callLog).toContain("verify:signInWithPassword");
+    expect(validHarness.callLog).toContain("verify:signOut:local");
+
+    const badHarness = createSecurityHarness();
+    const badRes = await badHarness.app.request(
+      "http://localhost/api/v1/security/verify-password",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer test-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password: "wrong-password" }),
+      }
+    );
+    expect(badRes.status).toBe(403);
+    expect(((await badRes.json()) as { error: string }).error).toBe("INVALID_PASSWORD");
+  });
 });

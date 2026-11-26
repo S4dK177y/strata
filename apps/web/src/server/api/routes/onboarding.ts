@@ -153,6 +153,7 @@ export function createOnboardingRouter(deps: ApiDependencies) {
       locale: body.locale,
       base_currency: body.base_currency,
       theme: body.theme,
+      accent: body.accent,
       privacy_blur_default: body.privacy_blur_default,
       onboarding_completed: true,
     };

@@ -313,8 +313,8 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(16, 185, 129, 0.42) 44%,
-    rgba(6, 182, 212, 0.34) 76%,
+    var(--strata-aurora-curtainA) 44%,
+    var(--strata-aurora-curtainA2) 76%,
     transparent 100%
   );
 }
@@ -325,8 +325,8 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(6, 182, 212, 0.36) 38%,
-    rgba(99, 102, 241, 0.28) 76%,
+    var(--strata-aurora-curtainB) 38%,
+    var(--strata-aurora-curtainB2) 76%,
     transparent 100%
   );
 }
@@ -337,8 +337,8 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(16, 185, 129, 0.38) 48%,
-    rgba(167, 243, 208, 0.28) 80%,
+    var(--strata-aurora-curtainC) 48%,
+    var(--strata-aurora-curtainC2) 80%,
     transparent 100%
   );
 }
@@ -347,8 +347,8 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(16, 185, 129, 0.72) 45%,
-    rgba(34, 211, 238, 0.56) 78%,
+    var(--strata-aurora-curtainA) 45%,
+    var(--strata-aurora-curtainA2) 78%,
     transparent 100%
   );
 }
@@ -357,8 +357,8 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(34, 211, 238, 0.62) 38%,
-    rgba(99, 102, 241, 0.52) 76%,
+    var(--strata-aurora-curtainB) 38%,
+    var(--strata-aurora-curtainB2) 76%,
     transparent 100%
   );
 }
@@ -367,8 +367,8 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(16, 185, 129, 0.66) 50%,
-    rgba(167, 243, 208, 0.42) 80%,
+    var(--strata-aurora-curtainC) 50%,
+    var(--strata-aurora-curtainC2) 80%,
     transparent 100%
   );
 }
@@ -393,7 +393,7 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     to top,
     rgba(255, 255, 255, 0.92) 0%,
-    rgba(236, 253, 245, 0.88) 55%,
+    var(--strata-flash-veilMid) 55%,
     rgba(255, 255, 255, 0.78) 100%
   );
   animation: strata-veil-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -403,7 +403,7 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: linear-gradient(
     to top,
     rgba(244, 255, 250, 0.88) 0%,
-    rgba(167, 243, 208, 0.58) 52%,
+    var(--strata-flash-veilMid) 52%,
     rgba(11, 12, 14, 0.45) 100%
   );
 }
@@ -418,13 +418,89 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   background: radial-gradient(
     circle,
     rgba(255, 255, 255, 0.98) 0%,
-    rgba(167, 243, 208, 0.84) 38%,
-    rgba(34, 211, 238, 0.42) 68%,
+    var(--strata-flash-bloomMid) 38%,
+    var(--strata-flash-bloomOuter) 68%,
     transparent 100%
   );
   filter: blur(18px);
   will-change: transform, opacity;
   animation: strata-bloom-rise 680ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes strata-otp-dot-breathe {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.7;
+  }
+}
+
+@keyframes strata-otp-digit-morph {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.25;
+  }
+  65% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes strata-otp-checking {
+  0%,
+  100% {
+    transform: translateY(0);
+    border-color: var(--strata-border-subtle);
+  }
+  50% {
+    transform: translateY(-4px);
+    border-color: var(--strata-accent-brand);
+  }
+}
+
+@keyframes strata-otp-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-7px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .strata-otp-dot-idle {
+    animation: strata-otp-dot-breathe 1.8s ease-in-out infinite;
+  }
+
+  .strata-otp-digit-morph {
+    animation: strata-otp-digit-morph 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .strata-otp-cell-checking {
+    animation: strata-otp-checking 480ms ease-in-out infinite;
+  }
+
+  .strata-otp-shake {
+    animation: strata-otp-shake 360ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
 }
 
 @keyframes strata-bloom-rise {

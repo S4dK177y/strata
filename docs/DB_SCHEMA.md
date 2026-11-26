@@ -5,6 +5,7 @@ Versioned migrations live in [`supabase/migrations/`](../supabase/migrations):
 - `20261126000002_seed_defaults.sql` — idempotent seed for default `feature_flags`.
 - `20261126000003_harden_rpc_grants.sql` — explicit `REVOKE` of `anon` / `PUBLIC` `EXECUTE` privileges on `SECURITY DEFINER` functions.
 - `20261126000004_account_security_sessions.sql` — private session/MFA helpers (`private.current_session_id()`, `private.is_session_active()`, `private.is_mfa_satisfied()`, `private.is_session_mfa_allowed()`), `RESTRICTIVE` RLS policies enforcing instant session revocation & opt-in `aal2`, and user security RPCs.
+- `20261126000005_profile_accent.sql` — adds `profiles.accent` (`emerald` | `ocean` | `amethyst` | `sunset` | `graphite`).
 
 ## Global Conventions
 - **Money:** `BIGINT` (`*_minor` in kopecks/cents). `transactions.amount_minor > 0`. Interest rates use `NUMERIC(6, 5)`.

@@ -339,6 +339,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          accent: string
           base_currency: string
           created_at: string
           display_name: string
@@ -353,6 +354,7 @@ export type Database = {
           wrapped_settings: Json
         }
         Insert: {
+          accent?: string
           base_currency?: string
           created_at?: string
           display_name?: string
@@ -367,6 +369,7 @@ export type Database = {
           wrapped_settings?: Json
         }
         Update: {
+          accent?: string
           base_currency?: string
           created_at?: string
           display_name?: string

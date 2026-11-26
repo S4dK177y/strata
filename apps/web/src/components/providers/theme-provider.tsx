@@ -9,21 +9,34 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Theme } from "@strata/api-contract";
+import type { AccentPalette, Theme } from "@strata/api-contract";
 
 const THEME_STORAGE_KEY = "strata-theme";
+const ACCENT_STORAGE_KEY = "strata-accent";
 
 export type ResolvedTheme = "light" | "dark";
 
 interface ThemeContextValue {
   theme: Theme;
+  accent: AccentPalette;
   systemTheme: ResolvedTheme;
   resolvedTheme: ResolvedTheme;
   setTheme: (next: Theme, opts?: { syncServer?: boolean }) => void;
+  setAccent: (next: AccentPalette, opts?: { syncServer?: boolean }) => void;
   toggleCompactTheme: (opts?: { syncServer?: boolean }) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function isValidAccent(val: string | null): val is AccentPalette {
+  return (
+    val === "emerald" ||
+    val === "ocean" ||
+    val === "amethyst" ||
+    val === "sunset" ||
+    val === "graphite"
+  );
+}
 
 function readStoredTheme(): Theme {
   if (typeof window === "undefined") return "system";
@@ -36,12 +49,23 @@ function readStoredTheme(): Theme {
   return "system";
 }
 
+function readStoredAccent(): AccentPalette {
+  if (typeof window === "undefined") return "emerald";
+  try {
+    const val = window.localStorage.getItem(ACCENT_STORAGE_KEY);
+    if (isValidAccent(val)) return val;
+  } catch {
+    // Ignore storage access errors
+  }
+  return "emerald";
+}
+
 function getSystemTheme(): ResolvedTheme {
   if (typeof window === "undefined") return "dark";
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyThemeToDom(theme: Theme, systemTheme: ResolvedTheme) {
+function applyThemeToDom(theme: Theme, systemTheme: ResolvedTheme, accent: AccentPalette) {
   if (typeof document === "undefined") return;
   const resolved: ResolvedTheme = theme === "system" ? systemTheme : theme;
 
@@ -67,17 +91,19 @@ function applyThemeToDom(theme: Theme, systemTheme: ResolvedTheme) {
   const root = document.documentElement;
   root.classList.toggle("dark", resolved === "dark");
   root.classList.toggle("light", resolved === "light");
+  root.dataset.accent = accent;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => readStoredTheme());
+  const [accent, setAccentState] = useState<AccentPalette>(() => readStoredAccent());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
 
   const resolvedTheme: ResolvedTheme = theme === "system" ? systemTheme : theme;
 
   useEffect(() => {
-    applyThemeToDom(theme, systemTheme);
-  }, [theme, systemTheme]);
+    applyThemeToDom(theme, systemTheme, accent);
+  }, [theme, systemTheme, accent]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -91,6 +117,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             ? event.newValue
             : "system"
         );
+      } else if (event.key === ACCENT_STORAGE_KEY) {
+        setAccentState(isValidAccent(event.newValue) ? event.newValue : "emerald");
       }
     };
 
@@ -114,7 +142,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       } catch {
         // Ignore storage errors
       }
-      applyThemeToDom(next, getSystemTheme());
+      applyThemeToDom(next, getSystemTheme(), readStoredAccent());
 
       if (opts?.syncServer) {
         void fetch("/api/v1/me", {
@@ -127,12 +155,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const setAccent = useCallback(
+    (next: AccentPalette, opts?: { syncServer?: boolean }) => {
+      setAccentState(next);
+      try {
+        window.localStorage.setItem(ACCENT_STORAGE_KEY, next);
+      } catch {
+        // Ignore storage errors
+      }
+      if (typeof document !== "undefined") {
+        document.documentElement.dataset.accent = next;
+      }
+
+      if (opts?.syncServer) {
+        void fetch("/api/v1/me", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accent: next }),
+        }).catch(() => {});
+      }
+    },
+    []
+  );
+
   const toggleCompactTheme = useCallback(
     (opts?: { syncServer?: boolean }) => {
       const currentSys = getSystemTheme();
       const currentlyRendered: ResolvedTheme = theme === "system" ? currentSys : theme;
       const target: ResolvedTheme = currentlyRendered === "dark" ? "light" : "dark";
-      // If target matches OS preference, revert to "system" instead of pinning
       const nextTheme: Theme = target === currentSys ? "system" : target;
       setTheme(nextTheme, opts);
     },
@@ -142,12 +192,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme,
+      accent,
       systemTheme,
       resolvedTheme,
       setTheme,
+      setAccent,
       toggleCompactTheme,
     }),
-    [theme, systemTheme, resolvedTheme, setTheme, toggleCompactTheme]
+    [theme, accent, systemTheme, resolvedTheme, setTheme, setAccent, toggleCompactTheme]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

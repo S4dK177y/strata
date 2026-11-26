@@ -59,6 +59,11 @@ export type Locale = z.infer<typeof LocaleSchema>;
 export const ThemeSchema = z.enum(["light", "dark", "system"]).openapi("Theme");
 export type Theme = z.infer<typeof ThemeSchema>;
 
+export const AccentPaletteSchema = z
+  .enum(["emerald", "ocean", "amethyst", "sunset", "graphite"])
+  .openapi("AccentPalette");
+export type AccentPalette = z.infer<typeof AccentPaletteSchema>;
+
 export const UserRoleSchema = z.enum(["user", "admin"]).openapi("UserRole");
 export type UserRole = z.infer<typeof UserRoleSchema>;
 

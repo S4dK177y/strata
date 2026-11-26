@@ -211,6 +211,7 @@ export function createMeRouter(deps: ApiDependencies) {
     if (body.locale !== undefined) updatePatch.locale = body.locale;
     if (body.base_currency !== undefined) updatePatch.base_currency = body.base_currency;
     if (body.theme !== undefined) updatePatch.theme = body.theme;
+    if (body.accent !== undefined) updatePatch.accent = body.accent;
     if (body.privacy_blur_default !== undefined) {
       updatePatch.privacy_blur_default = body.privacy_blur_default;
     }

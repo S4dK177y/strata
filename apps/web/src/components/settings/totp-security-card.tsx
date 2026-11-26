@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, KeyRound, Loader2, ShieldCheck, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
@@ -9,11 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModalDialog } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OtpCodeInput, type OtpCodeStatus } from "@/components/ui/otp-code-input";
 import { useI18n } from "@/lib/i18n/client";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 
 interface TotpFactorSummary {
   id: string;
@@ -53,22 +52,25 @@ export function TotpSecurityCard({
   const [enrollCode, setEnrollCode] = useState("");
   const [enrollTouched, setEnrollTouched] = useState(false);
   const [enrollError, setEnrollError] = useState<string | null>(null);
-  const [verifyingEnroll, setVerifyingEnroll] = useState(false);
+  const [enrollStatus, setEnrollStatus] = useState<OtpCodeStatus>("idle");
 
   const [disableOpen, setDisableOpen] = useState(false);
   const [disableCode, setDisableCode] = useState("");
   const [disableTouched, setDisableTouched] = useState(false);
   const [disableError, setDisableError] = useState<string | null>(null);
-  const [disabling, setDisabling] = useState(false);
+  const [disableStatus, setDisableStatus] = useState<OtpCodeStatus>("idle");
 
   const enrollInputRef = useRef<HTMLInputElement>(null);
   const disableInputRef = useRef<HTMLInputElement>(null);
+  const enrollLockRef = useRef(false);
+  const disableLockRef = useRef(false);
+
   const enrollHintId = useId();
   const enrollErrorId = useId();
   const disableHintId = useId();
   const disableErrorId = useId();
 
-  async function refreshFactors() {
+  const refreshFactors = useCallback(async () => {
     setLoadingFactors(true);
     try {
       const supabase = createBrowserSupabaseClient();
@@ -94,7 +96,7 @@ export function TotpSecurityCard({
     } finally {
       setLoadingFactors(false);
     }
-  }
+  }, [onMfaChanged]);
 
   useEffect(() => {
     let active = true;
@@ -139,7 +141,7 @@ export function TotpSecurityCard({
       const supabase = createBrowserSupabaseClient();
       await supabase.auth.mfa.unenroll({ factorId });
     } catch {
-      // Best-effort cleanup of unverified enrollment
+      // Best-effort cleanup
     }
   }
 
@@ -148,6 +150,7 @@ export function TotpSecurityCard({
     setEnrollError(null);
     setEnrollCode("");
     setEnrollTouched(false);
+    setEnrollStatus("idle");
     setQrCode(null);
     setSecret(null);
     setPendingFactorId(null);
@@ -188,7 +191,7 @@ export function TotpSecurityCard({
   }
 
   async function handleEnrollDialogChange(open: boolean) {
-    if (!open && !verifyingEnroll) {
+    if (!open && enrollStatus !== "verifying") {
       const factorToClean = pendingFactorId;
       setEnrollOpen(false);
       setPendingFactorId(null);
@@ -196,30 +199,26 @@ export function TotpSecurityCard({
       setSecret(null);
       setEnrollCode("");
       setEnrollError(null);
+      setEnrollStatus("idle");
       await cleanupPendingFactor(factorToClean);
       return;
     }
     setEnrollOpen(open);
   }
 
-  async function handleConfirmEnroll(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setEnrollTouched(true);
-    setEnrollError(null);
-
-    const trimmed = enrollCode.replace(/\s+/g, "");
-    if (!/^\d{6}$/.test(trimmed)) {
-      setEnrollError(t.errors.mfaCodeRequired);
-      enrollInputRef.current?.focus();
-      return;
-    }
-
+  async function verifyEnrollCode(rawCode: string) {
+    const trimmed = rawCode.replace(/\s+/g, "");
+    if (enrollLockRef.current || !/^\d{6}$/.test(trimmed)) return;
     if (!pendingFactorId) {
       setEnrollError(t.errors.generic);
       return;
     }
 
-    setVerifyingEnroll(true);
+    enrollLockRef.current = true;
+    setEnrollTouched(true);
+    setEnrollError(null);
+    setEnrollStatus("verifying");
+
     try {
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase.auth.mfa.challengeAndVerify({
@@ -228,44 +227,52 @@ export function TotpSecurityCard({
       });
 
       if (error) {
+        setEnrollStatus("error");
         setEnrollError(t.errors.invalidMfaCode);
-        enrollInputRef.current?.focus();
+        setTimeout(() => {
+          setEnrollCode("");
+          setEnrollStatus("idle");
+          enrollInputRef.current?.focus();
+        }, 420);
         return;
       }
 
+      setEnrollStatus("success");
       setPendingFactorId(null);
       setEnrollOpen(false);
       setQrCode(null);
       setSecret(null);
       setEnrollCode("");
+      setEnrollStatus("idle");
       toast.success(t.settings.totp.enabledToast);
       await refreshFactors();
       router.refresh();
     } catch {
+      setEnrollStatus("error");
       setEnrollError(t.errors.generic);
+      setTimeout(() => {
+        setEnrollCode("");
+        setEnrollStatus("idle");
+        enrollInputRef.current?.focus();
+      }, 420);
     } finally {
-      setVerifyingEnroll(false);
+      enrollLockRef.current = false;
     }
   }
 
-  async function handleConfirmDisable(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setDisableTouched(true);
-    setDisableError(null);
-
-    const trimmed = disableCode.replace(/\s+/g, "");
-    if (!/^\d{6}$/.test(trimmed)) {
-      setDisableError(t.errors.mfaCodeRequired);
-      disableInputRef.current?.focus();
-      return;
-    }
-
+  async function verifyDisableCode(rawCode: string) {
+    const trimmed = rawCode.replace(/\s+/g, "");
+    if (disableLockRef.current || !/^\d{6}$/.test(trimmed)) return;
     if (!activeFactor) {
       setDisableOpen(false);
       return;
     }
 
-    setDisabling(true);
+    disableLockRef.current = true;
+    setDisableTouched(true);
+    setDisableError(null);
+    setDisableStatus("verifying");
+
     try {
       const supabase = createBrowserSupabaseClient();
       const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
@@ -274,8 +281,13 @@ export function TotpSecurityCard({
       });
 
       if (verifyError) {
+        setDisableStatus("error");
         setDisableError(t.errors.invalidMfaCode);
-        disableInputRef.current?.focus();
+        setTimeout(() => {
+          setDisableCode("");
+          setDisableStatus("idle");
+          disableInputRef.current?.focus();
+        }, 420);
         return;
       }
 
@@ -284,21 +296,34 @@ export function TotpSecurityCard({
       });
 
       if (unenrollError) {
+        setDisableStatus("error");
         setDisableError(unenrollError.message || t.errors.generic);
+        setTimeout(() => {
+          setDisableCode("");
+          setDisableStatus("idle");
+        }, 420);
         return;
       }
 
       await supabase.auth.refreshSession().catch(() => {});
+      setDisableStatus("success");
       setDisableOpen(false);
       setDisableCode("");
       setDisableError(null);
+      setDisableStatus("idle");
       toast.success(t.settings.totp.disabledToast);
       await refreshFactors();
       router.refresh();
     } catch {
+      setDisableStatus("error");
       setDisableError(t.errors.generic);
+      setTimeout(() => {
+        setDisableCode("");
+        setDisableStatus("idle");
+        disableInputRef.current?.focus();
+      }, 420);
     } finally {
-      setDisabling(false);
+      disableLockRef.current = false;
     }
   }
 
@@ -319,8 +344,8 @@ export function TotpSecurityCard({
       }).format(new Date(activeFactor.createdAt))
     : null;
 
-  const enrollInvalid = enrollTouched && !/^\d{6}$/.test(enrollCode);
-  const disableInvalid = disableTouched && !/^\d{6}$/.test(disableCode);
+  const enrollInvalid = enrollTouched && enrollCode.length > 0 && !/^\d{6}$/.test(enrollCode);
+  const disableInvalid = disableTouched && disableCode.length > 0 && !/^\d{6}$/.test(disableCode);
 
   return (
     <>
@@ -355,6 +380,7 @@ export function TotpSecurityCard({
                 setDisableCode("");
                 setDisableError(null);
                 setDisableTouched(false);
+                setDisableStatus("idle");
                 setDisableOpen(true);
               }}
             >
@@ -392,7 +418,7 @@ export function TotpSecurityCard({
         }}
         title={t.settings.totp.enrollTitle}
         description={t.settings.totp.enrollDescription}
-        dismissible={!verifyingEnroll}
+        dismissible={enrollStatus !== "verifying"}
         maxWidthClassName="sm:max-w-md"
       >
         {enrolling ? (
@@ -400,7 +426,14 @@ export function TotpSecurityCard({
             <Loader2 className="h-6 w-6 animate-spin text-[var(--strata-text-muted)]" aria-hidden="true" />
           </div>
         ) : (
-          <form onSubmit={handleConfirmEnroll} method="POST" className="space-y-5">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void verifyEnrollCode(enrollCode);
+            }}
+            method="POST"
+            className="space-y-5"
+          >
             {qrCode ? (
               <div className="mx-auto flex w-fit items-center justify-center rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-surface-qr)] p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -450,60 +483,56 @@ export function TotpSecurityCard({
               </div>
             ) : null}
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label htmlFor="enroll-totp-code">{t.settings.totp.codeLabel}</Label>
               <p id={enrollHintId} className="text-xs text-[var(--strata-text-muted)]">
                 {t.settings.totp.codeHint}
               </p>
-              <Input
-                ref={enrollInputRef}
+              <OtpCodeInput
                 id="enroll-totp-code"
-                name="otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                pattern="\d{6}"
-                maxLength={6}
-                enterKeyHint="done"
-                required
-                aria-invalid={enrollError || enrollInvalid ? "true" : "false"}
-                aria-describedby={enrollError ? `${enrollHintId} ${enrollErrorId}` : enrollHintId}
+                inputRef={enrollInputRef}
                 value={enrollCode}
-                onChange={(e) => {
-                  const digitsOnly = e.target.value.replace(/\D+/g, "").slice(0, 6);
-                  setEnrollCode(digitsOnly);
-                  if (enrollError && /^\d{6}$/.test(digitsOnly)) {
+                status={enrollStatus}
+                required
+                ariaInvalid={Boolean(enrollError || enrollInvalid)}
+                ariaDescribedBy={enrollError ? `${enrollHintId} ${enrollErrorId}` : enrollHintId}
+                onChange={(next) => {
+                  setEnrollCode(next);
+                  if (enrollError && next.length > 0) {
                     setEnrollError(null);
                   }
                 }}
                 onBlur={() => setEnrollTouched(true)}
-                placeholder="000000"
-                className={cn(
-                  "strata-mono min-h-12 text-center text-lg font-semibold tracking-[0.35em]",
-                  (enrollError || enrollInvalid) && "border-[var(--strata-money-expense)]"
-                )}
+                onComplete={(completed) => {
+                  void verifyEnrollCode(completed);
+                }}
               />
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex min-h-5 items-center justify-center gap-2 text-xs text-[var(--strata-text-muted)]"
+              >
+                {enrollStatus === "verifying" ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                    <span>{t.settings.totp.enabling}</span>
+                  </>
+                ) : (
+                  <span>{t.auth.mfaAutoHint}</span>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2.5">
+            <div className="flex justify-end">
               <Button
                 type="button"
                 variant="secondary"
-                disabled={verifyingEnroll}
+                disabled={enrollStatus === "verifying"}
                 onClick={() => {
                   void handleEnrollDialogChange(false);
                 }}
               >
                 {t.common.cancel}
-              </Button>
-              <Button type="submit" disabled={verifyingEnroll}>
-                {verifyingEnroll ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                ) : null}
-                {verifyingEnroll ? t.settings.totp.enabling : t.settings.totp.confirmEnable}
               </Button>
             </div>
           </form>
@@ -513,14 +542,21 @@ export function TotpSecurityCard({
       <ModalDialog
         open={disableOpen}
         onOpenChange={(open) => {
-          if (!disabling) setDisableOpen(open);
+          if (disableStatus !== "verifying") setDisableOpen(open);
         }}
         title={t.settings.totp.disableTitle}
         description={t.settings.totp.disableDescription}
-        dismissible={!disabling}
+        dismissible={disableStatus !== "verifying"}
         maxWidthClassName="sm:max-w-md"
       >
-        <form onSubmit={handleConfirmDisable} method="POST" className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void verifyDisableCode(disableCode);
+          }}
+          method="POST"
+          className="space-y-4"
+        >
           {disableError ? (
             <div
               id={disableErrorId}
@@ -532,59 +568,55 @@ export function TotpSecurityCard({
             </div>
           ) : null}
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="disable-totp-code">{t.settings.totp.codeLabel}</Label>
             <p id={disableHintId} className="text-xs text-[var(--strata-text-muted)]">
               {t.settings.totp.codeHint}
             </p>
-            <Input
-              ref={disableInputRef}
+            <OtpCodeInput
               id="disable-totp-code"
-              name="otp"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              autoCorrect="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              pattern="\d{6}"
-              maxLength={6}
-              enterKeyHint="done"
+              inputRef={disableInputRef}
+              value={disableCode}
+              status={disableStatus}
               autoFocus
               required
-              aria-invalid={disableError || disableInvalid ? "true" : "false"}
-              aria-describedby={disableError ? `${disableHintId} ${disableErrorId}` : disableHintId}
-              value={disableCode}
-              onChange={(e) => {
-                const digitsOnly = e.target.value.replace(/\D+/g, "").slice(0, 6);
-                setDisableCode(digitsOnly);
-                if (disableError && /^\d{6}$/.test(digitsOnly)) {
+              ariaInvalid={Boolean(disableError || disableInvalid)}
+              ariaDescribedBy={disableError ? `${disableHintId} ${disableErrorId}` : disableHintId}
+              onChange={(next) => {
+                setDisableCode(next);
+                if (disableError && next.length > 0) {
                   setDisableError(null);
                 }
               }}
               onBlur={() => setDisableTouched(true)}
-              placeholder="000000"
-              className={cn(
-                "strata-mono min-h-12 text-center text-lg font-semibold tracking-[0.35em]",
-                (disableError || disableInvalid) && "border-[var(--strata-money-expense)]"
-              )}
+              onComplete={(completed) => {
+                void verifyDisableCode(completed);
+              }}
             />
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex min-h-5 items-center justify-center gap-2 text-xs text-[var(--strata-text-muted)]"
+            >
+              {disableStatus === "verifying" ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  <span>{t.settings.totp.disabling}</span>
+                </>
+              ) : (
+                <span>{t.auth.mfaAutoHint}</span>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
+          <div className="flex justify-end pt-1">
             <Button
               type="button"
               variant="secondary"
-              disabled={disabling}
+              disabled={disableStatus === "verifying"}
               onClick={() => setDisableOpen(false)}
             >
               {t.common.cancel}
-            </Button>
-            <Button type="submit" variant="destructive" disabled={disabling}>
-              {disabling ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : null}
-              {disabling ? t.settings.totp.disabling : t.settings.totp.confirmDisable}
             </Button>
           </div>
         </form>

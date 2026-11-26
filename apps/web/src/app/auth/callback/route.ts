@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         } else if (gate.status === "needs_onboarding") {
           redirectTo.pathname = "/onboarding";
         } else if (gate.status === "ready") {
-          redirectTo.pathname = safeNext;
+          return NextResponse.redirect(new URL(safeNext, request.url));
         } else if (gate.status === "session_revoked") {
           redirectTo.pathname = "/login";
           redirectTo.searchParams.set("reason", "session_revoked");

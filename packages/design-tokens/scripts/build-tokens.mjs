@@ -14,16 +14,45 @@ function toCssVarName(key) {
   return `--strata-${key.replace(/\./g, "-")}`;
 }
 
-function renderVars(themeObj) {
+function renderVars(themeObj, indent = "  ") {
   return Object.entries(themeObj)
-    .map(([key, value]) => `  ${toCssVarName(key)}: ${value};`)
+    .map(([key, value]) => `${indent}${toCssVarName(key)}: ${value};`)
     .join("\n");
 }
+
+const defaultAccent = tokens.accents.emerald;
+const swatchVars = Object.entries(tokens.accents)
+  .map(([name, cfg]) => `  --strata-swatch-${name}: ${cfg.swatch};`)
+  .join("\n");
+
+const nonDefaultAccents = Object.entries(tokens.accents).filter(
+  ([name]) => name !== "emerald"
+);
+
+const accentOverridesCss = nonDefaultAccents
+  .map(([name, cfg]) => {
+    return `:root[data-accent="${name}"] {
+${renderVars(cfg.light)}
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark)[data-accent="${name}"] {
+${renderVars(cfg.dark, "    ")}
+  }
+}
+
+.dark[data-accent="${name}"] {
+${renderVars(cfg.dark)}
+}`;
+  })
+  .join("\n\n");
 
 const css = `/* Auto-generated from tokens.json by scripts/build-tokens.mjs. Do not edit manually. */
 :root {
   color-scheme: light dark;
 ${renderVars(tokens.themes.light)}
+${renderVars(defaultAccent.light)}
+${swatchVars}
   --strata-radius-card: ${tokens.radii.card};
   --strata-radius-hero: ${tokens.radii.hero};
   --strata-radius-pill: ${tokens.radii.pill};
@@ -41,18 +70,19 @@ ${renderVars(tokens.themes.light)}
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) {
-${renderVars(tokens.themes.dark)
-  .split("\n")
-  .map((line) => `  ${line}`)
-  .join("\n")}
+${renderVars(tokens.themes.dark, "    ")}
+${renderVars(defaultAccent.dark, "    ")}
     --strata-shadow-card: ${tokens.shadows.cardDark};
   }
 }
 
 .dark {
 ${renderVars(tokens.themes.dark)}
+${renderVars(defaultAccent.dark)}
   --strata-shadow-card: ${tokens.shadows.cardDark};
 }
+
+${accentOverridesCss}
 
 .strata-glass {
   background: var(--strata-bg-glass);
@@ -67,9 +97,9 @@ ${renderVars(tokens.themes.dark)}
   overflow-x: clip;
   background-color: var(--strata-bg-canvas);
   background-image:
-    radial-gradient(62% 55% at 86% 18%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
-    radial-gradient(58% 60% at 52% 48%, rgba(6, 182, 212, 0.18) 0%, transparent 68%),
-    radial-gradient(65% 55% at 15% 88%, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+    radial-gradient(62% 55% at 86% 18%, var(--strata-aurora-a) 0%, transparent 65%),
+    radial-gradient(58% 60% at 52% 48%, var(--strata-aurora-b) 0%, transparent 68%),
+    radial-gradient(65% 55% at 15% 88%, var(--strata-aurora-c) 0%, transparent 70%);
 }
 
 .strata-aurora-screen::before,
@@ -84,45 +114,44 @@ ${renderVars(tokens.themes.dark)}
 
 .strata-aurora-screen::before {
   background:
-    radial-gradient(48% 44% at 78% 22%, rgba(16, 185, 129, 0.22) 0%, transparent 70%),
-    radial-gradient(42% 42% at 24% 76%, rgba(6, 182, 212, 0.18) 0%, transparent 70%);
+    radial-gradient(48% 44% at 78% 22%, var(--strata-aurora-a) 0%, transparent 70%),
+    radial-gradient(42% 42% at 24% 76%, var(--strata-aurora-b) 0%, transparent 70%);
 }
 
 .strata-aurora-screen::after {
   background:
-    radial-gradient(46% 40% at 42% 36%, rgba(99, 102, 241, 0.12) 0%, transparent 72%),
-    radial-gradient(38% 36% at 86% 80%, rgba(16, 185, 129, 0.14) 0%, transparent 70%);
+    radial-gradient(46% 40% at 42% 36%, var(--strata-aurora-c) 0%, transparent 72%),
+    radial-gradient(38% 36% at 86% 80%, var(--strata-aurora-a) 0%, transparent 70%);
 }
 
 .dark .strata-aurora-screen {
   background-color: var(--strata-bg-canvas);
   background-image:
-    radial-gradient(60% 55% at 88% 18%, rgba(52, 211, 153, 0.34) 0%, transparent 62%),
-    radial-gradient(55% 65% at 55% 46%, rgba(14, 165, 233, 0.28) 0%, transparent 66%),
-    radial-gradient(68% 55% at 12% 84%, rgba(16, 185, 129, 0.22) 0%, transparent 68%),
-    linear-gradient(135deg, #0b0c0e 0%, #111b1e 48%, #0d1615 100%);
+    radial-gradient(60% 55% at 88% 18%, var(--strata-aurora-a) 0%, transparent 62%),
+    radial-gradient(55% 65% at 55% 46%, var(--strata-aurora-b) 0%, transparent 66%),
+    radial-gradient(68% 55% at 12% 84%, var(--strata-aurora-c) 0%, transparent 68%);
 }
 
 .dark .strata-aurora-screen::before {
   background:
-    radial-gradient(48% 44% at 82% 20%, rgba(52, 211, 153, 0.28) 0%, transparent 68%),
-    radial-gradient(44% 42% at 20% 78%, rgba(14, 165, 233, 0.24) 0%, transparent 68%);
+    radial-gradient(48% 44% at 82% 20%, var(--strata-aurora-a) 0%, transparent 68%),
+    radial-gradient(44% 42% at 20% 78%, var(--strata-aurora-b) 0%, transparent 68%);
 }
 
 .dark .strata-aurora-screen::after {
   background:
-    radial-gradient(46% 42% at 46% 42%, rgba(99, 102, 241, 0.18) 0%, transparent 72%),
-    radial-gradient(38% 36% at 84% 76%, rgba(16, 185, 129, 0.18) 0%, transparent 70%);
+    radial-gradient(46% 42% at 46% 42%, var(--strata-aurora-c) 0%, transparent 72%),
+    radial-gradient(38% 36% at 84% 76%, var(--strata-aurora-a) 0%, transparent 70%);
 }
 
 .strata-aurora-hero {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background-color: var(--strata-bg-surface);
+  background-color: var(--strata-auroraHero-surface);
   background-image:
-    radial-gradient(75% 95% at 82% 18%, rgba(16, 185, 129, 0.20) 0%, transparent 65%),
-    radial-gradient(65% 90% at 32% 24%, rgba(6, 182, 212, 0.16) 0%, transparent 65%);
+    radial-gradient(75% 95% at 82% 18%, var(--strata-aurora-a) 0%, transparent 65%),
+    radial-gradient(65% 90% at 32% 24%, var(--strata-aurora-b) 0%, transparent 65%);
   border: 1px solid var(--strata-border-subtle);
 }
 
@@ -133,24 +162,24 @@ ${renderVars(tokens.themes.dark)}
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(50% 55% at 80% 24%, rgba(16, 185, 129, 0.18) 0%, transparent 68%),
-    radial-gradient(45% 50% at 28% 35%, rgba(6, 182, 212, 0.14) 0%, transparent 68%);
+    radial-gradient(50% 55% at 80% 24%, var(--strata-aurora-a) 0%, transparent 68%),
+    radial-gradient(45% 50% at 28% 35%, var(--strata-aurora-b) 0%, transparent 68%);
 }
 
 .dark .strata-aurora-hero {
-  background-color: #0e1416;
+  background-color: var(--strata-auroraHero-surface);
   background-image:
     linear-gradient(180deg, rgba(11, 12, 14, 0) 68%, var(--strata-bg-canvas) 100%),
-    radial-gradient(78% 105% at 84% 16%, rgba(52, 211, 153, 0.36) 0%, transparent 64%),
-    radial-gradient(66% 95% at 44% 34%, rgba(14, 165, 233, 0.26) 0%, transparent 66%),
-    radial-gradient(60% 70% at 10% 10%, rgba(16, 185, 129, 0.16) 0%, transparent 60%);
+    radial-gradient(78% 105% at 84% 16%, var(--strata-aurora-a) 0%, transparent 64%),
+    radial-gradient(66% 95% at 44% 34%, var(--strata-aurora-b) 0%, transparent 66%),
+    radial-gradient(60% 70% at 10% 10%, var(--strata-aurora-c) 0%, transparent 60%);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark .strata-aurora-hero::before {
   background:
-    radial-gradient(50% 55% at 82% 20%, rgba(52, 211, 153, 0.26) 0%, transparent 66%),
-    radial-gradient(46% 50% at 30% 40%, rgba(14, 165, 233, 0.22) 0%, transparent 66%);
+    radial-gradient(50% 55% at 82% 20%, var(--strata-aurora-a) 0%, transparent 66%),
+    radial-gradient(46% 50% at 30% 40%, var(--strata-aurora-b) 0%, transparent 66%);
 }
 
 @keyframes strata-aurora-drift-a {
@@ -227,14 +256,13 @@ ${renderVars(tokens.themes.dark)}
 }
 
 .strata-hero {
-  background: linear-gradient(135deg, #047857 0%, #0d9488 55%, #0284c7 100%);
+  background: var(--strata-hero-bg);
   color: #f8fafc;
   box-shadow: var(--strata-shadow-neon);
 }
 
 .dark .strata-hero {
-  background:
-    radial-gradient(120% 140% at 85% 0%, rgba(52, 211, 153, 0.28) 0%, rgba(14, 165, 233, 0.20) 52%, rgba(22, 23, 26, 0.96) 100%);
+  background: var(--strata-hero-bg);
   border: 1px solid var(--strata-border-strong);
 }
 
@@ -282,6 +310,14 @@ export declare const strataTokens: {
     light: StrataThemeTokens;
     dark: StrataThemeTokens;
   };
+  accents: Record<
+    "emerald" | "ocean" | "amethyst" | "sunset" | "graphite",
+    {
+      swatch: string;
+      light: Record<string, string>;
+      dark: Record<string, string>;
+    }
+  >;
   radii: {
     card: string;
     hero: string;

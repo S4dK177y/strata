@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, CreditCard, LogOut, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type {
+  AccentPalette,
   AccountType,
   CategoryKind,
   Locale,
@@ -13,6 +14,7 @@ import type {
 } from "@strata/api-contract";
 import { usePrivacy } from "@/components/providers/privacy-provider";
 import { useTheme } from "@/components/providers/theme-provider";
+import { AccentSwitcher } from "@/components/ui/accent-switcher";
 import { AmountText } from "@/components/ui/amount-text";
 import { AuroraCurtains } from "@/components/ui/aurora-curtains";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +71,7 @@ export function OnboardingWizard({
 }) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
-  const { theme } = useTheme();
+  const { theme, accent } = useTheme();
   const { privacyBlur, setPrivacyBlur } = usePrivacy();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -79,6 +81,9 @@ export function OnboardingWizard({
   const [displayName, setDisplayName] = useState(initialProfile.display_name);
   const [baseCurrency, setBaseCurrency] = useState(initialProfile.base_currency || "RUB");
   const [selectedTheme, setSelectedTheme] = useState<Theme>(initialProfile.theme || theme);
+  const [selectedAccent, setSelectedAccent] = useState<AccentPalette>(
+    initialProfile.accent || accent
+  );
   const [privacyDefault, setPrivacyDefault] = useState(initialProfile.privacy_blur_default);
 
   // Step 2
@@ -209,6 +214,7 @@ export function OnboardingWizard({
           locale,
           base_currency: baseCurrency,
           theme: selectedTheme,
+          accent: selectedAccent,
           privacy_blur_default: privacyDefault,
           accounts: parsedAccounts,
           categories: selectedCategories,
@@ -369,6 +375,11 @@ export function OnboardingWizard({
                     value={selectedTheme}
                     onChange={setSelectedTheme}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{t.accent.label}</Label>
+                  <AccentSwitcher value={selectedAccent} onChange={setSelectedAccent} />
                 </div>
 
                 <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/65 p-4">

@@ -10,6 +10,7 @@
   - **PR 4 — Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator** ✅ **Completed & Verified**.
   - **PR 4.5 — UX & Auth Polish** *(soft-edge Privacy Blur, neutral duplicate-signup handling, password confirmation, sign-out on onboarding, per-route skeletons, alive login & View Transition screen switching)* ✅ **Completed & Verified**.
   - **PR 5 — Account Security & Session Control** *(2FA TOTP via Supabase MFA with RLS/SSR/API enforcement, active session tracking & instant revocation with device/browser/OS/IP, permanent account deletion with password + TOTP confirmation)* ✅ **Completed & Verified**.
+  - **PR 5.5 — 2FA UX Polish, Accent Palettes & Safe Email Change** *(post-2FA login flash animation, auto-verifying `Dot → Digit` OTP input without submit button, 5 accent palettes `emerald`/`ocean`/`amethyst`/`sunset`/`graphite` with warm amber Sunset contrast, and TOTP-or-password verified email change)* ✅ **Completed & Verified**.
 - **Next Up:**
   - **PR 6 — Dashboard, Interactive Spotlight Onboarding Tour, Export, `/admin`, Playwright E2E** *(interactive feature tour with step highlights/skip/replay + analytics, export & admin panel)*.
 
@@ -47,6 +48,10 @@
   - Added `"surface.qr"` token in `@strata/design-tokens` and OpenAPI 3.1 security schemas in `@strata/api-contract` (`src/security.ts`, `MeResponseSchema` security status fields).
   - Implemented `parseSessionUserAgent` (`userAgentFromString` + `StrataAndroid` support), `getServerSessionGate()` `session_revoked` & `needs_mfa` states, local-scoped `/auth/signout`, `401 SESSION_REVOKED` & `403 MFA_REQUIRED` middleware enforcement, and `/api/v1/security/{sessions,sessions/{id},sessions/revoke-others,delete-account}` endpoints (with password verification, conditional TOTP verification, ephemeral session cleanup, and last-admin protection).
   - Built `/mfa-verify` (`MfaVerifyCard`), updated `/login` (`AuthCard` post-login `AAL2` redirect + `session_revoked` / `deleted` notices), and added `TotpSecurityCard`, `ActiveSessionsCard`, and `DangerZoneCard` in `/settings` with full RU/EN i18n.
+- **PR 5.5 (2FA UX Polish, Accent Palettes & Safe Email Change):**
+  - Moved `triggerAuthFlash` + `entering` animation from `/login` to post-2FA verification on `/mfa-verify`, and built `OtpCodeInput` with `Dot → Digit` slot animation and immediate auto-verification on the 6th digit (no submit button).
+  - Added `profiles.accent` migration (`20261126000005_profile_accent.sql`), 5 token-driven accent palettes (`emerald`, `ocean`, `amethyst`, `sunset`, `graphite` via `data-accent` + zero-FOUC init script + `AccentSwitcher` in Settings & Onboarding Step 1, keeping income/expense semantic colors intact and `sunset` strictly warm amber/bronze).
+  - Added `POST /api/v1/security/verify-password` and `ChangeEmailDialog` (TOTP-only verification when 2FA is active; current password verification when 2FA is off).
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`

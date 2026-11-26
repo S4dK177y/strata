@@ -67,3 +67,17 @@ export const DeleteAccountResponseSchema = z
   })
   .openapi("DeleteAccountResponse");
 export type DeleteAccountResponse = z.infer<typeof DeleteAccountResponseSchema>;
+
+export const VerifyPasswordRequestSchema = z
+  .object({
+    password: z.string().min(1).max(256),
+  })
+  .openapi("VerifyPasswordRequest");
+export type VerifyPasswordRequest = z.infer<typeof VerifyPasswordRequestSchema>;
+
+export const VerifyPasswordResponseSchema = z
+  .object({
+    verified: z.literal(true),
+  })
+  .openapi("VerifyPasswordResponse");
+export type VerifyPasswordResponse = z.infer<typeof VerifyPasswordResponseSchema>;

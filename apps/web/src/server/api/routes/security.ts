@@ -6,6 +6,8 @@ import {
   RevokeOtherSessionsResponseSchema,
   RevokeSessionResponseSchema,
   SessionListResponseSchema,
+  VerifyPasswordRequestSchema,
+  VerifyPasswordResponseSchema,
   z,
 } from "@strata/api-contract";
 import { parseSessionUserAgent } from "@/lib/security/user-agent";
@@ -149,6 +151,50 @@ const deleteAccountRoute = createRoute({
     },
     503: {
       description: "Account deletion service unavailable",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+  },
+});
+
+const verifyPasswordRoute = createRoute({
+  method: "post",
+  path: "/security/verify-password",
+  tags: ["Security"],
+  summary: "Verify the authenticated user's current password for sensitive account actions",
+  security: AUTH_SECURITY,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: VerifyPasswordRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Current password verified",
+      content: { "application/json": { schema: VerifyPasswordResponseSchema } },
+    },
+    400: {
+      description: "Missing email or validation error",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+    401: {
+      description: "Unauthorized or revoked session",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+    403: {
+      description: "MFA required or invalid password",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+    500: {
+      description: "Failed to verify password",
+      content: { "application/json": { schema: ErrorResponseSchema } },
+    },
+    503: {
+      description: "Verification service unavailable",
       content: { "application/json": { schema: ErrorResponseSchema } },
     },
   },
@@ -447,6 +493,72 @@ export function createSecurityRouter(deps: ApiDependencies) {
     }
 
     return c.json({ deleted: true as const }, 200);
+  });
+
+  router.openapi(verifyPasswordRoute, async (c) => {
+    const auth = c.get("auth");
+    if (!auth) {
+      return c.json({ error: "UNAUTHORIZED", message: "Authentication required" }, 401);
+    }
+
+    const body = c.req.valid("json");
+    const serviceClient = deps.getServiceClient?.() ?? null;
+    let userEmail = auth.email?.trim() || null;
+
+    if (serviceClient) {
+      const { data: userLookup, error: userLookupError } =
+        await serviceClient.auth.admin.getUserById(auth.userId);
+      if (userLookupError || !userLookup.user) {
+        return c.json(
+          {
+            error: "ACCOUNT_LOOKUP_FAILED",
+            message: userLookupError?.message ?? "Unable to locate user account",
+          },
+          500
+        );
+      }
+      userEmail = userLookup.user.email?.trim() || userEmail;
+    }
+
+    if (!userEmail) {
+      return c.json(
+        {
+          error: "ACCOUNT_EMAIL_MISSING",
+          message: "Account has no email address for password verification",
+        },
+        400
+      );
+    }
+
+    const verifyClient = deps.getPublicClient();
+    if (!verifyClient) {
+      return c.json(
+        {
+          error: "SERVICE_UNAVAILABLE",
+          message: "Auth client is not configured",
+        },
+        503
+      );
+    }
+
+    const { data: signInData, error: signInError } = await verifyClient.auth.signInWithPassword({
+      email: userEmail,
+      password: body.password,
+    });
+
+    if (signInError || !signInData.user || signInData.user.id !== auth.userId) {
+      return c.json(
+        {
+          error: "INVALID_PASSWORD",
+          message: "Current password is incorrect",
+        },
+        403
+      );
+    }
+
+    await verifyClient.auth.signOut({ scope: "local" }).catch(() => {});
+
+    return c.json({ verified: true as const }, 200);
   });
 
   return router;

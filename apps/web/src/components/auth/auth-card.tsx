@@ -118,7 +118,7 @@ export function AuthCard({
 
       const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       if (aalData?.nextLevel === "aal2" && aalData.currentLevel !== "aal2") {
-        setAuthVisualState("entering");
+        setAuthVisualState("idle");
         const target =
           safeNext !== "/"
             ? `/mfa-verify?next=${encodeURIComponent(safeNext)}`

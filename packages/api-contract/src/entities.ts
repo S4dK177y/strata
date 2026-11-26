@@ -1,4 +1,5 @@
 import {
+  AccentPaletteSchema,
   AccountTypeSchema,
   CategoryKindSchema,
   CurrencyCodeSchema,
@@ -33,6 +34,7 @@ export const ProfileSchema = z
     locale: LocaleSchema,
     base_currency: CurrencyCodeSchema,
     theme: ThemeSchema,
+    accent: AccentPaletteSchema.default("emerald"),
     privacy_blur_default: z.boolean(),
     onboarding_completed: z.boolean(),
     invite_redeemed_at: IsoDateTimeSchema.nullable(),

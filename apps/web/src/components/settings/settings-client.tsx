@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Palette, User } from "lucide-react";
 import { toast } from "sonner";
-import type { AalLevel, Profile, Theme } from "@strata/api-contract";
+import type { AalLevel, AccentPalette, Profile, Theme } from "@strata/api-contract";
 import { SUPPORTED_CURRENCIES } from "@/components/onboarding/starter-templates";
 import { usePrivacy } from "@/components/providers/privacy-provider";
 import { ActiveSessionsCard } from "@/components/settings/active-sessions-card";
+import { ChangeEmailDialog } from "@/components/settings/change-email-dialog";
 import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 import { TotpSecurityCard } from "@/components/settings/totp-security-card";
+import { AccentSwitcher } from "@/components/ui/accent-switcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,11 +32,13 @@ export function SettingsClient({
   email,
   initialMfaEnabled = false,
   initialAal = "aal1",
+  emailUpdated = false,
 }: {
   profile: Profile;
   email: string | null;
   initialMfaEnabled?: boolean;
   initialAal?: AalLevel;
+  emailUpdated?: boolean;
 }) {
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
@@ -43,9 +47,19 @@ export function SettingsClient({
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [baseCurrency, setBaseCurrency] = useState(profile.base_currency);
   const [themeValue, setThemeValue] = useState<Theme>(profile.theme);
+  const [accentValue, setAccentValue] = useState<AccentPalette>(profile.accent);
   const [privacyDefault, setPrivacyDefault] = useState(profile.privacy_blur_default);
   const [mfaEnabled, setMfaEnabled] = useState(initialMfaEnabled);
+  const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (emailUpdated) {
+      toast.success(t.settings.emailChange.updatedToast);
+      router.replace("/settings");
+    }
+  }, [emailUpdated, router, t.settings.emailChange.updatedToast]);
 
   async function handleSave(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -59,6 +73,7 @@ export function SettingsClient({
           base_currency: baseCurrency,
           locale,
           theme: themeValue,
+          accent: accentValue,
           privacy_blur_default: privacyDefault,
         }),
       });
@@ -107,12 +122,28 @@ export function SettingsClient({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="settings-email">{t.settings.emailReadOnly}</Label>
-              <Input
-                id="settings-email"
-                type="email"
-                value={email ?? ""}
-                disabled
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="settings-email"
+                  type="email"
+                  value={email ?? ""}
+                  disabled
+                  className="min-w-0 flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setChangeEmailOpen(true)}
+                >
+                  {t.settings.emailChange.button}
+                </Button>
+              </div>
+              {pendingEmail ? (
+                <p className="text-xs text-[var(--strata-text-muted)]">
+                  {t.settings.emailChange.pendingNotice.replace("{email}", pendingEmail)}
+                </p>
+              ) : null}
             </div>
 
             <div className="space-y-1.5">
@@ -185,6 +216,15 @@ export function SettingsClient({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label>{t.accent.label}</Label>
+            <AccentSwitcher
+              syncServer
+              value={accentValue}
+              onChange={setAccentValue}
+            />
+          </div>
+
           <div className="flex items-center justify-between gap-4 rounded-2xl bg-[var(--strata-bg-elevated)] p-4">
             <div className="space-y-0.5">
               <Label htmlFor="settings-privacy" className="text-sm font-semibold">
@@ -221,6 +261,14 @@ export function SettingsClient({
       <ActiveSessionsCard email={email} />
 
       <DangerZoneCard mfaEnabled={mfaEnabled} />
+
+      <ChangeEmailDialog
+        open={changeEmailOpen}
+        onOpenChange={setChangeEmailOpen}
+        currentEmail={email}
+        mfaEnabled={mfaEnabled}
+        onPendingEmailChange={setPendingEmail}
+      />
     </div>
   );
 }

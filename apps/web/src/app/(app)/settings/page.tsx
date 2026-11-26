@@ -4,7 +4,11 @@ import { getServerSessionGate } from "@/lib/auth/session-gate";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email_updated?: string }>;
+}) {
   const gate = await getServerSessionGate();
 
   if (gate.status === "session_revoked") {
@@ -17,6 +21,8 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
+  const params = await searchParams;
+
   return (
     <div className="strata-page-enter">
       <SettingsClient
@@ -24,6 +30,7 @@ export default async function SettingsPage() {
         email={gate.email}
         initialMfaEnabled={gate.mfaEnabled}
         initialAal={gate.aal}
+        emailUpdated={params.email_updated === "1"}
       />
     </div>
   );

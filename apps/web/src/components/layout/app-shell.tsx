@@ -50,7 +50,7 @@ function AppShellInner({
 }) {
   const pathname = usePathname();
   const { t, setLocale } = useI18n();
-  const { setTheme } = useTheme();
+  const { setTheme, setAccent } = useTheme();
   const { setPrivacyBlur } = usePrivacy();
   const { openQuickAdd } = useQuickAdd();
   const hydratedProfileIdRef = useRef<string | null>(null);
@@ -62,9 +62,10 @@ function AppShellInner({
     hydratedProfileIdRef.current = profile.id;
 
     setTheme(profile.theme);
+    setAccent(profile.accent);
     setLocale(profile.locale);
     setPrivacyBlur(profile.privacy_blur_default);
-  }, [profile, setLocale, setPrivacyBlur, setTheme]);
+  }, [profile, setAccent, setLocale, setPrivacyBlur, setTheme]);
 
   useEffect(() => {
     if (prevPathnameRef.current === pathname) return;

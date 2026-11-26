@@ -9,9 +9,9 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { ModalDialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OtpCodeInput } from "@/components/ui/otp-code-input";
 import { useI18n } from "@/lib/i18n/client";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 
 interface DangerZoneCardProps {
   mfaEnabled: boolean;
@@ -209,36 +209,21 @@ export function DangerZoneCard({ mfaEnabled }: DangerZoneCardProps) {
               <p id={totpHintId} className="text-xs text-[var(--strata-text-muted)]">
                 {t.settings.dangerZone.totpHint}
               </p>
-              <Input
-                ref={totpRef}
+              <OtpCodeInput
                 id="delete-account-totp"
-                name="otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                autoCorrect="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                pattern="\d{6}"
-                maxLength={6}
-                enterKeyHint="done"
-                required
-                aria-invalid={totpInvalid ? "true" : "false"}
-                aria-describedby={error ? `${totpHintId} ${errorId}` : totpHintId}
+                inputRef={totpRef}
                 value={totpCode}
-                onChange={(e) => {
-                  const digitsOnly = e.target.value.replace(/\D+/g, "").slice(0, 6);
+                status={deleting ? "verifying" : "idle"}
+                required
+                ariaInvalid={Boolean(totpInvalid)}
+                ariaDescribedBy={error ? `${totpHintId} ${errorId}` : totpHintId}
+                onChange={(digitsOnly) => {
                   setTotpCode(digitsOnly);
                   if (error && /^\d{6}$/.test(digitsOnly)) {
                     setError(null);
                   }
                 }}
                 onBlur={() => setTotpTouched(true)}
-                placeholder="000000"
-                className={cn(
-                  "strata-mono min-h-12 text-center text-lg font-semibold tracking-[0.35em]",
-                  totpInvalid && "border-[var(--strata-money-expense)]"
-                )}
               />
             </div>
           ) : null}
