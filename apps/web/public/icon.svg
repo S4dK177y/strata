@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="18" fill="#070B18"/>
+  <defs>
+    <linearGradient id="strataBottom" x1="12" y1="34" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4F46E5" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#7C3AED" stop-opacity="0.85"/>
+    </linearGradient>
+    <linearGradient id="strataMid" x1="12" y1="24" x2="52" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="strataTop" x1="14" y1="12" x2="50" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="55%" stop-color="#22D3EE"/>
+      <stop offset="100%" stop-color="#60A5FA"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 35L52 43.5L32 52L12 43.5L32 35Z" fill="url(#strataBottom)" stroke="#818CF8" stroke-opacity="0.45" stroke-width="1"/>
+  <path d="M32 24.5L52 33L32 41.5L12 33L32 24.5Z" fill="url(#strataMid)" stroke="#67E8F9" stroke-opacity="0.6" stroke-width="1"/>
+  <path d="M32 13L52 21.5L32 30L12 21.5L32 13Z" fill="url(#strataTop)"/>
+</svg>

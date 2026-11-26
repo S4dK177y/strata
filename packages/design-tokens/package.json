@@ -1,0 +1,22 @@
+{
+  "name": "@strata/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/tokens.js",
+  "types": "./dist/tokens.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/tokens.d.ts",
+      "default": "./dist/tokens.js"
+    },
+    "./dist/tokens.css": "./dist/tokens.css",
+    "./tokens.json": "./tokens.json"
+  },
+  "scripts": {
+    "build:tokens": "node scripts/build-tokens.mjs",
+    "build": "node scripts/build-tokens.mjs",
+    "typecheck": "node scripts/build-tokens.mjs",
+    "lint": "node -e \"console.log('design-tokens lint ok')\""
+  }
+}

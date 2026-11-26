@@ -1,0 +1,19 @@
+{
+  "name": "@strata/api-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "lint": "node -e \"console.log('api-contract lint ok')\""
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  }
+}

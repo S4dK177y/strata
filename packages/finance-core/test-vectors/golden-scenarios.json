@@ -1,0 +1,370 @@
+{
+  "asOfDate": "2026-11-26",
+  "year": 2026,
+  "month": 11,
+  "unpaidActiveRecurringMinor": 75000,
+  "accounts": [
+    {
+      "id": "acc-sber",
+      "name": "Сбер (Дебет)",
+      "type": "debit",
+      "initialBalanceMinor": 1000000,
+      "creditLimitMinor": 0,
+      "isActive": true
+    },
+    {
+      "id": "acc-alfa-deb",
+      "name": "Альфа (Дебет)",
+      "type": "debit",
+      "initialBalanceMinor": 0,
+      "creditLimitMinor": 0,
+      "isActive": true
+    },
+    {
+      "id": "acc-alfa-cred",
+      "name": "Альфа (Кредитка)",
+      "type": "credit",
+      "initialBalanceMinor": 0,
+      "creditLimitMinor": 8000000,
+      "isActive": true
+    },
+    {
+      "id": "acc-cash",
+      "name": "Наличные",
+      "type": "cash",
+      "initialBalanceMinor": 200000,
+      "creditLimitMinor": 0,
+      "isActive": true
+    },
+    {
+      "id": "acc-sav-1",
+      "name": "Сбер (Накопительный)",
+      "type": "savings",
+      "initialBalanceMinor": 0,
+      "creditLimitMinor": 0,
+      "isActive": true
+    },
+    {
+      "id": "acc-sav-2",
+      "name": "Яндекс (Сейв)",
+      "type": "savings",
+      "initialBalanceMinor": 0,
+      "creditLimitMinor": 0,
+      "isActive": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-cafe",
+      "name": "Кафе и доставка",
+      "kind": "expense",
+      "isPassive": false,
+      "monthlyLimitMinor": 500000
+    },
+    {
+      "id": "cat-salary",
+      "name": "Зарплата",
+      "kind": "income",
+      "isPassive": false,
+      "monthlyLimitMinor": null
+    },
+    {
+      "id": "cat-passive",
+      "name": "Проценты по счетам",
+      "kind": "income",
+      "isPassive": true,
+      "monthlyLimitMinor": null
+    }
+  ],
+  "savingsRules": [
+    {
+      "id": "sr-1",
+      "accountId": "acc-sav-1",
+      "accrualType": "daily_balance",
+      "baseRate": 0.1,
+      "promoRate": 0.16,
+      "promoEndDate": "2026-12-05",
+      "capitalization": true,
+      "minBalanceOverrideMinor": null
+    }
+  ],
+  "goals": [
+    {
+      "id": "goal-tax",
+      "name": "Резерв: Налог НПД",
+      "priority": "high",
+      "targetAmountMinor": 450000,
+      "initialAmountMinor": 0,
+      "monthlyPlanMinor": 450000,
+      "storageAccountId": "acc-sav-1"
+    },
+    {
+      "id": "goal-pixel",
+      "name": "Google Pixel 11 Pro",
+      "priority": "high",
+      "targetAmountMinor": 11000000,
+      "initialAmountMinor": 0,
+      "monthlyPlanMinor": 1500000,
+      "storageAccountId": "acc-sav-1"
+    }
+  ],
+  "goalTransfers": [],
+  "debts": [
+    {
+      "id": "debt-1",
+      "direction": "lent",
+      "counterparty": "Макс",
+      "amountMinor": 300000,
+      "manualRepaidMinor": 0,
+      "openedAt": "2026-11-14"
+    },
+    {
+      "id": "debt-2",
+      "direction": "lent",
+      "counterparty": "Макс",
+      "amountMinor": 200000,
+      "manualRepaidMinor": 0,
+      "openedAt": "2026-11-15"
+    },
+    {
+      "id": "debt-3",
+      "direction": "borrowed",
+      "counterparty": "Мама",
+      "amountMinor": 1000000,
+      "manualRepaidMinor": 0,
+      "openedAt": "2026-11-20"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-1",
+      "occurredAt": "2026-11-05",
+      "type": "income",
+      "amountMinor": 7446800,
+      "categoryId": "cat-salary",
+      "accountFromId": "acc-sber",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Зарплата + НПД",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-2",
+      "occurredAt": "2026-11-06",
+      "type": "transfer",
+      "amountMinor": 446800,
+      "categoryId": null,
+      "accountFromId": "acc-sber",
+      "accountToId": "acc-sav-1",
+      "goalId": "goal-tax",
+      "comment": "Резерв налога",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-3",
+      "occurredAt": "2026-11-07",
+      "type": "expense",
+      "amountMinor": 360000,
+      "categoryId": "cat-cafe",
+      "accountFromId": "acc-alfa-cred",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Ужин с друзьями",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-4",
+      "occurredAt": "2026-11-07",
+      "type": "compensation",
+      "amountMinor": 240000,
+      "categoryId": "cat-cafe",
+      "accountFromId": "acc-sber",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Скинулись за ужин",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-5",
+      "occurredAt": "2026-11-08",
+      "type": "passive_income",
+      "amountMinor": 2820000,
+      "categoryId": "cat-passive",
+      "accountFromId": "acc-sber",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Проценты и кэшбэк",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-6",
+      "occurredAt": "2026-11-10",
+      "type": "transfer",
+      "amountMinor": 2000000,
+      "categoryId": null,
+      "accountFromId": "acc-sber",
+      "accountToId": "acc-sav-1",
+      "goalId": "goal-pixel",
+      "comment": "В конверт Pixel",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-7",
+      "occurredAt": "2026-11-12",
+      "type": "transfer",
+      "amountMinor": 1000000,
+      "categoryId": null,
+      "accountFromId": "acc-sav-1",
+      "accountToId": "acc-sav-2",
+      "goalId": "goal-pixel",
+      "comment": "Перекладка на промо",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-8",
+      "occurredAt": "2026-11-15",
+      "type": "debt_given",
+      "amountMinor": 500000,
+      "categoryId": null,
+      "accountFromId": "acc-sber",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Макс",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-9",
+      "occurredAt": "2026-11-18",
+      "type": "debt_received_back",
+      "amountMinor": 300000,
+      "categoryId": null,
+      "accountFromId": "acc-sber",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Макс вернул часть",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-10",
+      "occurredAt": "2026-11-20",
+      "type": "debt_borrowed",
+      "amountMinor": 1000000,
+      "categoryId": null,
+      "accountFromId": "acc-cash",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Мама",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-11",
+      "occurredAt": "2026-11-22",
+      "type": "debt_paid_back",
+      "amountMinor": 400000,
+      "categoryId": null,
+      "accountFromId": "acc-cash",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Мама",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-12",
+      "occurredAt": "2026-11-23",
+      "type": "transit_in",
+      "amountMinor": 150000,
+      "categoryId": null,
+      "accountFromId": "acc-alfa-deb",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Транзит приход",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-13",
+      "occurredAt": "2026-11-23",
+      "type": "transit_out",
+      "amountMinor": 150000,
+      "categoryId": null,
+      "accountFromId": "acc-alfa-deb",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Транзит расход",
+      "status": "confirmed"
+    },
+    {
+      "id": "tx-draft",
+      "occurredAt": "2026-11-25",
+      "type": "expense",
+      "amountMinor": 999900,
+      "categoryId": "cat-cafe",
+      "accountFromId": "acc-sber",
+      "accountToId": null,
+      "goalId": null,
+      "comment": "Черновик пуша",
+      "status": "draft"
+    }
+  ],
+  "expected": {
+    "accountBalances": {
+      "acc-sber": 8860000,
+      "acc-alfa-deb": 0,
+      "acc-alfa-cred": -360000,
+      "acc-cash": 800000,
+      "acc-sav-1": 1446800,
+      "acc-sav-2": 1000000
+    },
+    "creditCardDebtMinor": 360000,
+    "creditCardAvailableMinor": 7640000,
+    "netWorthMinor": 11146800,
+    "safeToSpendMinor": 9225000,
+    "period": {
+      "activeIncomeMinor": 7446800,
+      "passiveIncomeMinor": 2820000,
+      "totalIncomeMinor": 10266800,
+      "grossExpenseMinor": 360000,
+      "compensationMinor": 240000,
+      "netExpenseMinor": 120000,
+      "netBalanceMinor": 10146800,
+      "transactionCount": 13
+    },
+    "debts": {
+      "totalLentRemainingMinor": 200000,
+      "totalBorrowedRemainingMinor": 600000,
+      "netDebtBalanceMinor": -400000,
+      "openCount": 2,
+      "closedCount": 1,
+      "byIdRemaining": {
+        "debt-1": 0,
+        "debt-2": 200000,
+        "debt-3": 600000
+      }
+    },
+    "promoRadar": {
+      "status": "expiring_soon",
+      "daysLeft": 9,
+      "effectiveRate": 0.16
+    },
+    "goals": {
+      "goal-tax": {
+        "currentMinor": 446800,
+        "remainingMinor": 3200,
+        "monthsToGoal": 1
+      },
+      "goal-pixel": {
+        "currentMinor": 2000000,
+        "remainingMinor": 9000000,
+        "monthsToGoal": 6
+      }
+    },
+    "wrapped": {
+      "titleKey": "financial_ninja",
+      "disciplineRankKey": "apprentice",
+      "freeCoffeesCount": 94,
+      "freeShawarmasCount": 80,
+      "antiFakeFilteredMinor": 6426800,
+      "lentFrequent": "Макс",
+      "borrowedMainSavior": "Мама"
+    }
+  }
+}

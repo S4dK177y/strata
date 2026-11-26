@@ -1,0 +1,24 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    # Run every 3 days at 06:00 UTC to keep Supabase Free tier active (< 7 day threshold)
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    name: Ping Strata Health Endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Healthcheck ping
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL repository variable is not set yet; skipping keepalive ping."
+            exit 0
+          fi
+          curl --fail --silent --show-error "${APP_URL%/}/api/v1/health"
+          echo ""
+          echo "Keepalive ping succeeded."

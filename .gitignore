@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+out/
+.turbo/
+dist/
+build/
+coverage/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Testing & logs
+playwright-report/
+test-results/
+*.log
+npm-debug.log*
+
+# OS & editor junk
+.DS_Store
+Thumbs.db
+
+# Local AI client caches / personal overrides (keep AGENTS.md, CLAUDE.md, .agents/, docs/)
+.claude/settings.local.json
+.opencode/
+.gemini/
+.cursor/
+.windsurf/
