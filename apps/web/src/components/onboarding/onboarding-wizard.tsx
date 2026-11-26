@@ -2,15 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Check,
-  CreditCard,
-  Plus,
-  Sparkles,
-  Trash2,
-  UserCheck,
-  Wallet,
-} from "lucide-react";
+import { Check, CreditCard, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type {
   AccountType,
@@ -237,463 +229,458 @@ export function OnboardingWizard({
   const incomeCategories = categories.filter((c) => c.kind === "income");
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center px-4 py-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="strata-canvas-ambient flex min-h-screen flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
+        <div className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt={t.common.brand} className="h-10 w-10 rounded-2xl shadow-md" />
+          <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
           <div>
-            <div className="text-base font-bold text-[var(--strata-text-primary)]">
+            <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
               {t.common.brand}
-            </div>
-            <div className="text-xs text-[var(--strata-text-muted)]">
-              {email ?? t.onboarding.stepLabel.replace("{step}", String(step))}
-            </div>
+            </span>
+            {email ? (
+              <span className="ml-2.5 hidden text-xs text-[var(--strata-text-muted)] sm:inline">
+                {email}
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="flex items-center gap-2">
           <LocaleSwitcher onChange={handleLocaleSwitch} />
           <ThemeSwitcher variant="compact" onChange={setSelectedTheme} />
         </div>
-      </div>
+      </header>
 
-      {/* Step progress bar */}
-      <div className="mb-5 space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-[var(--strata-text-secondary)]">
-          <span>{t.onboarding.stepLabel.replace("{step}", String(step))}</span>
-          <span>{Math.round((step / 3) * 100)}%</span>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-8">
+        <div className="mb-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--strata-text-muted)]">
+            <span>{t.onboarding.stepLabel.replace("{step}", String(step))}</span>
+            <span className="strata-mono">{Math.round((step / 3) * 100)}%</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[1, 2, 3].map((idx) => (
+              <div
+                key={idx}
+                className={cn(
+                  "h-1.5 rounded-full transition-colors duration-200",
+                  idx <= step
+                    ? "bg-[var(--strata-accent-brand)]"
+                    : "bg-[var(--strata-border-subtle)]"
+                )}
+              />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[1, 2, 3].map((idx) => (
-            <div
-              key={idx}
-              className={cn(
-                "h-2 rounded-full transition-colors duration-200",
-                idx <= step
-                  ? "bg-[var(--strata-accent-brand)]"
-                  : "bg-[var(--strata-border-subtle)]"
-              )}
-            />
-          ))}
-        </div>
-      </div>
 
-      <Card className="space-y-6">
-        {step === 1 ? (
-          <>
-            <CardHeader>
-              <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-neon)]">
-                <UserCheck className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <CardTitle className="text-xl">{t.onboarding.step1Title}</CardTitle>
-              <CardDescription>{t.onboarding.step1Subtitle}</CardDescription>
-            </CardHeader>
+        <Card className="space-y-6">
+          {step === 1 ? (
+            <>
+              <CardHeader>
+                <CardTitle>{t.onboarding.step1Title}</CardTitle>
+                <CardDescription>{t.onboarding.step1Subtitle}</CardDescription>
+              </CardHeader>
 
-            <div className="space-y-5">
-              <div className="space-y-1.5">
-                <Label htmlFor="onboarding-name">{t.onboarding.displayNameLabel}</Label>
-                <Input
-                  id="onboarding-name"
-                  name="displayName"
-                  type="text"
-                  autoComplete="name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder={t.onboarding.displayNamePlaceholder}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-5">
                 <div className="space-y-1.5">
-                  <Label>{t.locale.label}</Label>
-                  <Select
-                    value={locale}
-                    onValueChange={(val) =>
-                      handleLocaleSwitch(val === "en" ? "en" : "ru")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ru">{t.locale.ru}</SelectItem>
-                      <SelectItem value="en">{t.locale.en}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="onboarding-name">{t.onboarding.displayNameLabel}</Label>
+                  <Input
+                    id="onboarding-name"
+                    name="displayName"
+                    type="text"
+                    autoComplete="name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder={t.onboarding.displayNamePlaceholder}
+                  />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label>{t.onboarding.currencyLabel}</Label>
-                  <Select value={baseCurrency} onValueChange={setBaseCurrency}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SUPPORTED_CURRENCIES.map((cur) => (
-                        <SelectItem key={cur.code} value={cur.code}>
-                          {locale === "en" ? cur.labelEn : cur.labelRu}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label>{t.locale.label}</Label>
+                    <Select
+                      value={locale}
+                      onValueChange={(val) =>
+                        handleLocaleSwitch(val === "en" ? "en" : "ru")
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ru">{t.locale.ru}</SelectItem>
+                        <SelectItem value="en">{t.locale.en}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>{t.theme.label}</Label>
-                <ThemeSwitcher
-                  variant="segmented"
-                  value={selectedTheme}
-                  onChange={setSelectedTheme}
-                />
-              </div>
-
-              <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] p-4">
-                <div className="space-y-1">
-                  <Label htmlFor="onboarding-privacy" className="text-sm font-semibold">
-                    {t.onboarding.privacyDefaultLabel}
-                  </Label>
-                  <p className="text-xs text-[var(--strata-text-muted)]">
-                    {t.onboarding.privacyDefaultHint}
-                  </p>
-                  <div className="pt-1 text-xs text-[var(--strata-text-secondary)]">
-                    {t.privacy.previewLabel}:{" "}
-                    <AmountText
-                      minor={14500000}
-                      currency={baseCurrency}
-                      className={cn(
-                        "font-bold text-[var(--strata-accent-neon)]",
-                        (privacyDefault || privacyBlur) && "blur-[7px] select-none"
-                      )}
-                    />
+                  <div className="space-y-1.5">
+                    <Label>{t.onboarding.currencyLabel}</Label>
+                    <Select value={baseCurrency} onValueChange={setBaseCurrency}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUPPORTED_CURRENCIES.map((cur) => (
+                          <SelectItem key={cur.code} value={cur.code}>
+                            {locale === "en" ? cur.labelEn : cur.labelRu}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <Switch
-                  id="onboarding-privacy"
-                  checked={privacyDefault}
-                  onCheckedChange={(checked) => {
-                    setPrivacyDefault(checked);
-                    setPrivacyBlur(checked);
-                  }}
-                />
-              </div>
-            </div>
 
-            <div className="flex justify-end pt-2">
-              <Button onClick={() => setStep(2)} className="w-full sm:w-auto">
-                {t.common.next}
-              </Button>
-            </div>
-          </>
-        ) : step === 2 ? (
-          <>
-            <CardHeader>
-              <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-secondary)]">
-                <Wallet className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <CardTitle className="text-xl">{t.onboarding.step2Title}</CardTitle>
-              <CardDescription>{t.onboarding.step2Subtitle}</CardDescription>
-            </CardHeader>
+                <div className="space-y-2">
+                  <Label>{t.theme.label}</Label>
+                  <ThemeSwitcher
+                    variant="segmented"
+                    value={selectedTheme}
+                    onChange={setSelectedTheme}
+                  />
+                </div>
 
-            <div className="space-y-3">
-              {accounts.map((acc) => (
-                <div
-                  key={acc.id}
-                  className={cn(
-                    "space-y-3 rounded-2xl border p-4 transition",
-                    acc.selected
-                      ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)]"
-                      : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] opacity-60"
-                  )}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <Switch
-                        checked={acc.selected}
-                        aria-label={acc.name || t.onboarding.accountNameLabel}
-                        onCheckedChange={(checked) =>
-                          setAccounts((prev) =>
-                            prev.map((item) =>
-                              item.id === acc.id ? { ...item, selected: checked } : item
-                            )
-                          )
-                        }
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="onboarding-privacy" className="text-sm font-semibold">
+                      {t.onboarding.privacyDefaultLabel}
+                    </Label>
+                    <p className="text-xs text-[var(--strata-text-muted)]">
+                      {t.onboarding.privacyDefaultHint}
+                    </p>
+                    <div className="pt-1 text-xs text-[var(--strata-text-secondary)]">
+                      {t.privacy.previewLabel}:{" "}
+                      <AmountText
+                        minor={14500000}
+                        currency={baseCurrency}
+                        className={cn(
+                          "font-semibold text-[var(--strata-text-primary)]",
+                          (privacyDefault || privacyBlur) && "blur-[7px] select-none"
+                        )}
                       />
-                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--strata-text-secondary)]">
-                        <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t.onboarding.accountTypes[acc.type]}
-                      </span>
                     </div>
-
-                    {!acc.templateKey ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={t.common.remove}
-                        onClick={() =>
-                          setAccounts((prev) => prev.filter((item) => item.id !== acc.id))
-                        }
-                      >
-                        <Trash2 className="h-4 w-4 text-[var(--strata-money-expense)]" />
-                      </Button>
-                    ) : null}
                   </div>
+                  <Switch
+                    id="onboarding-privacy"
+                    checked={privacyDefault}
+                    onCheckedChange={(checked) => {
+                      setPrivacyDefault(checked);
+                      setPrivacyBlur(checked);
+                    }}
+                  />
+                </div>
+              </div>
 
-                  {acc.selected ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                      <div className="space-y-1">
-                        <Label htmlFor={`acc-name-${acc.id}`}>
-                          {t.onboarding.accountNameLabel}
-                        </Label>
-                        <Input
-                          id={`acc-name-${acc.id}`}
-                          value={acc.name}
-                          placeholder={t.onboarding.accountNamePlaceholder}
-                          onChange={(e) =>
+              <div className="flex justify-end pt-2">
+                <Button onClick={() => setStep(2)} className="w-full sm:w-auto">
+                  {t.common.next}
+                </Button>
+              </div>
+            </>
+          ) : step === 2 ? (
+            <>
+              <CardHeader>
+                <CardTitle>{t.onboarding.step2Title}</CardTitle>
+                <CardDescription>{t.onboarding.step2Subtitle}</CardDescription>
+              </CardHeader>
+
+              <div className="space-y-3">
+                {accounts.map((acc) => (
+                  <div
+                    key={acc.id}
+                    className={cn(
+                      "space-y-3 rounded-xl border p-4 transition",
+                      acc.selected
+                        ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)]"
+                        : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] opacity-60"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <Switch
+                          checked={acc.selected}
+                          aria-label={acc.name || t.onboarding.accountNameLabel}
+                          onCheckedChange={(checked) =>
                             setAccounts((prev) =>
                               prev.map((item) =>
-                                item.id === acc.id
-                                  ? { ...item, name: e.target.value, nameCustomized: true }
-                                  : item
+                                item.id === acc.id ? { ...item, selected: checked } : item
                               )
                             )
                           }
                         />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--strata-text-secondary)]">
+                          <CreditCard className="h-3.5 w-3.5 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                          {t.onboarding.accountTypes[acc.type]}
+                        </span>
                       </div>
 
-                      <div className="space-y-1">
-                        <Label>{t.onboarding.accountTypeLabel}</Label>
-                        <Select
-                          value={acc.type}
-                          onValueChange={(val) =>
-                            setAccounts((prev) =>
-                              prev.map((item) =>
-                                item.id === acc.id
-                                  ? { ...item, type: val as AccountType }
-                                  : item
-                              )
-                            )
+                      {!acc.templateKey ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t.common.remove}
+                          onClick={() =>
+                            setAccounts((prev) => prev.filter((item) => item.id !== acc.id))
                           }
                         >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(
-                              ["debit", "cash", "savings", "credit", "deposit"] as const
-                            ).map((typeKey) => (
-                              <SelectItem key={typeKey} value={typeKey}>
-                                {t.onboarding.accountTypes[typeKey]}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                          <Trash2 className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} />
+                        </Button>
+                      ) : null}
+                    </div>
 
-                      <div className="space-y-1">
-                        <Label htmlFor={`acc-balance-${acc.id}`}>
-                          {t.onboarding.accountBalanceLabel} ({baseCurrency})
-                        </Label>
-                        <Input
-                          id={`acc-balance-${acc.id}`}
-                          inputMode="decimal"
-                          value={acc.initialBalanceText}
-                          onChange={(e) =>
-                            setAccounts((prev) =>
-                              prev.map((item) =>
-                                item.id === acc.id
-                                  ? { ...item, initialBalanceText: e.target.value }
-                                  : item
-                              )
-                            )
-                          }
-                        />
-                      </div>
-
-                      {acc.type === "credit" ? (
-                        <div className="space-y-1 sm:col-span-3">
-                          <Label htmlFor={`acc-limit-${acc.id}`}>
-                            {t.onboarding.accountLimitLabel} ({baseCurrency})
+                    {acc.selected ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div className="space-y-1">
+                          <Label htmlFor={`acc-name-${acc.id}`}>
+                            {t.onboarding.accountNameLabel}
                           </Label>
                           <Input
-                            id={`acc-limit-${acc.id}`}
-                            inputMode="decimal"
-                            value={acc.creditLimitText}
+                            id={`acc-name-${acc.id}`}
+                            value={acc.name}
+                            placeholder={t.onboarding.accountNamePlaceholder}
                             onChange={(e) =>
                               setAccounts((prev) =>
                                 prev.map((item) =>
                                   item.id === acc.id
-                                    ? { ...item, creditLimitText: e.target.value }
+                                    ? { ...item, name: e.target.value, nameCustomized: true }
                                     : item
                                 )
                               )
                             }
                           />
                         </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleAddAccount}
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                {t.onboarding.addAccount}
-              </Button>
-            </div>
+                        <div className="space-y-1">
+                          <Label>{t.onboarding.accountTypeLabel}</Label>
+                          <Select
+                            value={acc.type}
+                            onValueChange={(val) =>
+                              setAccounts((prev) =>
+                                prev.map((item) =>
+                                  item.id === acc.id
+                                    ? { ...item, type: val as AccountType }
+                                    : item
+                                )
+                              )
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(
+                                ["debit", "cash", "savings", "credit", "deposit"] as const
+                              ).map((typeKey) => (
+                                <SelectItem key={typeKey} value={typeKey}>
+                                  {t.onboarding.accountTypes[typeKey]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setStep(1)}>
-                {t.common.back}
-              </Button>
-              <Button onClick={() => setStep(3)}>{t.common.next}</Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <CardHeader>
-              <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]">
-                <Sparkles className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <CardTitle className="text-xl">{t.onboarding.step3Title}</CardTitle>
-              <CardDescription>{t.onboarding.step3Subtitle}</CardDescription>
-            </CardHeader>
+                        <div className="space-y-1">
+                          <Label htmlFor={`acc-balance-${acc.id}`}>
+                            {t.onboarding.accountBalanceLabel} ({baseCurrency})
+                          </Label>
+                          <Input
+                            id={`acc-balance-${acc.id}`}
+                            inputMode="decimal"
+                            value={acc.initialBalanceText}
+                            onChange={(e) =>
+                              setAccounts((prev) =>
+                                prev.map((item) =>
+                                  item.id === acc.id
+                                    ? { ...item, initialBalanceText: e.target.value }
+                                    : item
+                                )
+                              )
+                            }
+                          />
+                        </div>
 
-            <div className="space-y-5">
-              <div className="space-y-2.5">
-                <div className="text-xs font-semibold tracking-wide text-[var(--strata-text-secondary)]">
-                  {t.onboarding.expenseCategories}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {expenseCategories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() =>
-                        setCategories((prev) =>
-                          prev.map((item) =>
-                            item.id === cat.id
-                              ? { ...item, selected: !item.selected }
-                              : item
-                          )
-                        )
-                      }
-                      className={cn(
-                        "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition",
-                        cat.selected
-                          ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
-                          : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-muted)]"
-                      )}
-                    >
-                      {cat.selected ? (
-                        <Check
-                          className="h-3.5 w-3.5 text-[var(--strata-accent-neon)]"
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                      <span>{cat.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                        {acc.type === "credit" ? (
+                          <div className="space-y-1 sm:col-span-3">
+                            <Label htmlFor={`acc-limit-${acc.id}`}>
+                              {t.onboarding.accountLimitLabel} ({baseCurrency})
+                            </Label>
+                            <Input
+                              id={`acc-limit-${acc.id}`}
+                              inputMode="decimal"
+                              value={acc.creditLimitText}
+                              onChange={(e) =>
+                                setAccounts((prev) =>
+                                  prev.map((item) =>
+                                    item.id === acc.id
+                                      ? { ...item, creditLimitText: e.target.value }
+                                      : item
+                                  )
+                                )
+                              }
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
 
-              <div className="space-y-2.5">
-                <div className="text-xs font-semibold tracking-wide text-[var(--strata-text-secondary)]">
-                  {t.onboarding.incomeCategories}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {incomeCategories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() =>
-                        setCategories((prev) =>
-                          prev.map((item) =>
-                            item.id === cat.id
-                              ? { ...item, selected: !item.selected }
-                              : item
-                          )
-                        )
-                      }
-                      className={cn(
-                        "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition",
-                        cat.selected
-                          ? "border-[var(--strata-accent-neon)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
-                          : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-muted)]"
-                      )}
-                    >
-                      {cat.selected ? (
-                        <Check
-                          className="h-3.5 w-3.5 text-[var(--strata-accent-neon)]"
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                      <span>{cat.name}</span>
-                      {cat.isPassive ? (
-                        <Badge tone="passive">{t.onboarding.passiveBadge}</Badge>
-                      ) : null}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <form
-                onSubmit={handleAddCategory}
-                className="flex flex-col gap-2.5 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] p-3 sm:flex-row sm:items-center"
-              >
-                <Input
-                  value={customCategoryName}
-                  onChange={(e) => setCustomCategoryName(e.target.value)}
-                  placeholder={t.onboarding.customCategoryPlaceholder}
-                  className="flex-1"
-                />
-                <Select
-                  value={customCategoryKind}
-                  onValueChange={(v) =>
-                    setCustomCategoryKind(v === "income" ? "income" : "expense")
-                  }
-                >
-                  <SelectTrigger className="sm:w-44">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="expense">{t.onboarding.expenseCategories}</SelectItem>
-                    <SelectItem value="income">{t.onboarding.incomeCategories}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button type="submit" variant="secondary">
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  {t.common.add}
-                </Button>
-              </form>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setStep(2)} disabled={submitting}>
-                {t.common.back}
-              </Button>
-              <div className="flex flex-wrap items-center gap-2">
                 <Button
+                  type="button"
                   variant="outline"
-                  onClick={() => handleFinish(true)}
-                  disabled={submitting}
+                  className="w-full"
+                  onClick={handleAddAccount}
                 >
-                  {t.common.skip}
-                </Button>
-                <Button onClick={() => handleFinish(false)} disabled={submitting}>
-                  {submitting ? t.onboarding.finishing : t.onboarding.finish}
+                  <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                  {t.onboarding.addAccount}
                 </Button>
               </div>
-            </div>
-          </>
-        )}
-      </Card>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Button variant="ghost" onClick={() => setStep(1)}>
+                  {t.common.back}
+                </Button>
+                <Button onClick={() => setStep(3)}>{t.common.next}</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <CardHeader>
+                <CardTitle>{t.onboarding.step3Title}</CardTitle>
+                <CardDescription>{t.onboarding.step3Subtitle}</CardDescription>
+              </CardHeader>
+
+              <div className="space-y-5">
+                <div className="space-y-2.5">
+                  <div className="text-xs font-semibold tracking-wide text-[var(--strata-text-secondary)]">
+                    {t.onboarding.expenseCategories}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {expenseCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() =>
+                          setCategories((prev) =>
+                            prev.map((item) =>
+                              item.id === cat.id
+                                ? { ...item, selected: !item.selected }
+                                : item
+                            )
+                          )
+                        }
+                        className={cn(
+                          "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition",
+                          cat.selected
+                            ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] text-[var(--strata-text-muted)]"
+                        )}
+                      >
+                        {cat.selected ? (
+                          <Check
+                            className="h-3.5 w-3.5 text-[var(--strata-text-primary)]"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <span>{cat.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="text-xs font-semibold tracking-wide text-[var(--strata-text-secondary)]">
+                    {t.onboarding.incomeCategories}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {incomeCategories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() =>
+                          setCategories((prev) =>
+                            prev.map((item) =>
+                              item.id === cat.id
+                                ? { ...item, selected: !item.selected }
+                                : item
+                            )
+                          )
+                        }
+                        className={cn(
+                          "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition",
+                          cat.selected
+                            ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] text-[var(--strata-text-muted)]"
+                        )}
+                      >
+                        {cat.selected ? (
+                          <Check
+                            className="h-3.5 w-3.5 text-[var(--strata-text-primary)]"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                        ) : null}
+                        <span>{cat.name}</span>
+                        {cat.isPassive ? (
+                          <Badge tone="passive">{t.onboarding.passiveBadge}</Badge>
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={handleAddCategory}
+                  className="flex flex-col gap-2.5 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-3 sm:flex-row sm:items-center"
+                >
+                  <Input
+                    value={customCategoryName}
+                    onChange={(e) => setCustomCategoryName(e.target.value)}
+                    placeholder={t.onboarding.customCategoryPlaceholder}
+                    className="flex-1 bg-[var(--strata-bg-surface)]"
+                  />
+                  <Select
+                    value={customCategoryKind}
+                    onValueChange={(v) =>
+                      setCustomCategoryKind(v === "income" ? "income" : "expense")
+                    }
+                  >
+                    <SelectTrigger className="sm:w-44">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="expense">{t.onboarding.expenseCategories}</SelectItem>
+                      <SelectItem value="income">{t.onboarding.incomeCategories}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button type="submit" variant="secondary">
+                    <Plus className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                    {t.common.add}
+                  </Button>
+                </form>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <Button variant="ghost" onClick={() => setStep(2)} disabled={submitting}>
+                  {t.common.back}
+                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleFinish(true)}
+                    disabled={submitting}
+                  >
+                    {t.common.skip}
+                  </Button>
+                  <Button onClick={() => handleFinish(false)} disabled={submitting}>
+                    {submitting ? t.onboarding.finishing : t.onboarding.finish}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </Card>
+      </main>
     </div>
   );
 }

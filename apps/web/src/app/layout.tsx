@@ -1,8 +1,23 @@
 import type { Metadata, Viewport } from "next";
+import { JetBrains_Mono, Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 import { AppProviders } from "@/components/providers/app-providers";
 import { getServerLocale } from "@/lib/i18n/server";
 import "./globals.css";
+
+const manrope = Manrope({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-strata-sans",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600", "700"],
+  variable: "--font-strata-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Strata — Personal Finance",
@@ -28,7 +43,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const initialLocale = await getServerLocale();
 
   return (
-    <html lang={initialLocale} suppressHydrationWarning>
+    <html
+      lang={initialLocale}
+      className={`${manrope.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />

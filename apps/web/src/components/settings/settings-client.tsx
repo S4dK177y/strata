@@ -81,8 +81,8 @@ export function SettingsClient({
       <form onSubmit={handleSave} className="space-y-6">
         <Card className="space-y-5">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-4 w-4 text-[var(--strata-accent-brand)]" aria-hidden="true" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <User className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
               {t.settings.profileSection}
             </CardTitle>
           </CardHeader>
@@ -148,8 +148,8 @@ export function SettingsClient({
 
         <Card className="space-y-5">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-4 w-4 text-[var(--strata-accent-secondary)]" aria-hidden="true" />
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Palette className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
               {t.settings.preferencesSection}
             </CardTitle>
           </CardHeader>
@@ -164,7 +164,7 @@ export function SettingsClient({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] p-4">
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-4">
             <div className="space-y-0.5">
               <Label htmlFor="settings-privacy" className="text-sm font-semibold">
                 {t.onboarding.privacyDefaultLabel}
@@ -193,8 +193,8 @@ export function SettingsClient({
 
       <Card className="flex flex-wrap items-center justify-between gap-4">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4 text-[var(--strata-accent-neon)]" aria-hidden="true" />
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ShieldCheck className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
             {t.settings.securitySection}
           </CardTitle>
           <CardDescription>{email}</CardDescription>
@@ -202,7 +202,7 @@ export function SettingsClient({
 
         <form action="/auth/signout" method="post">
           <Button type="submit" variant="outline">
-            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             {t.common.signOut}
           </Button>
         </form>

@@ -6,15 +6,40 @@ body {
   background-color: var(--strata-bg-canvas);
   color: var(--strata-text-primary);
   font-family:
+    var(--font-strata-sans),
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     Roboto,
     sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
   transition:
     background-color 200ms ease,
     color 200ms ease;
+}
+
+.strata-mono {
+  font-family: var(--font-strata-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.strata-money {
+  letter-spacing: -0.02em;
+}
+
+.strata-canvas-ambient {
+  background-image:
+    radial-gradient(
+      65% 45% at 50% 0%,
+      color-mix(in srgb, var(--strata-accent-brand) 7%, transparent) 0%,
+      transparent 75%
+    ),
+    radial-gradient(
+      40% 30% at 85% 15%,
+      color-mix(in srgb, var(--strata-accent-secondary) 4%, transparent) 0%,
+      transparent 70%
+    );
 }
 
 input:focus-visible,
@@ -22,7 +47,7 @@ select:focus-visible,
 textarea:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--strata-accent-brand);
+  outline: 2px solid color-mix(in srgb, var(--strata-accent-brand) 65%, transparent);
   outline-offset: 2px;
 }
 

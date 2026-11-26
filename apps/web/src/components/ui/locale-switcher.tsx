@@ -1,6 +1,6 @@
 "use client";
 
-import { Languages } from "lucide-react";
+import { Globe } from "lucide-react";
 import type { Locale } from "@strata/api-contract";
 import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
@@ -30,11 +30,11 @@ export function LocaleSwitcher({
       onClick={toggle}
       aria-label={t.locale.label}
       className={cn(
-        "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-3.5 py-2 text-xs font-semibold text-[var(--strata-text-primary)] transition hover:border-[var(--strata-border-strong)]",
+        "inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-3 py-2 text-xs font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]",
         className
       )}
     >
-      <Languages className="h-4 w-4 text-[var(--strata-accent-secondary)]" aria-hidden="true" />
+      <Globe className="h-3.5 w-3.5 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
       <span>{locale.toUpperCase()}</span>
     </button>
   );

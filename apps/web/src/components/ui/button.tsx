@@ -12,21 +12,21 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const VARIANT_CLASSES: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-[var(--strata-accent-brand)] text-white shadow-[var(--strata-shadow-neon)] hover:opacity-90",
+    "bg-[var(--strata-accent-brand)] text-white shadow-sm hover:brightness-110 active:scale-[0.99]",
   secondary:
     "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] border border-[var(--strata-border-subtle)] hover:border-[var(--strata-border-strong)]",
   outline:
-    "bg-transparent text-[var(--strata-text-primary)] border border-[var(--strata-border-strong)] hover:bg-[var(--strata-bg-elevated)]",
+    "bg-transparent text-[var(--strata-text-primary)] border border-[var(--strata-border-subtle)] hover:border-[var(--strata-border-strong)] hover:bg-[var(--strata-bg-elevated)]",
   ghost:
     "bg-transparent text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]",
   destructive:
-    "bg-[var(--strata-money-expense)] text-white hover:opacity-90",
+    "bg-[var(--strata-money-expense)] text-white hover:brightness-110",
 };
 
 const SIZE_CLASSES: Record<NonNullable<ButtonProps["size"]>, string> = {
   sm: "min-h-10 px-3.5 py-2 text-xs rounded-xl",
   md: "min-h-11 px-4 py-2.5 text-sm rounded-xl",
-  lg: "min-h-12 px-5 py-3 text-sm rounded-2xl",
+  lg: "min-h-12 px-5 py-3 text-sm rounded-xl",
   icon: "min-h-11 min-w-11 p-2.5 rounded-xl",
 };
 
@@ -38,7 +38,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={asChild ? undefined : type}
         className={cn(
-          "inline-flex cursor-pointer items-center justify-center gap-2 font-semibold transition duration-200 ease-out disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex cursor-pointer items-center justify-center gap-2 font-semibold transition duration-150 ease-out disabled:pointer-events-none disabled:opacity-50",
           VARIANT_CLASSES[variant],
           SIZE_CLASSES[size],
           className

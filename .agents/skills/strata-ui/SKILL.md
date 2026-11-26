@@ -18,6 +18,8 @@ Always read `docs/DESIGN_SYSTEM.md` and `packages/design-tokens/tokens.json` bef
    - Minimum `44px` touch targets, comfortable bottom navigation on mobile (`Overview`, `Operations`, `+`, `Capital`, `Plans`), collapsible sidebar on desktop (`>= lg`).
 5. **i18n:**
    - Every visible label, aria-label, and toast must exist in both `src/messages/ru.json` and `src/messages/en.json`.
-6. **Proven UI Libraries & Iconography:**
+6. **Proven UI Libraries & Anti-AI-Cliché Iconography:**
    - Use popular, well-maintained, `npm audit`-clean accessible UI libraries (`Radix UI` / `shadcn/ui` primitives, `lucide-react`, `vaul`, `sonner`, `recharts`, `motion`) wrapped in `apps/web/src/components/ui/` and styled via `--strata-*` tokens instead of hand-rolling dialogs, drawers, selects, popovers, toasts, or charts from scratch.
-   - Never use raw Unicode emojis in UI controls, navigation, badges, or headings — always use crisp `lucide-react` vector icons.
+   - Never use raw Unicode emojis in UI controls, navigation, badges, or headings — always use crisp `lucide-react` vector icons (`strokeWidth={1.75}`).
+   - Never use `Sparkles` icons or decorative glowing icon boxes above card/section headings. Keep service icons strictly monochrome (`text-[var(--strata-text-muted)]` / `text-[var(--strata-text-secondary)]`), reserving color exclusively for the primary CTA and semantic financial indicators (income/expense/promo radar).
+   - Keep UI copy concise, human, and product-oriented (never expose technical jargon like "integer precision" or internal milestone terms in user-facing copy).

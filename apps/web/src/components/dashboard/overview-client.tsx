@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Calculator, Layers, Sparkles, Wallet } from "lucide-react";
+import { Calculator, Layers, Wallet } from "lucide-react";
 import {
   computeAllAccountBalances,
   computeDebtsLedger,
@@ -61,14 +61,13 @@ export function OverviewClient({
           </h1>
           <p className="text-xs text-[var(--strata-text-muted)]">{t.common.tagline}</p>
         </div>
-        <Badge tone="neon">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+        <Badge tone="default">
           {t.dashboard.categoriesCount}: {categoriesCount}
         </Badge>
       </div>
 
       {/* Expressive Neobank Hero Card */}
-      <section className="strata-hero rounded-3xl p-6 space-y-4">
+      <section className="strata-hero rounded-2xl p-6 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-xs font-medium opacity-80">{t.dashboard.netWorth}</div>
@@ -101,10 +100,10 @@ export function OverviewClient({
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-base font-bold text-[var(--strata-text-primary)]">
-            <Wallet className="h-4 w-4 text-[var(--strata-accent-secondary)]" aria-hidden="true" />
+            <Wallet className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
             {t.dashboard.accountsTitle}
           </h2>
-          <span className="text-xs text-[var(--strata-text-muted)]">
+          <span className="strata-mono text-xs text-[var(--strata-text-muted)]">
             {accounts.length}
           </span>
         </div>
@@ -118,7 +117,7 @@ export function OverviewClient({
             {accounts.map((acc) => {
               const balance = metrics.balances[acc.id] ?? acc.initialBalanceMinor;
               return (
-                <Card key={acc.id} className="space-y-2 rounded-2xl p-4">
+                <Card key={acc.id} className="space-y-2 p-4 sm:p-5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
                       {acc.name}
@@ -136,14 +135,14 @@ export function OverviewClient({
       </section>
 
       {/* Quick Add Calculator sandbox */}
-      <Card className="space-y-3 rounded-2xl p-5">
+      <Card className="space-y-3 p-5 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Label htmlFor="strata-calc" className="flex items-center gap-2 text-sm font-semibold">
-            <Calculator className="h-4 w-4 text-[var(--strata-accent-neon)]" aria-hidden="true" />
+            <Calculator className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
             {t.dashboard.calculatorTitle}
           </Label>
           <span className="flex items-center gap-1.5 text-xs text-[var(--strata-text-muted)]">
-            <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+            <Layers className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
             {t.dashboard.pr4Notice}
           </span>
         </div>
@@ -156,9 +155,9 @@ export function OverviewClient({
             placeholder={t.dashboard.calculatorPlaceholder}
             className="flex-1"
           />
-          <div className="min-h-11 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] px-4 py-2.5 text-sm font-semibold">
+          <div className="min-h-11 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] px-4 py-2.5 text-sm font-semibold">
             {parsedMinor !== null ? (
-              <span className="text-[var(--strata-accent-neon)]">
+              <span className="text-[var(--strata-money-income)]">
                 {t.dashboard.calculatorParsed}:{" "}
                 <AmountText minor={parsedMinor} currency={profile.base_currency} />
               </span>

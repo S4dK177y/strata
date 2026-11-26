@@ -1,7 +1,7 @@
 {
   "common": {
     "brand": "Strata",
-    "tagline": "Privacy-first neobank personal finance, goal envelopes & seasonal Wrapped",
+    "tagline": "Personal finance, accounts & goals",
     "loading": "Loading...",
     "save": "Save",
     "saving": "Saving...",
@@ -13,7 +13,7 @@
     "add": "Add",
     "remove": "Remove",
     "signOut": "Sign out",
-    "inviteBadge": "Invite-only access",
+    "inviteBadge": "Invite only",
     "comingSoon": "Coming in PR 4–5",
     "adminBadge": "Admin"
   },
@@ -47,8 +47,8 @@
     "previewLabel": "Privacy blur preview"
   },
   "auth": {
-    "welcomeTitle": "Welcome to Strata",
-    "welcomeSubtitle": "Personal finance cockpit with integer precision, goal envelopes & offline-ready sync.",
+    "welcomeTitle": "Sign in to Strata",
+    "welcomeSubtitle": "Track accounts, spending, and savings goals in one place.",
     "signInTab": "Sign in",
     "signUpTab": "Create account",
     "emailLabel": "Email",
@@ -75,8 +75,8 @@
     "passwordUpdated": "Password updated. Welcome back!"
   },
   "invite": {
-    "title": "Invite-only early access",
-    "subtitle": "Enter your invite code to unlock your account and set up your workspace.",
+    "title": "Invite-only access",
+    "subtitle": "Enter your invite code to unlock your account and continue setup.",
     "signedInAs": "Signed in as",
     "wrongAccount": "Sign out and switch account",
     "codeLabel": "Invite code",
@@ -90,8 +90,8 @@
   },
   "onboarding": {
     "stepLabel": "Step {step} of 3",
-    "step1Title": "Profile & preferences",
-    "step1Subtitle": "Choose your name, base currency, theme, and privacy mode.",
+    "step1Title": "Profile & currency",
+    "step1Subtitle": "Set your name, base currency, appearance, and privacy mode.",
     "step2Title": "Starter accounts",
     "step2Subtitle": "Keep the templates you need or add your own. Supports inline math like =50000+12500.",
     "step3Title": "Starter categories",

@@ -62,19 +62,19 @@ export function AppShell({ profile, email, children }: AppShellProps) {
   return (
     <div className="min-h-screen lg:flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex lg:w-68 lg:shrink-0 lg:flex-col lg:justify-between lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
+      <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
         <div className="space-y-6">
-          <Link href="/" className="flex items-center gap-3 rounded-2xl p-1">
+          <Link href="/" className="flex items-center gap-3 rounded-xl p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.svg" alt={t.common.brand} className="h-10 w-10 rounded-2xl shadow-md" />
+            <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
+                <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
                   {t.common.brand}
                 </span>
                 {profile.role === "admin" ? (
                   <Badge tone="brand">
-                    <Shield className="h-3 w-3" aria-hidden="true" />
+                    <Shield className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
                     {t.common.adminBadge}
                   </Badge>
                 ) : null}
@@ -85,7 +85,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
             </div>
           </Link>
 
-          <nav aria-label="Main navigation" className="space-y-1.5">
+          <nav aria-label="Main navigation" className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               if (!item.live) {
@@ -93,13 +93,13 @@ export function AppShell({ profile, email, children }: AppShellProps) {
                   <div
                     key={item.href}
                     aria-disabled="true"
-                    className="flex min-h-11 items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-muted)] opacity-60"
+                    className="flex min-h-11 items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-muted)] opacity-55"
                   >
                     <span className="flex items-center gap-3">
-                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                       {item.label}
                     </span>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">
+                    <span className="strata-mono text-[10px] font-medium uppercase tracking-wider">
                       PR4
                     </span>
                   </div>
@@ -111,13 +111,13 @@ export function AppShell({ profile, email, children }: AppShellProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition",
+                    "flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition",
                     item.active
-                      ? "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] border border-[var(--strata-border-glow)]"
+                      ? "border border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
                       : "text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
                   )}
                 >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                   {item.label}
                 </Link>
               );
@@ -128,9 +128,9 @@ export function AppShell({ profile, email, children }: AppShellProps) {
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-2xl border border-[var(--strata-border-subtle)] px-3.5 py-2.5 text-sm font-semibold text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+            className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border border-[var(--strata-border-subtle)] px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
           >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
+            <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             {t.common.signOut}
           </button>
         </form>
@@ -142,13 +142,13 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-2.5 lg:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl" />
+              <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
               <span className="text-base font-bold text-[var(--strata-text-primary)]">
                 {t.common.brand}
               </span>
             </Link>
 
-            <div className="hidden text-sm font-semibold text-[var(--strata-text-secondary)] lg:block">
+            <div className="hidden text-sm font-medium text-[var(--strata-text-secondary)] lg:block">
               {profile.display_name || email}
             </div>
 
@@ -173,11 +173,11 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           className={cn(
             "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
             pathname === "/"
-              ? "text-[var(--strata-accent-brand)]"
+              ? "text-[var(--strata-text-primary)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+          <LayoutDashboard className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           <span>{t.nav.overview}</span>
         </Link>
 
@@ -185,23 +185,23 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           aria-disabled="true"
           className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--strata-text-muted)] opacity-50"
         >
-          <ArrowLeftRight className="h-4 w-4" aria-hidden="true" />
+          <ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           <span>{t.nav.operations}</span>
         </span>
 
         <span
           aria-disabled="true"
           title={t.common.comingSoon}
-          className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-white opacity-55 shadow-[var(--strata-shadow-neon)]"
+          className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--strata-accent-brand)] text-white opacity-55"
         >
-          <Plus className="h-5 w-5" aria-hidden="true" />
+          <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
         </span>
 
         <span
           aria-disabled="true"
           className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--strata-text-muted)] opacity-50"
         >
-          <Wallet className="h-4 w-4" aria-hidden="true" />
+          <Wallet className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           <span>{t.nav.capital}</span>
         </span>
 
@@ -210,11 +210,11 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           className={cn(
             "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
             pathname === "/settings"
-              ? "text-[var(--strata-accent-brand)]"
+              ? "text-[var(--strata-text-primary)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <Settings className="h-4 w-4" aria-hidden="true" />
+          <Settings className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           <span>{t.nav.settings}</span>
         </Link>
       </nav>

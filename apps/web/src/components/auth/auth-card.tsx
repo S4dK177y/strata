@@ -2,9 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, KeyRound, Lock, Mail, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -157,275 +156,272 @@ export function AuthCard({
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-8">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="strata-canvas-ambient flex min-h-screen flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
+        <div className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt={t.common.brand} className="h-10 w-10 rounded-2xl shadow-md" />
-          <div>
-            <div className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
-              {t.common.brand}
-            </div>
-            {inviteOnlyEnabled ? (
-              <Badge tone="neon" className="mt-0.5">
-                <Lock className="h-3 w-3" aria-hidden="true" />
-                {t.common.inviteBadge}
-              </Badge>
-            ) : null}
-          </div>
+          <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
+          <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
+            {t.common.brand}
+          </span>
         </div>
+
         <div className="flex items-center gap-2">
           <LocaleSwitcher />
           <ThemeSwitcher variant="compact" />
         </div>
-      </div>
+      </header>
 
-      <Card className="space-y-6">
-        {mode === "check_email" ? (
-          <div className="space-y-4">
-            <CardHeader>
-              <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-neon)]">
-                <Mail className="h-5 w-5" aria-hidden="true" />
+      <main className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center px-4 py-10">
+        <Card className="space-y-6">
+          {mode === "check_email" ? (
+            <div className="space-y-5">
+              <CardHeader>
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-muted)]">
+                  <Mail className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  <span>{email}</span>
+                </div>
+                <CardTitle>{t.auth.checkEmailTitle}</CardTitle>
+                <CardDescription>
+                  {t.auth.checkEmailBody.replace("{email}", email)}
+                </CardDescription>
+              </CardHeader>
+              <div className="flex flex-col gap-2.5">
+                <Button
+                  variant="secondary"
+                  onClick={handleResendConfirmation}
+                  disabled={loading}
+                >
+                  {t.auth.resendEmail}
+                </Button>
+                <Button variant="ghost" onClick={() => setMode("signin")}>
+                  {t.auth.backToSignIn}
+                </Button>
               </div>
-              <CardTitle>{t.auth.checkEmailTitle}</CardTitle>
-              <CardDescription>
-                {t.auth.checkEmailBody.replace("{email}", email)}
-              </CardDescription>
-            </CardHeader>
-            <div className="flex flex-col gap-2.5">
-              <Button
-                variant="secondary"
-                onClick={handleResendConfirmation}
-                disabled={loading}
-              >
-                {t.auth.resendEmail}
-              </Button>
-              <Button variant="ghost" onClick={() => setMode("signin")}>
-                {t.auth.backToSignIn}
-              </Button>
             </div>
-          </div>
-        ) : mode === "reset" ? (
-          <div className="space-y-5">
-            <CardHeader>
-              <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]">
-                <KeyRound className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <CardTitle>{t.auth.resetTitle}</CardTitle>
-              <CardDescription>{t.auth.resetSubtitle}</CardDescription>
-            </CardHeader>
+          ) : mode === "reset" ? (
+            <div className="space-y-5">
+              <CardHeader>
+                <CardTitle>{t.auth.resetTitle}</CardTitle>
+                <CardDescription>{t.auth.resetSubtitle}</CardDescription>
+              </CardHeader>
 
-            {formError ? (
-              <div
-                role="alert"
-                className="rounded-2xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-elevated)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
-              >
-                {formError}
-              </div>
-            ) : null}
+              {formError ? (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
+                >
+                  {formError}
+                </div>
+              ) : null}
 
-            <form onSubmit={handleResetPassword} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="reset-email">{t.auth.emailLabel}</Label>
-                <span className="block text-xs text-[var(--strata-text-muted)]">
-                  {t.auth.emailHint}
-                </span>
-                <Input
-                  id="reset-email"
-                  name="email"
-                  type="email"
-                  autoComplete="username"
-                  spellCheck={false}
-                  enterKeyHint="done"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t.common.loading : t.auth.sendResetLink}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => {
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="reset-email">{t.auth.emailLabel}</Label>
+                  <span className="block text-xs text-[var(--strata-text-muted)]">
+                    {t.auth.emailHint}
+                  </span>
+                  <Input
+                    id="reset-email"
+                    name="email"
+                    type="email"
+                    autoComplete="username"
+                    spellCheck={false}
+                    enterKeyHint="done"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? t.common.loading : t.auth.sendResetLink}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setFormError(null);
+                    setMode("signin");
+                  }}
+                >
+                  {t.auth.backToSignIn}
+                </Button>
+              </form>
+            </div>
+          ) : (
+            <>
+              <CardHeader>
+                <CardTitle>{t.auth.welcomeTitle}</CardTitle>
+                <CardDescription>{t.auth.welcomeSubtitle}</CardDescription>
+              </CardHeader>
+
+              {formError ? (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
+                >
+                  {formError}
+                </div>
+              ) : null}
+
+              <Tabs
+                value={mode}
+                onValueChange={(v) => {
                   setFormError(null);
-                  setMode("signin");
+                  setMode(v === "signup" ? "signup" : "signin");
                 }}
               >
-                {t.auth.backToSignIn}
-              </Button>
-            </form>
-          </div>
-        ) : (
-          <>
-            <CardHeader>
-              <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-neon)]">
-                <Sparkles className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <CardTitle className="text-xl">{t.auth.welcomeTitle}</CardTitle>
-              <CardDescription>{t.auth.welcomeSubtitle}</CardDescription>
-            </CardHeader>
+                <TabsList>
+                  <TabsTrigger value="signin">{t.auth.signInTab}</TabsTrigger>
+                  <TabsTrigger value="signup">{t.auth.signUpTab}</TabsTrigger>
+                </TabsList>
 
-            {formError ? (
-              <div
-                role="alert"
-                className="rounded-2xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-elevated)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
-              >
-                {formError}
-              </div>
-            ) : null}
-
-            <Tabs
-              value={mode}
-              onValueChange={(v) => {
-                setFormError(null);
-                setMode(v === "signup" ? "signup" : "signin");
-              }}
-            >
-              <TabsList>
-                <TabsTrigger value="signin">{t.auth.signInTab}</TabsTrigger>
-                <TabsTrigger value="signup">{t.auth.signUpTab}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signin-email">{t.auth.emailLabel}</Label>
-                    <Input
-                      id="signin-email"
-                      name="email"
-                      type="email"
-                      autoComplete="username"
-                      spellCheck={false}
-                      enterKeyHint="next"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <Label htmlFor="signin-password">{t.auth.passwordLabel}</Label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormError(null);
-                          setMode("reset");
-                        }}
-                        className="cursor-pointer text-xs font-medium text-[var(--strata-accent-secondary)] hover:underline"
-                      >
-                        {t.auth.forgotPassword}
-                      </button>
-                    </div>
-                    <div className="relative">
+                <TabsContent value="signin">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signin-email">{t.auth.emailLabel}</Label>
                       <Input
-                        id="signin-password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="current-password"
-                        enterKeyHint="done"
+                        id="signin-email"
+                        name="email"
+                        type="email"
+                        autoComplete="username"
+                        spellCheck={false}
+                        enterKeyHint="next"
                         required
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-12"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        aria-label={
-                          showPassword ? t.auth.hidePassword : t.auth.showPassword
-                        }
-                        className="absolute inset-y-0 right-0 flex min-w-11 cursor-pointer items-center justify-center text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" aria-hidden="true" />
-                        ) : (
-                          <Eye className="h-4 w-4" aria-hidden="true" />
-                        )}
-                      </button>
                     </div>
-                  </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t.common.loading : t.auth.signInSubmit}
-                  </Button>
-                </form>
-              </TabsContent>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="signin-password">{t.auth.passwordLabel}</Label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormError(null);
+                            setMode("reset");
+                          }}
+                          className="cursor-pointer text-xs font-medium text-[var(--strata-text-secondary)] transition hover:text-[var(--strata-text-primary)]"
+                        >
+                          {t.auth.forgotPassword}
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          id="signin-password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="current-password"
+                          enterKeyHint="done"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pr-12"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          aria-label={
+                            showPassword ? t.auth.hidePassword : t.auth.showPassword
+                          }
+                          className="absolute inset-y-0 right-0 flex min-w-11 cursor-pointer items-center justify-center text-[var(--strata-text-muted)] transition hover:text-[var(--strata-text-primary)]"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-email">{t.auth.emailLabel}</Label>
-                    <span className="block text-xs text-[var(--strata-text-muted)]">
-                      {t.auth.emailHint}
-                    </span>
-                    <Input
-                      id="signup-email"
-                      name="email"
-                      type="email"
-                      autoComplete="username"
-                      spellCheck={false}
-                      enterKeyHint="next"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                    />
-                  </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? t.common.loading : t.auth.signInSubmit}
+                    </Button>
+                  </form>
+                </TabsContent>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="signup-password">{t.auth.passwordLabel}</Label>
-                    <span
-                      id="signup-password-rules"
-                      className="block text-xs text-[var(--strata-text-muted)]"
-                    >
-                      {t.auth.passwordRulesTitle}
-                    </span>
-                    <div className="relative">
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-email">{t.auth.emailLabel}</Label>
+                      <span className="block text-xs text-[var(--strata-text-muted)]">
+                        {t.auth.emailHint}
+                      </span>
                       <Input
-                        id="signup-password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        minLength={8}
-                        enterKeyHint="done"
+                        id="signup-email"
+                        name="email"
+                        type="email"
+                        autoComplete="username"
+                        spellCheck={false}
+                        enterKeyHint="next"
                         required
-                        aria-describedby="signup-password-rules"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="pr-12"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        aria-label={
-                          showPassword ? t.auth.hidePassword : t.auth.showPassword
-                        }
-                        className="absolute inset-y-0 right-0 flex min-w-11 cursor-pointer items-center justify-center text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" aria-hidden="true" />
-                        ) : (
-                          <Eye className="h-4 w-4" aria-hidden="true" />
-                        )}
-                      </button>
                     </div>
-                  </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? t.common.loading : t.auth.signUpSubmit}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
-      </Card>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-password">{t.auth.passwordLabel}</Label>
+                      <span
+                        id="signup-password-rules"
+                        className="block text-xs text-[var(--strata-text-muted)]"
+                      >
+                        {t.auth.passwordRulesTitle}
+                      </span>
+                      <div className="relative">
+                        <Input
+                          id="signup-password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          minLength={8}
+                          enterKeyHint="done"
+                          required
+                          aria-describedby="signup-password-rules"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pr-12"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          aria-label={
+                            showPassword ? t.auth.hidePassword : t.auth.showPassword
+                          }
+                          className="absolute inset-y-0 right-0 flex min-w-11 cursor-pointer items-center justify-center text-[var(--strata-text-muted)] transition hover:text-[var(--strata-text-primary)]"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? t.common.loading : t.auth.signUpSubmit}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </Card>
+
+        {inviteOnlyEnabled ? (
+          <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[var(--strata-text-muted)]">
+            <Lock className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+            <span>{t.common.inviteBadge}</span>
+          </p>
+        ) : null}
+      </main>
     </div>
   );
 }

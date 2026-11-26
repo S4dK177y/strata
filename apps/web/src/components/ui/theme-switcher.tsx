@@ -36,14 +36,14 @@ export function ThemeSwitcher({
         aria-label={label}
         title={label}
         className={cn(
-          "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-3.5 py-2 text-xs font-semibold text-[var(--strata-text-primary)] transition hover:border-[var(--strata-border-strong)]",
+          "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-3 py-2 text-xs font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]",
           className
         )}
       >
         {resolvedTheme === "dark" ? (
-          <Sun className="h-4 w-4 text-[var(--strata-radar-warn)]" aria-hidden="true" />
+          <Sun className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
         ) : (
-          <Moon className="h-4 w-4 text-[var(--strata-accent-brand)]" aria-hidden="true" />
+          <Moon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
         )}
         <span className="hidden sm:inline">
           {resolvedTheme === "dark" ? t.theme.light : t.theme.dark}
@@ -87,13 +87,13 @@ export function ThemeSwitcher({
             aria-checked={selected}
             onClick={() => handleSelect(opt.id)}
             className={cn(
-              "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition",
+              "flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-semibold transition",
               selected
-                ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] shadow-[var(--strata-shadow-card)]"
-                : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-muted)] hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+                ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] text-[var(--strata-text-muted)] hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-secondary)]"
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
             <span className="truncate">{opt.label}</span>
           </button>
         );

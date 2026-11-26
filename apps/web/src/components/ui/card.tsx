@@ -7,7 +7,10 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("strata-glass rounded-3xl p-6", className)}
+      className={cn(
+        "rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] p-6 shadow-[var(--strata-shadow-card)] sm:p-7",
+        className
+      )}
       {...props}
     />
   );
@@ -27,7 +30,7 @@ export function CardTitle({
   return (
     <h2
       className={cn(
-        "text-lg font-bold tracking-tight text-[var(--strata-text-primary)]",
+        "text-xl font-bold tracking-tight text-[var(--strata-text-primary)]",
         className
       )}
       {...props}
@@ -41,7 +44,7 @@ export function CardDescription({
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn("text-sm text-[var(--strata-text-muted)]", className)}
+      className={cn("text-sm leading-relaxed text-[var(--strata-text-muted)]", className)}
       {...props}
     />
   );

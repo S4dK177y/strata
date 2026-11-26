@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Ticket } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,11 +60,11 @@ export function InviteGateCard({ email }: { email: string | null }) {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-8">
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="strata-canvas-ambient flex min-h-screen flex-col">
+      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
+        <div className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt={t.common.brand} className="h-10 w-10 rounded-2xl shadow-md" />
+          <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
           <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
             {t.common.brand}
           </span>
@@ -73,67 +73,66 @@ export function InviteGateCard({ email }: { email: string | null }) {
           <LocaleSwitcher syncServer />
           <ThemeSwitcher variant="compact" syncServer />
         </div>
-      </div>
+      </header>
 
-      <Card className="space-y-6">
-        <CardHeader>
-          <div className="mb-2 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-neon)]">
-            <Ticket className="h-5 w-5" aria-hidden="true" />
-          </div>
-          <CardTitle className="text-xl">{t.invite.title}</CardTitle>
-          <CardDescription>{t.invite.subtitle}</CardDescription>
-        </CardHeader>
+      <main className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center px-4 py-10">
+        <Card className="space-y-6">
+          <CardHeader>
+            <CardTitle>{t.invite.title}</CardTitle>
+            <CardDescription>{t.invite.subtitle}</CardDescription>
+          </CardHeader>
 
-        {email ? (
-          <div className="rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] px-3.5 py-2.5 text-xs">
-            <span className="text-[var(--strata-text-muted)]">{t.invite.signedInAs}: </span>
-            <span className="font-semibold text-[var(--strata-text-primary)]">{email}</span>
-          </div>
-        ) : null}
+          {email ? (
+            <div className="rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] px-3.5 py-2.5 text-xs">
+              <span className="text-[var(--strata-text-muted)]">{t.invite.signedInAs}: </span>
+              <span className="font-semibold text-[var(--strata-text-primary)]">{email}</span>
+            </div>
+          ) : null}
 
-        {error ? (
-          <div
-            role="alert"
-            className="rounded-2xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-elevated)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
-          >
-            {error}
-          </div>
-        ) : null}
+          {error ? (
+            <div
+              role="alert"
+              className="rounded-xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
+            >
+              {error}
+            </div>
+          ) : null}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-code">{t.invite.codeLabel}</Label>
-            <span className="block text-xs text-[var(--strata-text-muted)]">
-              {t.invite.codeHint}
-            </span>
-            <Input
-              id="invite-code"
-              name="inviteCode"
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              autoCapitalize="off"
-              minLength={4}
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={t.invite.codePlaceholder}
-              className="font-mono tracking-wider"
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="invite-code">{t.invite.codeLabel}</Label>
+              <span className="block text-xs text-[var(--strata-text-muted)]">
+                {t.invite.codeHint}
+              </span>
+              <Input
+                id="invite-code"
+                name="inviteCode"
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                autoCapitalize="off"
+                minLength={4}
+                required
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder={t.invite.codePlaceholder}
+                className="strata-mono tracking-wider"
+              />
+            </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t.invite.submitting : t.invite.submit}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? t.invite.submitting : t.invite.submit}
+            </Button>
+          </form>
 
-        <form action="/auth/signout" method="post" className="border-t border-[var(--strata-border-subtle)] pt-4">
-          <Button type="submit" variant="ghost" className="w-full">
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            {t.invite.wrongAccount}
-          </Button>
-        </form>
-      </Card>
+          <form action="/auth/signout" method="post" className="border-t border-[var(--strata-border-subtle)] pt-4">
+            <Button type="submit" variant="ghost" className="w-full">
+              <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              {t.invite.wrongAccount}
+            </Button>
+          </form>
+        </Card>
+      </main>
     </div>
   );
 }
