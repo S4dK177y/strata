@@ -11,7 +11,7 @@ import {
   PROFILE_SELECT_COLUMNS,
   serializeProfileRow,
 } from "@/lib/auth/profile-serializer";
-import type { Database } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 import { createRequireAuth, requireMfaVerified } from "../middleware/auth";
 import type { ApiDependencies, ApiEnv } from "../types";
 
@@ -220,6 +220,9 @@ export function createMeRouter(deps: ApiDependencies) {
     }
     if (body.tour_completed_at !== undefined) {
       updatePatch.tour_completed_at = body.tour_completed_at;
+    }
+    if (body.dashboard_layout !== undefined) {
+      updatePatch.dashboard_layout = body.dashboard_layout as Json | null;
     }
 
     if (body.wrapped_settings !== undefined) {

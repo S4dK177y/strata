@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,16 @@ interface SpotlightTourOverlayProps {
 
 const SPOTLIGHT_PADDING = 8;
 
+function isFixedOrSticky(el: HTMLElement): boolean {
+  let node: HTMLElement | null = el;
+  while (node && node !== document.body) {
+    const pos = window.getComputedStyle(node).position;
+    if (pos === "fixed" || pos === "sticky") return true;
+    node = node.parentElement;
+  }
+  return false;
+}
+
 export function SpotlightTourOverlay({
   open,
   stepIndex,
@@ -36,6 +46,7 @@ export function SpotlightTourOverlay({
 }: SpotlightTourOverlayProps) {
   const { t } = useI18n();
   const maskId = useId();
+  const popoverRef = useRef<HTMLDivElement>(null);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
   const [viewport, setViewport] = useState({ width: 1280, height: 800 });
 
@@ -43,51 +54,100 @@ export function SpotlightTourOverlay({
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === TOUR_STEPS.length - 1;
 
+  // Hard lock background scroll & mobile swipes while the tour is open
+  useEffect(() => {
+    if (!open || typeof document === "undefined") return;
+
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    const prevHtmlOverscroll = html.style.overscrollBehavior;
+    const prevBodyOverscroll = body.style.overscrollBehavior;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    body.style.overscrollBehavior = "none";
+
+    const blockScroll = (e: Event) => {
+      if (popoverRef.current?.contains(e.target as Node)) return;
+      if (e.cancelable) e.preventDefault();
+    };
+
+    window.addEventListener("wheel", blockScroll, { passive: false });
+    window.addEventListener("touchmove", blockScroll, { passive: false });
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+      html.style.overscrollBehavior = prevHtmlOverscroll;
+      body.style.overscrollBehavior = prevBodyOverscroll;
+      window.removeEventListener("wheel", blockScroll);
+      window.removeEventListener("touchmove", blockScroll);
+    };
+  }, [open]);
+
+  // Measure target rect & safely center scrollable targets below sticky top bar
   useEffect(() => {
     if (!open || !step) return;
 
     const target = findVisibleTourTarget(step.id);
-    if (target) {
+    if (target && !isFixedOrSticky(target)) {
       const rect = target.getBoundingClientRect();
-      const outOfView = rect.top < 72 || rect.bottom > window.innerHeight - 88;
-      if (outOfView) {
-        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      const safeTop = 84;
+      const safeBottom = window.innerHeight - 104;
+      if (rect.top < safeTop || rect.bottom > safeBottom) {
+        const targetScrollY = Math.max(0, window.scrollY + rect.top - safeTop - 12);
+        window.scrollTo({ top: targetScrollY, behavior: "instant" });
       }
     }
 
     const updateRect = () => {
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      setViewport({ width: vw, height: vh });
+
       const el = findVisibleTourTarget(step.id);
       if (!el) {
         setTargetRect(null);
         return;
       }
+
       const r = el.getBoundingClientRect();
-      setTargetRect({
-        top: Math.max(4, r.top - SPOTLIGHT_PADDING),
-        left: Math.max(4, r.left - SPOTLIGHT_PADDING),
-        width: Math.min(window.innerWidth - 8, r.width + SPOTLIGHT_PADDING * 2),
-        height: Math.min(window.innerHeight - 8, r.height + SPOTLIGHT_PADDING * 2),
-      });
+      const rawTop = r.top - SPOTLIGHT_PADDING;
+      const rawLeft = r.left - SPOTLIGHT_PADDING;
+      const rawRight = r.right + SPOTLIGHT_PADDING;
+      const rawBottom = r.bottom + SPOTLIGHT_PADDING;
+
+      const left = Math.max(4, rawLeft);
+      const top = Math.max(4, rawTop);
+      const width = Math.max(0, Math.min(vw - 4, rawRight) - left);
+      const height = Math.max(0, Math.min(vh - 4, rawBottom) - top);
+
+      if (width <= 0 || height <= 0) {
+        setTargetRect(null);
+        return;
+      }
+      setTargetRect({ top, left, width, height });
     };
 
     const rafId = window.requestAnimationFrame(updateRect);
-    const timer = window.setTimeout(updateRect, 260);
+    const timer = window.setTimeout(updateRect, 220);
     const observer = target ? new ResizeObserver(updateRect) : null;
     if (observer && target) observer.observe(target);
 
     window.addEventListener("resize", updateRect);
-    window.addEventListener("scroll", updateRect, true);
 
     return () => {
       window.cancelAnimationFrame(rafId);
       window.clearTimeout(timer);
       observer?.disconnect();
       window.removeEventListener("resize", updateRect);
-      window.removeEventListener("scroll", updateRect, true);
     };
   }, [open, step]);
 
+  // Keyboard navigation
   useEffect(() => {
     if (!open) return;
 
@@ -114,7 +174,7 @@ export function SpotlightTourOverlay({
   }
 
   const cardWidth = Math.min(360, viewport.width - 24);
-  const estimatedCardHeight = 220;
+  const estimatedCardHeight = 224;
 
   let popoverTop = Math.max(12, Math.round((viewport.height - estimatedCardHeight) / 2));
   let popoverLeft = Math.max(12, Math.round((viewport.width - cardWidth) / 2));
@@ -128,7 +188,7 @@ export function SpotlightTourOverlay({
     } else if (spaceAbove >= estimatedCardHeight + 20) {
       popoverTop = Math.max(12, targetRect.top - estimatedCardHeight - 14);
     } else {
-      popoverTop = Math.max(12, Math.min(viewport.height - estimatedCardHeight - 12, 76));
+      popoverTop = Math.max(12, Math.min(viewport.height - estimatedCardHeight - 12, 80));
     }
 
     const centeredLeft = targetRect.left + targetRect.width / 2 - cardWidth / 2;
@@ -139,19 +199,18 @@ export function SpotlightTourOverlay({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[70]"
+      className="pointer-events-none fixed inset-0 z-[70]"
       role="dialog"
       aria-modal="true"
       aria-labelledby="strata-tour-title"
       aria-describedby="strata-tour-desc"
     >
-      {/* SVG Backdrop with rounded spotlight cutout */}
+      {/* Visual SVG Backdrop with rounded spotlight cutout */}
       <svg
-        className="fixed inset-0 h-full w-full"
+        className="pointer-events-none fixed inset-0 h-full w-full"
         width={viewport.width}
         height={viewport.height}
         aria-hidden="true"
-        onClick={onSkip}
       >
         <defs>
           <mask id={maskId}>
@@ -174,10 +233,46 @@ export function SpotlightTourOverlay({
           y="0"
           width="100%"
           height="100%"
-          fill="rgba(4, 6, 10, 0.70)"
+          fill="rgba(4, 6, 10, 0.72)"
           mask={`url(#${maskId})`}
         />
       </svg>
+
+      {/* Pointer blockers OUTSIDE the spotlight cutout (cutout itself stays interactive!) */}
+      {targetRect ? (
+        <>
+          <div
+            aria-hidden="true"
+            className="pointer-events-auto fixed top-0 right-0 left-0"
+            style={{ height: targetRect.top }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-auto fixed right-0 bottom-0 left-0"
+            style={{ top: targetRect.top + targetRect.height }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-auto fixed left-0"
+            style={{
+              top: targetRect.top,
+              height: targetRect.height,
+              width: targetRect.left,
+            }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-auto fixed right-0"
+            style={{
+              top: targetRect.top,
+              height: targetRect.height,
+              left: targetRect.left + targetRect.width,
+            }}
+          />
+        </>
+      ) : (
+        <div aria-hidden="true" className="pointer-events-auto fixed inset-0" />
+      )}
 
       {/* Glowing Accent Frame around target */}
       {targetRect ? (
@@ -196,7 +291,8 @@ export function SpotlightTourOverlay({
 
       {/* Tour Step Popover */}
       <div
-        className="fixed z-10 rounded-3xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] p-5 shadow-2xl transition-all duration-200"
+        ref={popoverRef}
+        className="pointer-events-auto fixed z-10 rounded-3xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] p-5 shadow-2xl transition-all duration-200"
         style={{
           top: popoverTop,
           left: popoverLeft,

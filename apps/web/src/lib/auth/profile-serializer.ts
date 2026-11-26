@@ -9,7 +9,7 @@ import type { Database } from "@/lib/supabase/database.types";
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export const PROFILE_SELECT_COLUMNS =
-  "id, role, display_name, locale, base_currency, theme, accent, privacy_blur_default, onboarding_completed, invite_redeemed_at, tour_completed_at, wrapped_settings, created_at, updated_at" as const;
+  "id, role, display_name, locale, base_currency, theme, accent, privacy_blur_default, onboarding_completed, invite_redeemed_at, tour_completed_at, dashboard_layout, wrapped_settings, created_at, updated_at" as const;
 
 export function serializeProfileRow(row: ProfileRow): Profile {
   const role: "admin" | "user" = row.role === "admin" ? "admin" : "user";
@@ -19,6 +19,10 @@ export function serializeProfileRow(row: ProfileRow): Profile {
   const accent: AccentPalette = accentParsed.success ? accentParsed.data : "emerald";
   const locale: "ru" | "en" = row.locale === "en" ? "en" : "ru";
   const wrappedParsed = WrappedSettingsSchema.safeParse(row.wrapped_settings ?? {});
+  const rawLayout = row.dashboard_layout;
+  const dashboardLayout = Array.isArray(rawLayout)
+    ? rawLayout.filter((item): item is string => typeof item === "string" && item.length > 0)
+    : null;
 
   return {
     id: row.id,
@@ -32,6 +36,7 @@ export function serializeProfileRow(row: ProfileRow): Profile {
     onboarding_completed: row.onboarding_completed,
     invite_redeemed_at: row.invite_redeemed_at,
     tour_completed_at: row.tour_completed_at ?? null,
+    dashboard_layout: dashboardLayout,
     wrapped_settings: wrappedParsed.success
       ? wrappedParsed.data
       : WrappedSettingsSchema.parse({}),

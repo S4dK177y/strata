@@ -160,7 +160,7 @@ export function SettingsClient({
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>{t.onboarding.currencyLabel}</Label>
               <Select value={baseCurrency} onValueChange={setBaseCurrency}>
                 <SelectTrigger>
@@ -172,24 +172,6 @@ export function SettingsClient({
                       {locale === "en" ? cur.labelEn : cur.labelRu}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t.locale.label}</Label>
-              <Select
-                value={locale}
-                onValueChange={(val) =>
-                  setLocale(val === "en" ? "en" : "ru", { syncServer: true })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ru">{t.locale.ru}</SelectItem>
-                  <SelectItem value="en">{t.locale.en}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -207,6 +189,24 @@ export function SettingsClient({
               {t.settings.preferencesSection}
             </CardTitle>
           </CardHeader>
+
+          <div className="space-y-2">
+            <Label>{t.locale.label}</Label>
+            <Select
+              value={locale}
+              onValueChange={(val) =>
+                setLocale(val === "en" ? "en" : "ru", { syncServer: true })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ru">{t.locale.ru}</SelectItem>
+                <SelectItem value="en">{t.locale.en}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-2">
             <Label>{t.theme.label}</Label>

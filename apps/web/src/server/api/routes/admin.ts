@@ -271,7 +271,7 @@ export function createAdminRouter(deps: ApiDependencies) {
       .from("invite_codes")
       .insert({
         code,
-        max_uses: body.max_uses,
+        max_uses: body.max_uses === undefined ? 1 : body.max_uses,
         expires_at: body.expires_at ?? null,
         note: body.note ?? "",
         is_active: body.is_active,

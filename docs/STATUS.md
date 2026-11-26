@@ -12,6 +12,7 @@
   - **PR 5 — Account Security & Session Control** *(2FA TOTP via Supabase MFA with RLS/SSR/API enforcement, active session tracking & instant revocation with device/browser/OS/IP, permanent account deletion with password + TOTP confirmation)* ✅ **Completed & Verified**.
   - **PR 5.5 — 2FA UX Polish, Accent Palettes & Safe Email Change** *(post-2FA login flash animation, auto-verifying `Dot → Digit` OTP input without submit button, 5 accent palettes `emerald`/`ocean`/`amethyst`/`sunset`/`graphite` with warm amber Sunset contrast, and TOTP-or-password verified email change)* ✅ **Completed & Verified**.
   - **PR 6 — Dashboard Analytics, Interactive Spotlight Tour, Export, `/admin` & Playwright E2E** *(Month/Year Recharts cashflow & net worth trends, category breakdown donut + budget progress, 6-step SVG Spotlight Tour with skip/replay, JSON/CSV export, Privacy-by-Design `/admin` console with 404 UI stealth for non-admins, and Playwright E2E across Mobile 360px / Tablet 768px / Desktop 1280px)* ✅ **Completed & Verified**.
+  - **PR 6.5 — Floating Pill Navigation, Mobile Polish, Spotlight Lock, Unlimited Invites & Customizable Dashboard** *(Variant A floating glass top pill bar + mobile floating bottom dock + Profile Quick Menu, Capital single-row actions, 5-column accent swatches, Language moved into Preferences card, Danger Zone mobile stacking, Spotlight Tour scroll/swipe lock + interactive cutout, clean `/admin` telemetry & flags mobile layout + unlimited `∞` invites, and customizable Overview card order synced via `profiles.dashboard_layout`)* ✅ **Completed & Verified**.
 - **Stage 2 (Smart Planning & Wealth Engine):**
   - **PR 7 — Savings Rules, Promo Radar & Recurring Payments** *(Next Up)*.
   - **PR 8 — Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts**.
@@ -60,6 +61,11 @@
   - Upgraded `/` Overview with Month/Year period selector, Savings Rate KPI, Recharts `CashflowTrendChart` (Cashflow bar chart & Net Worth area chart with Privacy Blur axis/tooltip masking) and `CategoryBreakdownCard` (donut + category budget bars), plus `?category=` filtering and CSV export on `/operations`.
   - Built native React Portal + SVG mask `SpotlightTourProvider` / `SpotlightTourOverlay` (6 steps, keyboard navigation, DB-synced skip/completion, replay from `/settings`) and `DataExportCard` in `/settings`.
   - Built `/admin` console (returns `404` via `notFound()` to non-admins; displays aggregate-only telemetry, invite code manager, and feature flag controls) and verified end-to-end with Playwright E2E across Mobile (`360px`), Tablet (`768px`), and Desktop (`1280px`).
+- **PR 6.5 (Floating Pill Nav, Mobile Polish, Tour Lock, Unlimited Invites & Customizable Overview):**
+  - Redesigned `AppShell` to **Variant A**: centered frosted floating top pill bar on desktop + minimal mobile header + floating glass bottom dock, with a `ProfileQuickMenu` popover (Language, Theme, Admin link, Sign Out).
+  - Fixed mobile layouts across `/capital` (single-row account actions), `AccentSwitcher` (symmetric 5-column swatch strip), `/settings` (moved Language inside Preferences card; stacked Danger Zone cleanly on mobile), and `/admin` (removed Privacy banner, 4-column non-truncated telemetry labels, 2-column mobile flag toggle bar, and unlimited `max_uses = NULL` invite codes via migration `20261126000007`).
+  - Hardened `SpotlightTourOverlay` with hard scroll/swipe lock and non-closing interactive cutout (clicking highlighted controls like Privacy Eye stays inside the tour).
+  - Added customizable Overview card order (`profiles.dashboard_layout` + drag-and-drop / arrow buttons + reset) persisted across devices.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`

@@ -557,8 +557,7 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   overflow: clip;
 }
 
-::view-transition-group(strata-header),
-::view-transition-group(strata-sidebar) {
+::view-transition-group(strata-header) {
   z-index: 20;
 }
 
@@ -568,14 +567,12 @@ dialog[open].strata-dialog[data-closing]::backdrop {
 
 ::view-transition-old(root),
 ::view-transition-old(strata-header),
-::view-transition-old(strata-sidebar),
 ::view-transition-old(strata-bottom-nav) {
   display: none;
 }
 
 ::view-transition-new(root),
 ::view-transition-new(strata-header),
-::view-transition-new(strata-sidebar),
 ::view-transition-new(strata-bottom-nav) {
   animation: none;
 }

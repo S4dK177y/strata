@@ -31,7 +31,8 @@
     "capital": "Капитал",
     "plans": "Планы",
     "settings": "Настройки",
-    "admin": "Админ-панель"
+    "admin": "Админка",
+    "accountMenu": "Меню аккаунта"
   },
   "theme": {
     "label": "Тема оформления",
@@ -276,6 +277,22 @@
       "noCategorySpend": "За выбранный период нет чистых расходов по категориям.",
       "totalSpent": "Всего расходов",
       "otherCategories": "Прочее"
+    },
+    "layout": {
+      "customize": "Порядок",
+      "done": "Готово",
+      "reset": "Сбросить",
+      "hint": "Перетаскивайте блоки на ПК или меняйте порядок стрелками — настройки сохраняются в профиле.",
+      "resetToast": "Порядок карточек сброшен.",
+      "moveUp": "Поднять «{section}»",
+      "moveDown": "Опустить «{section}»",
+      "sections": {
+        "analytics_kpis": "Показатели периода",
+        "cashflow_trend": "Динамика по месяцам",
+        "category_breakdown": "Структура расходов",
+        "accounts": "Ваши счета",
+        "recent_operations": "Последние операции"
+      }
     }
   },
   "transactions": {
@@ -482,16 +499,16 @@
       "title": "Телеметрия платформы",
       "subtitle": "Агрегированные показатели без персональных данных.",
       "refresh": "Обновить",
-      "totalUsers": "Пользователей",
-      "onboardedUsers": "Завершили онбординг",
+      "totalUsers": "Пользователи",
+      "onboardedUsers": "Прошли онбординг",
       "invitedUsers": "По инвайтам",
-      "activeInvites": "Активных инвайтов",
-      "totalAccounts": "Счетов",
-      "totalTransactions": "Операций всего",
-      "transactionsLast30d": "Операций за 30 дн.",
-      "totalGoals": "Целей",
-      "totalDebts": "Долгов",
-      "storyViewsTotal": "Просмотров сторис"
+      "activeInvites": "Активные инвайты",
+      "totalAccounts": "Счета",
+      "totalTransactions": "Всего операций",
+      "transactionsLast30d": "Операции (30 дн.)",
+      "totalGoals": "Цели",
+      "totalDebts": "Долги",
+      "storyViewsTotal": "Просмотры сторис"
     },
     "invites": {
       "title": "Инвайт-коды",
@@ -501,6 +518,8 @@
       "createDescription": "Оставьте поле кода пустым для автоматической генерации надёжного кода.",
       "codeLabel": "Код (необязательно)",
       "codePlaceholder": "Напр. STRATA-BETA-2026",
+      "unlimitedLabel": "Безлимитный код (∞)",
+      "unlimitedHint": "Неограниченное число регистраций по этому коду.",
       "maxUsesLabel": "Максимум использований",
       "expiresInputLabel": "Действует до (необязательно)",
       "noteLabel": "Заметка (необязательно)",

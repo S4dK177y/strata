@@ -39,6 +39,7 @@ export const ProfileSchema = z
     onboarding_completed: z.boolean(),
     invite_redeemed_at: IsoDateTimeSchema.nullable(),
     tour_completed_at: IsoDateTimeSchema.nullable().default(null),
+    dashboard_layout: z.array(z.string()).nullable().default(null),
     wrapped_settings: WrappedSettingsSchema,
     created_at: IsoDateTimeSchema,
     updated_at: IsoDateTimeSchema,
@@ -50,7 +51,7 @@ export const InviteCodeSchema = z
   .object({
     id: z.uuid(),
     code: z.string().min(4),
-    max_uses: z.int().positive(),
+    max_uses: z.int().positive().nullable(),
     used_count: z.int().nonnegative(),
     expires_at: IsoDateTimeSchema.nullable(),
     note: z.string().nullable(),

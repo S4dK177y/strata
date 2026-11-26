@@ -8,6 +8,7 @@ const ROUTE_ORDER: Array<{ prefix: string; index: number }> = [
   { prefix: "/operations", index: 1 },
   { prefix: "/capital", index: 2 },
   { prefix: "/settings", index: 3 },
+  { prefix: "/admin", index: 4 },
 ];
 
 function getRouteIndex(path: string): number {

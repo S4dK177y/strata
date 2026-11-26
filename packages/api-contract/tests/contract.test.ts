@@ -397,6 +397,23 @@ describe("@strata/api-contract", () => {
     ).toBe(true);
 
     expect(
+      ProfileUpdateRequestSchema.safeParse({
+        dashboard_layout: ["accounts", "recent_operations", "analytics_kpis"],
+      }).success
+    ).toBe(true);
+
+    expect(
+      CreateInviteCodeRequestSchema.parse({
+        max_uses: null,
+        note: "Unlimited invite",
+      })
+    ).toMatchObject({
+      max_uses: null,
+      note: "Unlimited invite",
+      is_active: true,
+    });
+
+    expect(
       CreateInviteCodeRequestSchema.parse({
         max_uses: 5,
         note: "Beta testers",

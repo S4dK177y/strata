@@ -63,25 +63,27 @@ test.describe("Admin Console journey (/admin telemetry, invites, feature flags &
 
     await page.waitForURL("**/");
 
-    // Admin link visible in desktop sidebar
+    // Admin link visible in desktop floating top bar
     const adminNavLink = page.locator('a[href="/admin"]').first();
     await expect(adminNavLink).toBeVisible();
     await adminNavLink.click();
     await expect(page).toHaveURL(/\/admin$/);
 
-    await expect(page.getByText(/Privacy by Design/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Admin Console|Админ-панель/i })).toBeVisible();
 
-    // Create custom invite code
+    // Create unlimited custom invite code
     const testInviteCode = `E2E-INV-${Date.now().toString(36).toUpperCase()}`;
     createdInviteCodes.push(testInviteCode);
 
     await page.getByRole("button", { name: /New invite|Новый инвайт/i }).click();
     await page.locator("#invite-custom-code").fill(testInviteCode);
-    await page.locator("#invite-max-uses").fill("3");
-    await page.locator("#invite-note").fill("Playwright E2E invite");
+    await page.locator("#invite-unlimited").click();
+    await expect(page.locator("#invite-max-uses")).toHaveCount(0);
+    await page.locator("#invite-note").fill("Playwright E2E unlimited invite");
     await page.getByRole("button", { name: /Create invite|Создать код/i }).click();
 
     await expect(page.getByText(testInviteCode)).toBeVisible();
+    await expect(page.getByText(/0 \/ ∞/).first()).toBeVisible();
 
     // Toggle invite active state
     const toggleSwitch = page.getByRole("switch", {

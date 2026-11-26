@@ -451,57 +451,72 @@ export function CapitalClient({
                       </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center justify-start gap-1.5 border-t border-[var(--strata-border-subtle)] pt-3 sm:justify-end">
+                    <div className="flex items-center gap-1.5 border-t border-[var(--strata-border-subtle)] pt-3">
                       {acc.is_active ? (
                         <Button
                           type="button"
                           variant="secondary"
                           size="sm"
                           onClick={() => openQuickAdd({ accountFromId: acc.id })}
+                          className="min-w-0 flex-1 justify-center sm:flex-none"
                         >
-                          <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                          {t.capital.quickOperation}
+                          <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                          <span className="truncate">{t.capital.quickOperation}</span>
                         </Button>
-                      ) : null}
+                      ) : (
+                        <div className="flex-1 sm:hidden" />
+                      )}
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openAccountForm(acc)}
-                      >
-                        <Pencil className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                        {t.common.edit}
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1 sm:ml-auto">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t.common.edit}
+                          title={t.common.edit}
+                          onClick={() => openAccountForm(acc)}
+                          className="h-9 w-9 p-0 sm:h-9 sm:w-auto sm:px-3"
+                        >
+                          <Pencil className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                          <span className="hidden sm:inline">{t.common.edit}</span>
+                        </Button>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void handleToggleArchive(acc)}
-                      >
-                        {acc.is_active ? (
-                          <Archive className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                        ) : (
-                          <ArchiveRestore
-                            className="h-3.5 w-3.5"
-                            strokeWidth={1.75}
-                            aria-hidden="true"
-                          />
-                        )}
-                        {acc.is_active ? t.common.archive : t.common.restore}
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-label={acc.is_active ? t.common.archive : t.common.restore}
+                          title={acc.is_active ? t.common.archive : t.common.restore}
+                          onClick={() => void handleToggleArchive(acc)}
+                          className="h-9 w-9 p-0 sm:h-9 sm:w-auto sm:px-3"
+                        >
+                          {acc.is_active ? (
+                            <Archive className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                          ) : (
+                            <ArchiveRestore
+                              className="h-4 w-4 sm:h-3.5 sm:w-3.5"
+                              strokeWidth={1.75}
+                              aria-hidden="true"
+                            />
+                          )}
+                          <span className="hidden sm:inline">
+                            {acc.is_active ? t.common.archive : t.common.restore}
+                          </span>
+                        </Button>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeletingAccount(acc)}
-                        className="text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)]"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                        {t.common.delete}
-                      </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t.common.delete}
+                          title={t.common.delete}
+                          onClick={() => setDeletingAccount(acc)}
+                          className="h-9 w-9 p-0 text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)] sm:h-9 sm:w-auto sm:px-3"
+                        >
+                          <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                          <span className="hidden sm:inline">{t.common.delete}</span>
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 );

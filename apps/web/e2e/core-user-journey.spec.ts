@@ -57,14 +57,25 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
 
     await page.waitForURL("**/");
 
-    // 1. Spotlight tour auto-launches once
+    // 1. Spotlight tour auto-launches once & locks scroll
     const tourDialog = page.getByRole("dialog");
     await expect(tourDialog).toBeVisible({ timeout: 10_000 });
     await expect(tourDialog).toContainText(/1 .* 6/);
 
-    // Advance 1 step and skip
+    // Page scroll is locked during tour
+    const overflowLocked = await page.evaluate(
+      () => document.documentElement.style.overflow === "hidden"
+    );
+    expect(overflowLocked).toBe(true);
+
+    // Advance to step 2 (Privacy Toggle), click the highlighted Privacy Eye and verify tour stays open
     await tourDialog.getByRole("button", { name: /Next|Далее/i }).click();
     await expect(tourDialog).toContainText(/2 .* 6/);
+    await page.locator('[data-tour="privacy-toggle"]:visible').first().click();
+    await expect(tourDialog).toBeVisible();
+    await page.locator('[data-tour="privacy-toggle"]:visible').first().click();
+    await expect(tourDialog).toBeVisible();
+
     await tourDialog.getByRole("button", { name: /Skip tour|Пропустить тур/i }).click();
     await expect(tourDialog).toBeHidden();
 
@@ -74,11 +85,25 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await page.waitForTimeout(700);
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
-    // 2. Dashboard analytics & period switcher
+    // 2. Dashboard analytics, period switcher & customizable card order
     await expect(page.locator('[data-tour="analytics-charts"]')).toBeVisible();
-    await expect(page.locator('[data-tour="analytics-charts"] svg').first()).toBeVisible();
+    await expect(
+      page.locator('[data-overview-section="cashflow_trend"] svg').first()
+    ).toBeVisible();
     await page.getByRole("tab", { name: /Year|Год/i }).click();
     await page.getByRole("tab", { name: /Month|Месяц/i }).click();
+
+    await page.getByRole("button", { name: /Order|Порядок/i }).click();
+    await page.getByRole("button", { name: /Move Ваши счета up|Поднять «Ваши счета»|Move Your accounts up/i }).click();
+    await page.getByRole("button", { name: /Done|Готово/i }).first().click();
+    await page.waitForTimeout(400);
+    await page.reload();
+    const sectionOrder = await page
+      .locator("[data-overview-section]")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-overview-section")));
+    expect(sectionOrder.indexOf("accounts")).toBeLessThan(
+      sectionOrder.indexOf("category_breakdown")
+    );
 
     // 3. Quick Add via "N" shortcut with calculator expression "=150+50"
     await page.keyboard.press("n");

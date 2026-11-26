@@ -67,6 +67,25 @@ export type AccentPalette = z.infer<typeof AccentPaletteSchema>;
 export const UserRoleSchema = z.enum(["user", "admin"]).openapi("UserRole");
 export type UserRole = z.infer<typeof UserRoleSchema>;
 
+export const DashboardSectionIdSchema = z
+  .enum([
+    "analytics_kpis",
+    "cashflow_trend",
+    "category_breakdown",
+    "accounts",
+    "recent_operations",
+  ])
+  .openapi("DashboardSectionId");
+export type DashboardSectionId = z.infer<typeof DashboardSectionIdSchema>;
+
+export const DEFAULT_DASHBOARD_LAYOUT: readonly DashboardSectionId[] = [
+  "analytics_kpis",
+  "cashflow_trend",
+  "category_breakdown",
+  "accounts",
+  "recent_operations",
+] as const;
+
 export const CurrencyCodeSchema = z
   .string()
   .length(3)

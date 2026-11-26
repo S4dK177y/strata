@@ -40,7 +40,7 @@ export function AccentSwitcher({
     <div
       role="radiogroup"
       aria-label={t.accent.label}
-      className={cn("flex flex-wrap gap-2", className)}
+      className={cn("grid grid-cols-5 gap-1.5 sm:gap-2", className)}
     >
       {ACCENT_OPTIONS.map((opt) => {
         const selected = activeAccent === opt.id;
@@ -52,7 +52,7 @@ export function AccentSwitcher({
             aria-checked={selected}
             onClick={() => handleSelect(opt.id)}
             className={cn(
-              "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-semibold transition",
+              "flex min-h-[62px] min-w-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border px-1 py-2 text-center transition",
               selected
                 ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] ring-1 ring-[var(--strata-accent-brand)]/40"
                 : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] text-[var(--strata-text-muted)] hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-secondary)]"
@@ -60,10 +60,12 @@ export function AccentSwitcher({
           >
             <span
               aria-hidden="true"
-              className="h-3 w-3 shrink-0 rounded-full"
+              className="h-4 w-4 shrink-0 rounded-full ring-2 ring-black/10 dark:ring-white/10"
               style={{ backgroundColor: opt.swatchVar }}
             />
-            <span>{t.accent[opt.id]}</span>
+            <span className="max-w-full truncate text-[11px] font-semibold sm:text-xs">
+              {t.accent[opt.id]}
+            </span>
           </button>
         );
       })}

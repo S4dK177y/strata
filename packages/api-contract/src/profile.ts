@@ -23,6 +23,7 @@ export const ProfileUpdateRequestSchema = z
     privacy_blur_default: z.boolean().optional(),
     onboarding_completed: z.boolean().optional(),
     tour_completed_at: IsoDateTimeSchema.nullable().optional(),
+    dashboard_layout: z.array(z.string().min(1).max(64)).max(24).nullable().optional(),
     wrapped_settings: WrappedSettingsSchema.partial().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, {

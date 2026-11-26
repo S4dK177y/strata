@@ -306,7 +306,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_active: boolean
-          max_uses: number
+          max_uses: number | null
           note: string
           updated_at: string
           used_count: number
@@ -318,7 +318,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
-          max_uses?: number
+          max_uses?: number | null
           note?: string
           updated_at?: string
           used_count?: number
@@ -330,7 +330,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean
-          max_uses?: number
+          max_uses?: number | null
           note?: string
           updated_at?: string
           used_count?: number
@@ -342,6 +342,7 @@ export type Database = {
           accent: string
           base_currency: string
           created_at: string
+          dashboard_layout: Json | null
           display_name: string
           id: string
           invite_redeemed_at: string | null
@@ -358,6 +359,7 @@ export type Database = {
           accent?: string
           base_currency?: string
           created_at?: string
+          dashboard_layout?: Json | null
           display_name?: string
           id: string
           invite_redeemed_at?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           accent?: string
           base_currency?: string
           created_at?: string
+          dashboard_layout?: Json | null
           display_name?: string
           id?: string
           invite_redeemed_at?: string | null

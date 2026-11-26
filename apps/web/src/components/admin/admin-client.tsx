@@ -8,7 +8,6 @@ import {
   KeyRound,
   Plus,
   RefreshCw,
-  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -45,6 +44,7 @@ export function AdminClient({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [customCode, setCustomCode] = useState("");
+  const [unlimitedUses, setUnlimitedUses] = useState(false);
   const [maxUses, setMaxUses] = useState("5");
   const [expiresDate, setExpiresDate] = useState("");
   const [note, setNote] = useState("");
@@ -74,10 +74,15 @@ export function AdminClient({
 
   async function handleCreateInvite(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const parsedMax = Number.parseInt(maxUses, 10);
-    if (!Number.isInteger(parsedMax) || parsedMax < 1 || parsedMax > 10000) {
-      toast.error(t.admin.invites.invalidMaxUses);
-      return;
+
+    let parsedMax: number | null = null;
+    if (!unlimitedUses) {
+      const val = Number.parseInt(maxUses, 10);
+      if (!Number.isInteger(val) || val < 1 || val > 10000) {
+        toast.error(t.admin.invites.invalidMaxUses);
+        return;
+      }
+      parsedMax = val;
     }
 
     const trimmedCode = customCode.trim();
@@ -117,6 +122,7 @@ export function AdminClient({
       setInvites((prev) => [json.invite, ...prev]);
       setCreateDialogOpen(false);
       setCustomCode("");
+      setUnlimitedUses(false);
       setMaxUses("5");
       setExpiresDate("");
       setNote("");
@@ -225,7 +231,7 @@ export function AdminClient({
     if (nowMs > 0 && invite.expires_at && new Date(invite.expires_at).getTime() <= nowMs) {
       return { label: t.admin.invites.statusExpired, tone: "warn" };
     }
-    if (invite.used_count >= invite.max_uses) {
+    if (invite.max_uses !== null && invite.used_count >= invite.max_uses) {
       return { label: t.admin.invites.statusExhausted, tone: "warn" };
     }
     return { label: t.admin.invites.statusActive, tone: "brand" };
@@ -283,21 +289,6 @@ export function AdminClient({
         <p className="text-sm text-[var(--strata-text-muted)]">{t.admin.subtitle}</p>
       </div>
 
-      {/* Privacy by Design Notice */}
-      <Card className="flex items-start gap-3.5 border-[var(--strata-border-glow)]">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]">
-          <ShieldCheck className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-        </div>
-        <div className="min-w-0 space-y-1">
-          <div className="text-sm font-bold text-[var(--strata-text-primary)]">
-            {t.admin.privacyNoticeTitle}
-          </div>
-          <p className="text-xs leading-relaxed text-[var(--strata-text-muted)]">
-            {t.admin.privacyNoticeBody}
-          </p>
-        </div>
-      </Card>
-
       {/* Aggregate Telemetry */}
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -329,16 +320,16 @@ export function AdminClient({
         </div>
 
         {telemetry ? (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
             {telemetryMetrics.map((metric) => (
               <div
                 key={metric.key}
-                className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5"
+                className="flex min-w-0 flex-col justify-between rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5"
               >
-                <div className="truncate text-xs text-[var(--strata-text-muted)]">
+                <div className="text-xs leading-snug text-[var(--strata-text-muted)]">
                   {metric.label}
                 </div>
-                <div className="strata-money mt-1 text-xl font-extrabold text-[var(--strata-text-primary)]">
+                <div className="strata-money mt-1.5 text-xl font-extrabold text-[var(--strata-text-primary)]">
                   {new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US").format(metric.value)}
                 </div>
               </div>
@@ -383,7 +374,7 @@ export function AdminClient({
               return (
                 <div
                   key={invite.id}
-                  className="flex flex-wrap items-center justify-between gap-3 py-3.5 first:pt-1 last:pb-1"
+                  className="flex flex-col gap-3 py-3.5 first:pt-1 last:pb-1 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -392,12 +383,14 @@ export function AdminClient({
                       </code>
                       <Badge tone={status.tone}>{status.label}</Badge>
                       <span className="strata-mono text-xs text-[var(--strata-text-muted)]">
-                        {invite.used_count}/{invite.max_uses}
+                        {invite.max_uses === null
+                          ? `${invite.used_count} / ∞`
+                          : `${invite.used_count} / ${invite.max_uses}`}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--strata-text-muted)]">
-                      {invite.note ? <span className="truncate">{invite.note}</span> : null}
+                      {invite.note ? <span className="break-words">{invite.note}</span> : null}
                       {invite.expires_at ? (
                         <span>
                           {t.admin.invites.expiresLabel.replace(
@@ -413,7 +406,7 @@ export function AdminClient({
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center justify-end gap-2">
                     <Button
                       type="button"
                       variant="ghost"
@@ -473,7 +466,7 @@ export function AdminClient({
             return (
               <div
                 key={flag.key}
-                className="flex flex-wrap items-center justify-between gap-4 py-3.5 first:pt-1 last:pb-1"
+                className="flex flex-col gap-3 py-4 first:pt-1 last:pb-1 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -488,12 +481,14 @@ export function AdminClient({
                     ) : null}
                   </div>
                   {flagDesc ? (
-                    <p className="text-xs text-[var(--strata-text-muted)]">{flagDesc}</p>
+                    <p className="text-xs leading-relaxed text-[var(--strata-text-muted)]">
+                      {flagDesc}
+                    </p>
                   ) : null}
                 </div>
 
-                <div className="flex shrink-0 flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
+                <div className="grid w-full grid-cols-2 gap-2.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-3 sm:flex sm:w-auto sm:shrink-0 sm:items-center sm:gap-4 sm:bg-transparent sm:p-0">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-[var(--strata-text-muted)]">
                       {t.admin.flags.previewLabel}
                     </span>
@@ -506,7 +501,7 @@ export function AdminClient({
                       }
                     />
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-[var(--strata-text-muted)]">
                       {t.admin.flags.enabledLabel}
                     </span>
@@ -543,20 +538,38 @@ export function AdminClient({
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="invite-max-uses">{t.admin.invites.maxUsesLabel}</Label>
-              <Input
-                id="invite-max-uses"
-                type="number"
-                min={1}
-                max={10000}
-                value={maxUses}
-                onChange={(e) => setMaxUses(e.target.value)}
-                required
-              />
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
+            <div className="min-w-0 space-y-0.5">
+              <Label htmlFor="invite-unlimited" className="text-sm font-semibold">
+                {t.admin.invites.unlimitedLabel}
+              </Label>
+              <p className="text-xs text-[var(--strata-text-muted)]">
+                {t.admin.invites.unlimitedHint}
+              </p>
             </div>
-            <div className="space-y-1.5">
+            <Switch
+              id="invite-unlimited"
+              checked={unlimitedUses}
+              onCheckedChange={setUnlimitedUses}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {!unlimitedUses ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-max-uses">{t.admin.invites.maxUsesLabel}</Label>
+                <Input
+                  id="invite-max-uses"
+                  type="number"
+                  min={1}
+                  max={10000}
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                  required
+                />
+              </div>
+            ) : null}
+            <div className={unlimitedUses ? "space-y-1.5 sm:col-span-2" : "space-y-1.5"}>
               <Label htmlFor="invite-expires">{t.admin.invites.expiresInputLabel}</Label>
               <Input
                 id="invite-expires"

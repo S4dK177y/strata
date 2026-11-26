@@ -1,19 +1,36 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   ArrowLeftRight,
   ArrowRight,
+  ArrowUp,
+  ArrowUpDown,
+  Check,
   ChevronLeft,
   ChevronRight,
   Eye,
   EyeOff,
+  GripVertical,
   Plus,
+  RotateCcw,
   SlidersHorizontal,
   Wallet,
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  DEFAULT_DASHBOARD_LAYOUT,
+  DashboardSectionIdSchema,
+  type Account,
+  type Category,
+  type DashboardSectionId,
+  type Debt,
+  type Profile,
+  type Transaction,
+} from "@strata/api-contract";
 import {
   computeAllAccountBalances,
   computeCategoryBreakdown,
@@ -24,13 +41,6 @@ import {
   computePeriodSummary,
   computeSafeToSpend,
 } from "@strata/finance-core";
-import type {
-  Account,
-  Category,
-  Debt,
-  Profile,
-  Transaction,
-} from "@strata/api-contract";
 import { CashflowTrendChart } from "@/components/dashboard/cashflow-trend-chart";
 import { CategoryBreakdownCard } from "@/components/dashboard/category-breakdown-card";
 import { usePrivacy } from "@/components/providers/privacy-provider";
@@ -63,6 +73,30 @@ interface OverviewClientProps {
   currentMonth: number;
 }
 
+function normalizeDashboardLayout(raw: string[] | null | undefined): DashboardSectionId[] {
+  const result: DashboardSectionId[] = [];
+  const seen = new Set<DashboardSectionId>();
+
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      const parsed = DashboardSectionIdSchema.safeParse(item);
+      if (parsed.success && !seen.has(parsed.data)) {
+        seen.add(parsed.data);
+        result.push(parsed.data);
+      }
+    }
+  }
+
+  for (const fallback of DEFAULT_DASHBOARD_LAYOUT) {
+    if (!seen.has(fallback)) {
+      seen.add(fallback);
+      result.push(fallback);
+    }
+  }
+
+  return result;
+}
+
 export function OverviewClient({
   profile,
   accounts,
@@ -80,6 +114,13 @@ export function OverviewClient({
   const [periodMode, setPeriodMode] = useState<"month" | "year">("month");
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  const [layoutOrder, setLayoutOrder] = useState<DashboardSectionId[]>(() =>
+    normalizeDashboardLayout(profile.dashboard_layout)
+  );
+  const [editingLayout, setEditingLayout] = useState(false);
+  const [draggingId, setDraggingId] = useState<DashboardSectionId | null>(null);
+  const [savingLayout, setSavingLayout] = useState(false);
 
   useEffect(() => {
     return registerOnMutated(() => {
@@ -159,6 +200,55 @@ export function OverviewClient({
     setSelectedMonth(currentMonth);
   }
 
+  async function persistLayout(nextOrder: DashboardSectionId[]) {
+    setSavingLayout(true);
+    try {
+      const res = await fetch("/api/v1/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dashboard_layout: nextOrder }),
+      });
+      if (!res.ok) {
+        toast.error(t.errors.generic);
+      }
+    } catch {
+      toast.error(t.errors.generic);
+    } finally {
+      setSavingLayout(false);
+    }
+  }
+
+  function moveSectionBy(index: number, delta: -1 | 1) {
+    const targetIdx = index + delta;
+    if (targetIdx < 0 || targetIdx >= layoutOrder.length) return;
+    const next = [...layoutOrder];
+    const [moved] = next.splice(index, 1);
+    if (!moved) return;
+    next.splice(targetIdx, 0, moved);
+    setLayoutOrder(next);
+    void persistLayout(next);
+  }
+
+  function reorderSection(sourceId: DashboardSectionId, targetId: DashboardSectionId) {
+    if (sourceId === targetId) return;
+    const fromIdx = layoutOrder.indexOf(sourceId);
+    const toIdx = layoutOrder.indexOf(targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const next = [...layoutOrder];
+    const [moved] = next.splice(fromIdx, 1);
+    if (!moved) return;
+    next.splice(toIdx, 0, moved);
+    setLayoutOrder(next);
+    void persistLayout(next);
+  }
+
+  function resetLayoutOrder() {
+    const defaults = [...DEFAULT_DASHBOARD_LAYOUT];
+    setLayoutOrder(defaults);
+    void persistLayout(defaults);
+    toast.success(t.dashboard.layout.resetToast);
+  }
+
   const savingsRateFormatted = useMemo(() => {
     const pct = Math.round(metrics.periodSummary.savingsRate * 1000) / 10;
     return `${new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US", {
@@ -166,9 +256,266 @@ export function OverviewClient({
     }).format(pct)}%`;
   }, [metrics.periodSummary.savingsRate, locale]);
 
+  function renderSectionContent(sectionId: DashboardSectionId): ReactNode {
+    switch (sectionId) {
+      case "analytics_kpis":
+        return (
+          <div data-tour="analytics-charts" className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+            <Card className="min-w-0 p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+                {t.dashboard.monthIncome}
+              </div>
+              <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
+                <AmountText
+                  minor={metrics.periodSummary.totalIncomeMinor}
+                  currency={profile.base_currency}
+                  showSign
+                />
+              </div>
+              {metrics.periodSummary.passiveIncomeMinor > 0 ? (
+                <div className="mt-0.5 truncate text-[11px] text-[var(--strata-text-muted)]">
+                  {t.dashboard.analytics.passiveShort}:{" "}
+                  <AmountText
+                    minor={metrics.periodSummary.passiveIncomeMinor}
+                    currency={profile.base_currency}
+                  />
+                </div>
+              ) : null}
+            </Card>
+
+            <Card className="min-w-0 p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+                {t.dashboard.monthExpense}
+              </div>
+              <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
+                <AmountText
+                  minor={
+                    metrics.periodSummary.netExpenseMinor > 0
+                      ? -metrics.periodSummary.netExpenseMinor
+                      : 0
+                  }
+                  currency={profile.base_currency}
+                />
+              </div>
+              {metrics.periodSummary.compensationMinor > 0 ? (
+                <div className="mt-0.5 truncate text-[11px] text-[var(--strata-money-compensation)]">
+                  {t.dashboard.analytics.refundOffset}:{" "}
+                  <AmountText
+                    minor={metrics.periodSummary.compensationMinor}
+                    currency={profile.base_currency}
+                  />
+                </div>
+              ) : null}
+            </Card>
+
+            <Card className="min-w-0 p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+                {t.dashboard.monthSaldo}
+              </div>
+              <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
+                <AmountText
+                  minor={metrics.periodSummary.netBalanceMinor}
+                  currency={profile.base_currency}
+                  showSign
+                />
+              </div>
+            </Card>
+
+            <Card className="min-w-0 p-4">
+              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+                {t.dashboard.analytics.savingsRate}
+              </div>
+              <div
+                className={cn(
+                  "strata-money mt-1 text-base font-bold sm:text-lg",
+                  metrics.periodSummary.savingsRate > 0
+                    ? "text-[var(--strata-money-income)]"
+                    : metrics.periodSummary.savingsRate < 0
+                      ? "text-[var(--strata-money-expense)]"
+                      : "text-[var(--strata-text-primary)]"
+                )}
+              >
+                {savingsRateFormatted}
+              </div>
+            </Card>
+          </div>
+        );
+
+      case "cashflow_trend":
+        return (
+          <CashflowTrendChart
+            series={metrics.monthlySeries}
+            year={selectedYear}
+            baseCurrency={profile.base_currency}
+          />
+        );
+
+      case "category_breakdown":
+        return (
+          <CategoryBreakdownCard
+            items={metrics.categoryBreakdown}
+            categories={categories}
+            baseCurrency={profile.base_currency}
+            periodLabel={periodLabel}
+          />
+        );
+
+      case "accounts":
+        return (
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
+                {t.dashboard.accountsTitle}
+              </h2>
+              <Link
+                href="/capital"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
+              >
+                {t.dashboard.manageAccounts}
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              </Link>
+            </div>
+
+            {activeAccounts.length === 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
+                <span>{t.dashboard.noAccounts}</span>
+                <Button asChild size="sm" variant="secondary">
+                  <Link href="/capital">{t.dashboard.addFirstAccount}</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-[var(--strata-border-subtle)]">
+                {activeAccounts.map((acc) => {
+                  const balance = metrics.balances[acc.id] ?? acc.initial_balance_minor;
+                  const AccountIcon = ACCOUNT_TYPE_ICONS[acc.type] ?? Wallet;
+                  const creditAvailable =
+                    acc.type === "credit" && acc.credit_limit_minor > 0
+                      ? computeCreditCardAvailable(toCoreAccount(acc), balance)
+                      : null;
+
+                  return (
+                    <Link
+                      key={acc.id}
+                      href={`/operations?account=${acc.id}`}
+                      className="flex min-h-14 items-center justify-between gap-4 py-3 transition first:pt-1 last:pb-1 hover:opacity-85"
+                    >
+                      <div className="flex min-w-0 items-center gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
+                          <AccountIcon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
+                            {acc.name}
+                          </div>
+                          <div className="text-xs text-[var(--strata-text-muted)]">
+                            {t.onboarding.accountTypes[acc.type]}
+                            {creditAvailable !== null ? (
+                              <span>
+                                {" "}
+                                · {t.dashboard.creditAvailableLabel}:{" "}
+                                <AmountText minor={creditAvailable} currency={acc.currency} />
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="shrink-0 whitespace-nowrap text-right text-base font-bold text-[var(--strata-text-primary)]">
+                        <AmountText minor={balance} currency={acc.currency} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        );
+
+      case "recent_operations":
+        return (
+          <Card className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
+                {t.dashboard.recentOperationsTitle}
+              </h2>
+              <Link
+                href="/operations"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
+              >
+                {t.dashboard.allOperations}
+                <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              </Link>
+            </div>
+
+            {recentTransactions.length === 0 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
+                <span>{t.dashboard.noOperations}</span>
+                <Button type="button" size="sm" onClick={() => openQuickAdd()}>
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+                  {t.nav.quickAdd}
+                </Button>
+              </div>
+            ) : (
+              <div className="divide-y divide-[var(--strata-border-subtle)]">
+                {recentTransactions.map((tx) => {
+                  const meta = TRANSACTION_TYPE_META[tx.type];
+                  const category = tx.category_id ? categoryMap.get(tx.category_id) : null;
+                  const fromAcc = tx.account_from_id ? accountMap.get(tx.account_from_id) : null;
+                  const toAcc = tx.account_to_id ? accountMap.get(tx.account_to_id) : null;
+                  const Icon = category ? getCategoryIcon(category.icon) : meta.icon;
+                  const signedMinor = meta.sign === "-" ? -tx.amount_minor : tx.amount_minor;
+                  const displayCurrency = fromAcc?.currency ?? profile.base_currency;
+
+                  return (
+                    <button
+                      key={tx.id}
+                      type="button"
+                      onClick={() => openQuickAdd({ transaction: tx })}
+                      className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-4 py-3 text-left transition first:pt-1 last:pb-1 hover:opacity-85"
+                    >
+                      <div className="flex min-w-0 items-center gap-3.5">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
+                          <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
+                              {category?.name ?? t.transactions.types[tx.type]}
+                            </span>
+                            {tx.status === "draft" ? (
+                              <Badge tone="warn">{t.transactions.draftBadge}</Badge>
+                            ) : null}
+                          </div>
+                          <div className="truncate text-xs text-[var(--strata-text-muted)]">
+                            {tx.type === "transfer"
+                              ? `${fromAcc?.name ?? t.transactions.filters.unknownAccount} → ${toAcc?.name ?? t.transactions.filters.unknownAccount}`
+                              : fromAcc?.name ?? t.transactions.noAccountOption}
+                            {tx.comment ? ` · ${tx.comment}` : ""}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className="shrink-0 whitespace-nowrap text-right text-base font-bold"
+                        style={{ color: meta.colorVar }}
+                      >
+                        <AmountText
+                          minor={signedMinor}
+                          currency={displayCurrency}
+                          showSign={meta.sign === "+"}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        );
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Open Aurora Balance Header */}
+      {/* Pinned Open Aurora Balance Header */}
       <section
         data-tour="hero-balance"
         className="strata-aurora-hero space-y-6 rounded-[28px] p-5 sm:p-8"
@@ -268,43 +615,43 @@ export function OverviewClient({
         </div>
       </section>
 
-      {/* Period Selector & Cashflow KPI Strip + Analytics */}
-      <section data-tour="analytics-charts" className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              aria-label={t.dashboard.analytics.prevPeriod}
-              onClick={() => shiftPeriod(-1)}
-            >
-              <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-            </Button>
-            <span className="min-w-28 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)] sm:min-w-36">
-              {periodLabel}
-            </span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              aria-label={t.dashboard.analytics.nextPeriod}
-              onClick={() => shiftPeriod(1)}
-            >
-              <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-            </Button>
+      {/* Period Selector & Layout Customize Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            aria-label={t.dashboard.analytics.prevPeriod}
+            onClick={() => shiftPeriod(-1)}
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          </Button>
+          <span className="min-w-28 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)] sm:min-w-36">
+            {periodLabel}
+          </span>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            aria-label={t.dashboard.analytics.nextPeriod}
+            onClick={() => shiftPeriod(1)}
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          </Button>
 
-            {!isCurrentPeriod ? (
-              <button
-                type="button"
-                onClick={resetToCurrentPeriod}
-                className="ml-1 min-h-9 cursor-pointer rounded-full border border-[var(--strata-border-subtle)] px-3 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:border-[var(--strata-border-strong)]"
-              >
-                {t.dashboard.analytics.currentPeriod}
-              </button>
-            ) : null}
-          </div>
+          {!isCurrentPeriod ? (
+            <button
+              type="button"
+              onClick={resetToCurrentPeriod}
+              className="ml-1 min-h-9 cursor-pointer rounded-full border border-[var(--strata-border-subtle)] px-3 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:border-[var(--strata-border-strong)]"
+            >
+              {t.dashboard.analytics.currentPeriod}
+            </button>
+          ) : null}
+        </div>
 
+        <div className="flex flex-wrap items-center gap-2">
           <div
             role="tablist"
             aria-label={t.dashboard.analytics.periodModeLabel}
@@ -339,249 +686,120 @@ export function OverviewClient({
               {t.dashboard.analytics.periodYear}
             </button>
           </div>
+
+          <Button
+            type="button"
+            variant={editingLayout ? "primary" : "secondary"}
+            size="sm"
+            aria-pressed={editingLayout}
+            onClick={() => setEditingLayout((v) => !v)}
+          >
+            {editingLayout ? (
+              <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <ArrowUpDown className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+            )}
+            <span>{editingLayout ? t.dashboard.layout.done : t.dashboard.layout.customize}</span>
+          </Button>
         </div>
+      </div>
 
-        {/* 4 KPI Cards */}
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-          <Card className="min-w-0 p-4">
-            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-              {t.dashboard.monthIncome}
-            </div>
-            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
-              <AmountText
-                minor={metrics.periodSummary.totalIncomeMinor}
-                currency={profile.base_currency}
-                showSign
-              />
-            </div>
-            {metrics.periodSummary.passiveIncomeMinor > 0 ? (
-              <div className="mt-0.5 truncate text-[11px] text-[var(--strata-text-muted)]">
-                {t.dashboard.analytics.passiveShort}:{" "}
-                <AmountText
-                  minor={metrics.periodSummary.passiveIncomeMinor}
-                  currency={profile.base_currency}
-                />
+      {editingLayout ? (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-[var(--strata-border-glow)] bg-[var(--strata-bg-elevated)]/80 p-3.5">
+          <div className="min-w-0 flex-1 text-xs text-[var(--strata-text-secondary)]">
+            {t.dashboard.layout.hint}
+            {savingLayout ? ` (${t.common.saving})` : ""}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={resetLayoutOrder}>
+              <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              {t.dashboard.layout.reset}
+            </Button>
+            <Button type="button" size="sm" onClick={() => setEditingLayout(false)}>
+              <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t.dashboard.layout.done}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
+
+      {/* Reorderable Overview Cards */}
+      <div className="space-y-6">
+        {layoutOrder.map((sectionId, idx) => {
+          const sectionTitle = t.dashboard.layout.sections[sectionId];
+          if (!editingLayout) {
+            return (
+              <div key={sectionId} data-overview-section={sectionId}>
+                {renderSectionContent(sectionId)}
               </div>
-            ) : null}
-          </Card>
+            );
+          }
 
-          <Card className="min-w-0 p-4">
-            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-              {t.dashboard.monthExpense}
-            </div>
-            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
-              <AmountText
-                minor={
-                  metrics.periodSummary.netExpenseMinor > 0
-                    ? -metrics.periodSummary.netExpenseMinor
-                    : 0
-                }
-                currency={profile.base_currency}
-              />
-            </div>
-            {metrics.periodSummary.compensationMinor > 0 ? (
-              <div className="mt-0.5 truncate text-[11px] text-[var(--strata-money-compensation)]">
-                {t.dashboard.analytics.refundOffset}:{" "}
-                <AmountText
-                  minor={metrics.periodSummary.compensationMinor}
-                  currency={profile.base_currency}
-                />
-              </div>
-            ) : null}
-          </Card>
-
-          <Card className="min-w-0 p-4">
-            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-              {t.dashboard.monthSaldo}
-            </div>
-            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
-              <AmountText
-                minor={metrics.periodSummary.netBalanceMinor}
-                currency={profile.base_currency}
-                showSign
-              />
-            </div>
-          </Card>
-
-          <Card className="min-w-0 p-4">
-            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-              {t.dashboard.analytics.savingsRate}
-            </div>
+          return (
             <div
+              key={sectionId}
+              data-overview-section={sectionId}
+              draggable
+              onDragStart={() => setDraggingId(sectionId)}
+              onDragOver={(e) => {
+                e.preventDefault();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggingId) {
+                  reorderSection(draggingId, sectionId);
+                }
+                setDraggingId(null);
+              }}
+              onDragEnd={() => setDraggingId(null)}
               className={cn(
-                "strata-money mt-1 text-base font-bold sm:text-lg",
-                metrics.periodSummary.savingsRate > 0
-                  ? "text-[var(--strata-money-income)]"
-                  : metrics.periodSummary.savingsRate < 0
-                    ? "text-[var(--strata-money-expense)]"
-                    : "text-[var(--strata-text-primary)]"
+                "space-y-2 rounded-3xl border-2 border-dashed p-2.5 transition",
+                draggingId === sectionId
+                  ? "border-[var(--strata-accent-brand)] opacity-60"
+                  : "border-[var(--strata-border-strong)]"
               )}
             >
-              {savingsRateFormatted}
-            </div>
-          </Card>
-        </div>
+              <div className="flex items-center justify-between gap-2 px-1.5">
+                <div className="flex min-w-0 cursor-grab items-center gap-2 text-xs font-bold text-[var(--strata-text-primary)] active:cursor-grabbing">
+                  <GripVertical
+                    className="h-4 w-4 shrink-0 text-[var(--strata-text-muted)]"
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{sectionTitle}</span>
+                </div>
 
-        <CashflowTrendChart
-          series={metrics.monthlySeries}
-          year={selectedYear}
-          baseCurrency={profile.base_currency}
-        />
-
-        <CategoryBreakdownCard
-          items={metrics.categoryBreakdown}
-          categories={categories}
-          baseCurrency={profile.base_currency}
-          periodLabel={periodLabel}
-        />
-      </section>
-
-      {/* Grouped Matte Accounts Section Card */}
-      <Card className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
-            {t.dashboard.accountsTitle}
-          </h2>
-          <Link
-            href="/capital"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
-          >
-            {t.dashboard.manageAccounts}
-            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-          </Link>
-        </div>
-
-        {activeAccounts.length === 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
-            <span>{t.dashboard.noAccounts}</span>
-            <Button asChild size="sm" variant="secondary">
-              <Link href="/capital">{t.dashboard.addFirstAccount}</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="divide-y divide-[var(--strata-border-subtle)]">
-            {activeAccounts.map((acc) => {
-              const balance = metrics.balances[acc.id] ?? acc.initial_balance_minor;
-              const AccountIcon = ACCOUNT_TYPE_ICONS[acc.type] ?? Wallet;
-              const creditAvailable =
-                acc.type === "credit" && acc.credit_limit_minor > 0
-                  ? computeCreditCardAvailable(toCoreAccount(acc), balance)
-                  : null;
-
-              return (
-                <Link
-                  key={acc.id}
-                  href={`/operations?account=${acc.id}`}
-                  className="flex min-h-14 items-center justify-between gap-4 py-3 transition first:pt-1 last:pb-1 hover:opacity-85"
-                >
-                  <div className="flex min-w-0 items-center gap-3.5">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
-                      <AccountIcon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
-                        {acc.name}
-                      </div>
-                      <div className="text-xs text-[var(--strata-text-muted)]">
-                        {t.onboarding.accountTypes[acc.type]}
-                        {creditAvailable !== null ? (
-                          <span>
-                            {" "}
-                            · {t.dashboard.creditAvailableLabel}:{" "}
-                            <AmountText minor={creditAvailable} currency={acc.currency} />
-                          </span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="shrink-0 whitespace-nowrap text-right text-base font-bold text-[var(--strata-text-primary)]">
-                    <AmountText minor={balance} currency={acc.currency} />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      {/* Recent Operations Card */}
-      <Card className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
-            {t.dashboard.recentOperationsTitle}
-          </h2>
-          <Link
-            href="/operations"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
-          >
-            {t.dashboard.allOperations}
-            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-          </Link>
-        </div>
-
-        {recentTransactions.length === 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
-            <span>{t.dashboard.noOperations}</span>
-            <Button type="button" size="sm" onClick={() => openQuickAdd()}>
-              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t.nav.quickAdd}
-            </Button>
-          </div>
-        ) : (
-          <div className="divide-y divide-[var(--strata-border-subtle)]">
-            {recentTransactions.map((tx) => {
-              const meta = TRANSACTION_TYPE_META[tx.type];
-              const category = tx.category_id ? categoryMap.get(tx.category_id) : null;
-              const fromAcc = tx.account_from_id ? accountMap.get(tx.account_from_id) : null;
-              const toAcc = tx.account_to_id ? accountMap.get(tx.account_to_id) : null;
-              const Icon = category ? getCategoryIcon(category.icon) : meta.icon;
-              const signedMinor = meta.sign === "-" ? -tx.amount_minor : tx.amount_minor;
-              const displayCurrency = fromAcc?.currency ?? profile.base_currency;
-
-              return (
-                <button
-                  key={tx.id}
-                  type="button"
-                  onClick={() => openQuickAdd({ transaction: tx })}
-                  className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-4 py-3 text-left transition first:pt-1 last:pb-1 hover:opacity-85"
-                >
-                  <div className="flex min-w-0 items-center gap-3.5">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
-                      <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
-                          {category?.name ?? t.transactions.types[tx.type]}
-                        </span>
-                        {tx.status === "draft" ? (
-                          <Badge tone="warn">{t.transactions.draftBadge}</Badge>
-                        ) : null}
-                      </div>
-                      <div className="truncate text-xs text-[var(--strata-text-muted)]">
-                        {tx.type === "transfer"
-                          ? `${fromAcc?.name ?? t.transactions.filters.unknownAccount} → ${toAcc?.name ?? t.transactions.filters.unknownAccount}`
-                          : fromAcc?.name ?? t.transactions.noAccountOption}
-                        {tx.comment ? ` · ${tx.comment}` : ""}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className="shrink-0 whitespace-nowrap text-right text-base font-bold"
-                    style={{ color: meta.colorVar }}
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    disabled={idx === 0}
+                    aria-label={t.dashboard.layout.moveUp.replace("{section}", sectionTitle)}
+                    onClick={() => moveSectionBy(idx, -1)}
+                    className="h-8 w-8"
                   >
-                    <AmountText
-                      minor={signedMinor}
-                      currency={displayCurrency}
-                      showSign={meta.sign === "+"}
-                    />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </Card>
+                    <ArrowUp className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    disabled={idx === layoutOrder.length - 1}
+                    aria-label={t.dashboard.layout.moveDown.replace("{section}", sectionTitle)}
+                    onClick={() => moveSectionBy(idx, 1)}
+                    className="h-8 w-8"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+
+              {renderSectionContent(sectionId)}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

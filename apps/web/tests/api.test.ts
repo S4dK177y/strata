@@ -405,7 +405,9 @@ function createMockClient(
             total_goals: state.goals.filter((g) => !g.deleted_at).length,
             total_debts: state.debts.filter((d) => !d.deleted_at).length,
             active_invites: state.invite_codes.filter(
-              (i) => i.is_active === true && Number(i.used_count) < Number(i.max_uses)
+              (i) =>
+                i.is_active === true &&
+                (i.max_uses === null || Number(i.used_count) < Number(i.max_uses))
             ).length,
             story_views_total: 0,
             generated_at: new Date().toISOString(),
@@ -426,7 +428,7 @@ function createMockClient(
           (i) =>
             i.code === cleanCode &&
             i.is_active === true &&
-            Number(i.used_count) < Number(i.max_uses)
+            (i.max_uses === null || Number(i.used_count) < Number(i.max_uses))
         );
         if (!invite) {
           return {
@@ -1223,13 +1225,21 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
         Authorization: "Bearer token-invited",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ tour_completed_at: tourTs }),
+      body: JSON.stringify({
+        tour_completed_at: tourTs,
+        dashboard_layout: ["accounts", "recent_operations", "analytics_kpis"],
+      }),
     });
     expect(patchTourRes.status).toBe(200);
     const patchTourJson = (await patchTourRes.json()) as {
-      profile: { tour_completed_at: string | null };
+      profile: { tour_completed_at: string | null; dashboard_layout: string[] | null };
     };
     expect(patchTourJson.profile.tour_completed_at).toBe(tourTs);
+    expect(patchTourJson.profile.dashboard_layout).toEqual([
+      "accounts",
+      "recent_operations",
+      "analytics_kpis",
+    ]);
 
     // Seed account, category, and formula-injection test transaction
     const accRes = await app.request("http://localhost/api/v1/accounts", {
@@ -1320,6 +1330,21 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
       telemetry: { total_users: number; active_invites: number };
     };
     expect(telemetryJson.telemetry.total_users).toBe(3);
+
+    // Create unlimited invite (max_uses: null)
+    const createUnlimitedRes = await app.request("http://localhost/api/v1/admin/invites", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-admin",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ max_uses: null, note: "Unlimited beta" }),
+    });
+    expect(createUnlimitedRes.status).toBe(201);
+    const createdUnlimited = (await createUnlimitedRes.json()) as {
+      invite: { id: string; max_uses: number | null };
+    };
+    expect(createdUnlimited.invite.max_uses).toBeNull();
 
     // Create invite with auto-generated code
     const createAutoRes = await app.request("http://localhost/api/v1/admin/invites", {

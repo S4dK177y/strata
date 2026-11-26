@@ -1,31 +1,33 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowLeftRight,
   Compass,
+  Eye,
+  EyeOff,
+  Globe,
   LayoutDashboard,
   LogOut,
+  Moon,
   Plus,
   Settings,
   Shield,
+  Sun,
+  User,
   Wallet,
 } from "lucide-react";
 import type { Account, Category, Debt, Goal, Profile } from "@strata/api-contract";
 import { usePrivacy } from "@/components/providers/privacy-provider";
 import { useTheme } from "@/components/providers/theme-provider";
+import { SpotlightTourProvider } from "@/components/tour/spotlight-tour-provider";
 import {
   QuickAddProvider,
   useQuickAdd,
 } from "@/components/transactions/quick-add-provider";
-import { SpotlightTourProvider } from "@/components/tour/spotlight-tour-provider";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { LocaleSwitcher } from "@/components/ui/locale-switcher";
-import { PrivacyToggle } from "@/components/ui/privacy-toggle";
-import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { notifyRouteChanged, TransitionLink } from "./transition-link";
@@ -38,6 +40,183 @@ interface AppShellProps {
   initialGoals?: Goal[];
   initialDebts?: Debt[];
   children: ReactNode;
+}
+
+function ProfileQuickMenu({
+  profile,
+  email,
+}: {
+  profile: Profile;
+  email: string | null;
+}) {
+  const { locale, setLocale, t } = useI18n();
+  const { resolvedTheme, toggleCompactTheme } = useTheme();
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setOpen(false), 0);
+    return () => window.clearTimeout(id);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  const initial = (profile.display_name || email || "S").trim().charAt(0).toUpperCase();
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={t.nav.accountMenu}
+        title={profile.display_name || email || t.nav.accountMenu}
+        className={cn(
+          "flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border text-xs font-bold transition",
+          open
+            ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)] hover:border-[var(--strata-border-strong)]"
+        )}
+      >
+        {initial ? (
+          <span>{initial}</span>
+        ) : (
+          <User className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+        )}
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          className="strata-frosted absolute right-0 mt-2 w-64 origin-top-right space-y-1.5 rounded-3xl p-2.5 shadow-2xl"
+        >
+          <div className="border-b border-[var(--strata-border-subtle)] px-2.5 py-2">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-sm font-bold text-[var(--strata-text-primary)]">
+                {profile.display_name || t.common.brand}
+              </span>
+              {profile.role === "admin" ? (
+                <Badge tone="brand">
+                  <Shield className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+                  {t.common.adminBadge}
+                </Badge>
+              ) : null}
+            </div>
+            {email ? (
+              <div className="truncate text-xs text-[var(--strata-text-muted)]">{email}</div>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => setLocale(locale === "ru" ? "en" : "ru", { syncServer: true })}
+            className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
+          >
+            <span className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+              {t.locale.label}
+            </span>
+            <span className="strata-mono rounded-lg bg-[var(--strata-bg-elevated)] px-2 py-0.5 text-[11px] font-bold text-[var(--strata-text-primary)]">
+              {locale.toUpperCase()}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => toggleCompactTheme({ syncServer: true })}
+            className="flex min-h-10 w-full cursor-pointer items-center justify-between rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
+          >
+            <span className="flex items-center gap-2">
+              {resolvedTheme === "dark" ? (
+                <Sun className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+              ) : (
+                <Moon className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+              )}
+              {t.theme.label}
+            </span>
+            <span className="rounded-lg bg-[var(--strata-bg-elevated)] px-2 py-0.5 text-[11px] font-semibold text-[var(--strata-text-primary)]">
+              {resolvedTheme === "dark" ? t.theme.dark : t.theme.light}
+            </span>
+          </button>
+
+          {profile.role === "admin" ? (
+            <TransitionLink
+              href="/admin"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="flex min-h-10 w-full items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:bg-[var(--strata-bg-elevated)]"
+            >
+              <Shield className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              {t.nav.admin}
+            </TransitionLink>
+          ) : null}
+
+          <div className="border-t border-[var(--strata-border-subtle)] pt-1.5">
+            <form action="/auth/signout" method="post">
+              <button
+                type="submit"
+                role="menuitem"
+                className="flex min-h-10 w-full cursor-pointer items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-money-expense)] transition hover:bg-[var(--strata-bg-elevated)]"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                {t.common.signOut}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PrivacyIconButton() {
+  const { privacyBlur, togglePrivacyBlur } = usePrivacy();
+  const { t } = useI18n();
+
+  return (
+    <button
+      type="button"
+      data-tour="privacy-toggle"
+      onClick={togglePrivacyBlur}
+      aria-pressed={privacyBlur}
+      aria-label={t.privacy.label}
+      title={t.privacy.label}
+      className={cn(
+        "flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border transition",
+        privacyBlur
+          ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]"
+          : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-secondary)] hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+      )}
+    >
+      {privacyBlur ? (
+        <EyeOff className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+      ) : (
+        <Eye className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+      )}
+    </button>
+  );
 }
 
 function AppShellInner({
@@ -113,62 +292,36 @@ function AppShellInner({
   ];
 
   return (
-    <div className="min-h-screen overflow-x-clip lg:flex">
-      {/* Desktop sidebar */}
-      <aside className="strata-vt-sidebar hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:overflow-y-auto lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
-        <div className="space-y-5">
-          <Link href="/" className="flex items-center gap-3 rounded-2xl p-1">
+    <div className="min-h-screen overflow-x-clip">
+      {/* Desktop Floating Glass Top Capsule (Variant A) */}
+      <header className="strata-vt-header sticky top-0 z-30 hidden px-4 pt-3 pb-2 lg:block lg:px-8">
+        <div className="strata-frosted mx-auto flex max-w-5xl items-center justify-between gap-2 rounded-full px-3 py-1.5">
+          <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-full py-0.5 pl-1 pr-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
-                  {t.common.brand}
-                </span>
-                {profile.role === "admin" ? (
-                  <Badge tone="brand">
-                    <Shield className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
-                    {t.common.adminBadge}
-                  </Badge>
-                ) : null}
-              </div>
-              <span className="block max-w-[160px] truncate text-xs text-[var(--strata-text-muted)]">
-                {profile.display_name || email || t.common.brand}
-              </span>
-            </div>
+            <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-xl" />
+            <span className="text-sm font-bold tracking-tight text-[var(--strata-text-primary)]">
+              {t.common.brand}
+            </span>
           </Link>
 
-          <Button
-            type="button"
-            data-tour="quick-add"
-            onClick={() => openQuickAdd()}
-            className="w-full justify-center shadow-[var(--strata-shadow-neon)]"
+          <nav
+            aria-label="Main navigation"
+            data-tour="nav-sections"
+            className="flex min-w-0 items-center gap-1"
           >
-            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            <span>{t.nav.addOperation}</span>
-            <kbd className="strata-mono ml-auto rounded-md bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold">
-              N
-            </kbd>
-          </Button>
-
-          <nav aria-label="Main navigation" data-tour="nav-sections" className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               if (!item.live) {
                 return (
-                  <div
+                  <span
                     key={item.href}
                     aria-disabled="true"
-                    className="flex min-h-11 items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-muted)] opacity-55"
+                    title={t.common.comingSoon}
+                    className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-[var(--strata-text-muted)] opacity-55"
                   >
-                    <span className="flex items-center gap-3">
-                      <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                      {item.label}
-                    </span>
-                    <span className="text-[11px] font-medium">
-                      {t.common.comingSoon}
-                    </span>
-                  </div>
+                    <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                    <span>{item.label}</span>
+                  </span>
                 );
               }
 
@@ -178,71 +331,70 @@ function AppShellInner({
                   href={item.href}
                   data-tour={item.href === "/settings" ? "settings-link" : undefined}
                   className={cn(
-                    "flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition",
+                    "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition",
                     item.active
-                      ? "bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]"
+                      ? "bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-sm"
                       : "text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
                   )}
                 >
-                  <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                  {item.label}
+                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  <span>{item.label}</span>
                 </TransitionLink>
               );
             })}
           </nav>
-        </div>
 
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-secondary)] transition hover:text-[var(--strata-text-primary)]"
-          >
-            <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-            {t.common.signOut}
-          </button>
-        </form>
-      </aside>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              data-tour="quick-add"
+              onClick={() => openQuickAdd()}
+              className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--strata-bg-elevated)] px-3.5 text-xs font-semibold text-[var(--strata-text-primary)] transition hover:brightness-110 active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5 text-[var(--strata-accent-brand)]" strokeWidth={2.25} aria-hidden="true" />
+              <span>{t.nav.quickAdd}</span>
+              <kbd className="strata-mono rounded bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--strata-text-muted)] dark:bg-white/10">
+                N
+              </kbd>
+            </button>
 
-      {/* Main area */}
-      <div className="min-w-0 flex-1 pb-28 lg:pb-10">
-        <header className="strata-vt-header sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-3 backdrop-blur-xl lg:px-8">
-          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-            <Link href="/" className="flex items-center gap-2.5 lg:hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
-              <span className="text-base font-bold text-[var(--strata-text-primary)]">
-                {t.common.brand}
-              </span>
-            </Link>
-
-            <div className="hidden text-sm font-medium text-[var(--strata-text-secondary)] lg:block">
-              {profile.display_name || email}
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div data-tour="privacy-toggle" className="inline-flex">
-                <PrivacyToggle />
-              </div>
-              <LocaleSwitcher syncServer />
-              <ThemeSwitcher variant="compact" syncServer />
-            </div>
+            <PrivacyIconButton />
+            <ProfileQuickMenu profile={profile} email={email} />
           </div>
-        </header>
+        </div>
+      </header>
 
-        <main
-          ref={mainRef}
-          tabIndex={-1}
-          className="strata-main-stage mx-auto max-w-4xl px-4 py-6 focus:outline-none lg:px-8"
-        >
-          {children}
-        </main>
-      </div>
+      {/* Mobile Minimal Top Bar */}
+      <header className="strata-vt-header sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-2.5 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-xl" />
+            <span className="text-base font-bold text-[var(--strata-text-primary)]">
+              {t.common.brand}
+            </span>
+          </Link>
 
-      {/* Mobile bottom nav */}
+          <div className="flex items-center gap-2">
+            <PrivacyIconButton />
+            <ProfileQuickMenu profile={profile} email={email} />
+          </div>
+        </div>
+      </header>
+
+      <main
+        ref={mainRef}
+        tabIndex={-1}
+        className="strata-main-stage mx-auto w-full max-w-5xl px-4 py-5 pb-28 focus:outline-none lg:px-8 lg:py-6 lg:pb-12"
+      >
+        {children}
+      </main>
+
+      {/* Mobile Floating Glass Bottom Dock (Variant A) */}
       <nav
         aria-label="Mobile navigation"
         data-tour="nav-sections"
-        className="strata-vt-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] lg:hidden"
+        className="strata-vt-bottom-nav strata-frosted fixed inset-x-3 bottom-[calc(0.625rem+env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-md grid-cols-5 items-center rounded-[26px] px-1.5 py-1.5 shadow-2xl lg:hidden"
       >
         <TransitionLink
           href="/"

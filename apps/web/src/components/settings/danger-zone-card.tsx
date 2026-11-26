@@ -121,16 +121,21 @@ export function DangerZoneCard({ mfaEnabled }: DangerZoneCardProps) {
   return (
     <>
       <Card className="space-y-4 border-[var(--strata-money-expense)]/30">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <CardHeader className="min-w-0 flex-1">
             <CardTitle className="flex items-center gap-2 text-lg text-[var(--strata-money-expense)]">
-              <AlertTriangle className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+              <AlertTriangle className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
               {t.settings.dangerZone.title}
             </CardTitle>
             <CardDescription>{t.settings.dangerZone.subtitle}</CardDescription>
           </CardHeader>
 
-          <Button type="button" variant="destructive" onClick={openDialog}>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={openDialog}
+            className="w-full shrink-0 sm:w-auto"
+          >
             <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             {t.settings.dangerZone.openButton}
           </Button>

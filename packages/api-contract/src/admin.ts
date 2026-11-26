@@ -31,7 +31,7 @@ export const CreateInviteCodeRequestSchema = z
       .max(64)
       .regex(/^[A-Za-z0-9_-]+$/, "Invite code may only contain letters, digits, hyphens, and underscores")
       .optional(),
-    max_uses: z.int().min(1).max(10000).default(1),
+    max_uses: z.int().min(1).max(10000).nullable().optional(),
     expires_at: IsoDateTimeSchema.nullable().optional(),
     note: z.string().trim().max(240).nullable().optional(),
     is_active: z.boolean().default(true),
@@ -41,7 +41,7 @@ export type CreateInviteCodeRequest = z.infer<typeof CreateInviteCodeRequestSche
 
 export const UpdateInviteCodeRequestSchema = z
   .object({
-    max_uses: z.int().min(1).max(10000).optional(),
+    max_uses: z.int().min(1).max(10000).nullable().optional(),
     expires_at: IsoDateTimeSchema.nullable().optional(),
     note: z.string().trim().max(240).nullable().optional(),
     is_active: z.boolean().optional(),

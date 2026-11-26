@@ -15,7 +15,7 @@ All shared Zod v4 + OpenAPI schemas live in [`packages/api-contract`](../package
 - `GET /api/v1/health` *(public)* — lightweight service & DB keepalive ping (`db: "ok" | "unconfigured" | "error"`).
 - `GET /api/v1/feature-flags` *(public / optional auth)* — returns active cloud feature flags (filters out disabled `admin_preview` flags for non-admins).
 - `GET /api/v1/me` *(auth + active session required, bypasses invite & MFA gates)* — returns current user's `profile`, `email`, `invite_required`, `aal`, `mfa_enabled`, and `mfa_required` (plus safe server-side `ADMIN_BOOTSTRAP_EMAIL` promotion).
-- `PATCH /api/v1/me` *(auth + MFA required, bypasses invite gate)* — updates user preferences (`display_name`, `locale`, `base_currency`, `theme`, `privacy_blur_default`, `onboarding_completed`, partial `wrapped_settings`) under RLS.
+- `PATCH /api/v1/me` *(auth + MFA required, bypasses invite gate)* — updates user preferences (`display_name`, `locale`, `base_currency`, `theme`, `accent`, `privacy_blur_default`, `onboarding_completed`, `tour_completed_at`, `dashboard_layout`, partial `wrapped_settings`) under RLS.
 - `GET /api/v1/security/sessions` *(auth + MFA required)* — lists active sessions (`auth.sessions`) with parsed device type/browser/OS (`userAgentFromString`), IP, `aal`, `last_active_at`, and `is_current`.
 - `DELETE /api/v1/security/sessions/{id}` *(auth + MFA required)* — revokes an active session immediately (`404 SESSION_NOT_FOUND` if missing; clears local cookie if revoking the current session).
 - `POST /api/v1/security/sessions/revoke-others` *(auth + MFA required)* — revokes all other active sessions for the current user.

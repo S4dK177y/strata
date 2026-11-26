@@ -7,6 +7,7 @@ Versioned migrations live in [`supabase/migrations/`](../supabase/migrations):
 - `20261126000004_account_security_sessions.sql` — private session/MFA helpers (`private.current_session_id()`, `private.is_session_active()`, `private.is_mfa_satisfied()`, `private.is_session_mfa_allowed()`), `RESTRICTIVE` RLS policies enforcing instant session revocation & opt-in `aal2`, and user security RPCs.
 - `20261126000005_profile_accent.sql` — adds `profiles.accent` (`emerald` | `ocean` | `amethyst` | `sunset` | `graphite`).
 - `20261126000006_tour_and_admin_hardening.sql` — adds `profiles.tour_completed_at` (`TIMESTAMPTZ NULL`), enforces `RESTRICTIVE` `is_session_mfa_allowed()` on `invite_codes` reads, and hardens `get_admin_telemetry()` with active session + MFA checks.
+- `20261126000007_unlimited_invites_and_dashboard_layout.sql` — adds `profiles.dashboard_layout` (`JSONB NULL`), relaxes `invite_codes.max_uses` to allow `NULL` (unlimited uses), and updates `redeem_invite_code()` & `get_admin_telemetry()`.
 
 ## Global Conventions
 - **Money:** `BIGINT` (`*_minor` in kopecks/cents). `transactions.amount_minor > 0`. Interest rates use `NUMERIC(6, 5)`.

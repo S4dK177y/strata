@@ -31,7 +31,8 @@
     "capital": "Capital",
     "plans": "Plans",
     "settings": "Settings",
-    "admin": "Admin"
+    "admin": "Admin",
+    "accountMenu": "Account menu"
   },
   "theme": {
     "label": "Appearance",
@@ -276,6 +277,22 @@
       "noCategorySpend": "No net category spending in this period.",
       "totalSpent": "Total spent",
       "otherCategories": "Other"
+    },
+    "layout": {
+      "customize": "Order",
+      "done": "Done",
+      "reset": "Reset",
+      "hint": "Drag blocks on desktop or reorder with arrows — saved to your profile.",
+      "resetToast": "Card order reset to default.",
+      "moveUp": "Move {section} up",
+      "moveDown": "Move {section} down",
+      "sections": {
+        "analytics_kpis": "Period metrics",
+        "cashflow_trend": "Monthly trend",
+        "category_breakdown": "Spending breakdown",
+        "accounts": "Your accounts",
+        "recent_operations": "Recent operations"
+      }
     }
   },
   "transactions": {
@@ -501,6 +518,8 @@
       "createDescription": "Leave the code blank to auto-generate a secure random invite code.",
       "codeLabel": "Custom code (optional)",
       "codePlaceholder": "e.g. STRATA-BETA-2026",
+      "unlimitedLabel": "Unlimited uses (∞)",
+      "unlimitedHint": "Allow an unlimited number of registrations with this invite code.",
       "maxUsesLabel": "Max uses",
       "expiresInputLabel": "Expires on (optional)",
       "noteLabel": "Note (optional)",
