@@ -670,22 +670,22 @@ function QuickAddFormBody({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-3.5">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor="qa-date">{t.transactions.dateLabel}</Label>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setQuickDate(0)}
-                  className="cursor-pointer rounded-lg px-2 py-0.5 text-[11px] font-medium text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)]"
+                  className="cursor-pointer rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
                 >
                   {t.transactions.today}
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickDate(1)}
-                  className="cursor-pointer rounded-lg px-2 py-0.5 text-[11px] font-medium text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)]"
+                  className="cursor-pointer rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
                 >
                   {t.transactions.yesterday}
                 </button>
@@ -867,6 +867,7 @@ export function QuickAddDialog({
         onOpenChange={onOpenChange}
         title={preset?.transaction ? t.transactions.editTitle : t.transactions.quickAddTitle}
         dismissible={!submitting && !deleting}
+        maxWidthClassName="sm:max-w-[540px]"
       >
         <QuickAddFormBody
           key={formKey}
