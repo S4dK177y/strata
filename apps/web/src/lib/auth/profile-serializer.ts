@@ -9,7 +9,7 @@ import type { Database } from "@/lib/supabase/database.types";
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 
 export const PROFILE_SELECT_COLUMNS =
-  "id, role, display_name, locale, base_currency, theme, accent, privacy_blur_default, onboarding_completed, invite_redeemed_at, wrapped_settings, created_at, updated_at" as const;
+  "id, role, display_name, locale, base_currency, theme, accent, privacy_blur_default, onboarding_completed, invite_redeemed_at, tour_completed_at, wrapped_settings, created_at, updated_at" as const;
 
 export function serializeProfileRow(row: ProfileRow): Profile {
   const role: "admin" | "user" = row.role === "admin" ? "admin" : "user";
@@ -31,6 +31,7 @@ export function serializeProfileRow(row: ProfileRow): Profile {
     privacy_blur_default: row.privacy_blur_default,
     onboarding_completed: row.onboarding_completed,
     invite_redeemed_at: row.invite_redeemed_at,
+    tour_completed_at: row.tour_completed_at ?? null,
     wrapped_settings: wrappedParsed.success
       ? wrappedParsed.data
       : WrappedSettingsSchema.parse({}),

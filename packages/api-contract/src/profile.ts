@@ -22,6 +22,7 @@ export const ProfileUpdateRequestSchema = z
     accent: AccentPaletteSchema.optional(),
     privacy_blur_default: z.boolean().optional(),
     onboarding_completed: z.boolean().optional(),
+    tour_completed_at: IsoDateTimeSchema.nullable().optional(),
     wrapped_settings: WrappedSettingsSchema.partial().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, {

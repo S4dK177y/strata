@@ -38,12 +38,29 @@ export const ProfileSchema = z
     privacy_blur_default: z.boolean(),
     onboarding_completed: z.boolean(),
     invite_redeemed_at: IsoDateTimeSchema.nullable(),
+    tour_completed_at: IsoDateTimeSchema.nullable().default(null),
     wrapped_settings: WrappedSettingsSchema,
     created_at: IsoDateTimeSchema,
     updated_at: IsoDateTimeSchema,
   })
   .openapi("Profile");
 export type Profile = z.infer<typeof ProfileSchema>;
+
+export const InviteCodeSchema = z
+  .object({
+    id: z.uuid(),
+    code: z.string().min(4),
+    max_uses: z.int().positive(),
+    used_count: z.int().nonnegative(),
+    expires_at: IsoDateTimeSchema.nullable(),
+    note: z.string().nullable(),
+    is_active: z.boolean(),
+    created_by: z.uuid().nullable(),
+    created_at: IsoDateTimeSchema,
+    updated_at: IsoDateTimeSchema,
+  })
+  .openapi("InviteCode");
+export type InviteCode = z.infer<typeof InviteCodeSchema>;
 
 export const AccountSchema = SyncFieldsSchema.extend({
   user_id: z.uuid(),

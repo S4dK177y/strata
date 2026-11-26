@@ -20,7 +20,7 @@
     "restore": "Восстановить",
     "signOut": "Выйти",
     "inviteBadge": "Доступ по приглашению",
-    "comingSoon": "Скоро в PR 5",
+    "comingSoon": "Скоро",
     "adminBadge": "Админ"
   },
   "nav": {
@@ -30,7 +30,8 @@
     "addOperation": "Новая операция",
     "capital": "Капитал",
     "plans": "Планы",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "admin": "Админ-панель"
   },
   "theme": {
     "label": "Тема оформления",
@@ -253,7 +254,29 @@
     "allOperations": "Все операции",
     "noOperations": "Операций пока нет — нажмите «Добавить» или клавишу N.",
     "creditAvailableLabel": "Доступно",
-    "archivedBadge": "Архив"
+    "archivedBadge": "Архив",
+    "analytics": {
+      "periodModeLabel": "Режим периода",
+      "periodMonth": "Месяц",
+      "periodYear": "Год",
+      "prevPeriod": "Предыдущий период",
+      "nextPeriod": "Следующий период",
+      "currentPeriod": "Текущий",
+      "savingsRate": "Норма сбережений",
+      "passiveShort": "Пассивный",
+      "refundOffset": "Возвраты",
+      "trendTitle": "Динамика по месяцам",
+      "trendCashflowSubtitle": "Доходы и чистые расходы за {year} год",
+      "trendNetWorthSubtitle": "Чистый капитал на конец месяца за {year} год",
+      "modeCashflow": "Денежный поток",
+      "modeNetWorth": "Капитал",
+      "noChartData": "За выбранный год пока нет подтверждённых операций для графика.",
+      "categoriesTitle": "Структура расходов",
+      "manageBudgets": "Лимиты",
+      "noCategorySpend": "За выбранный период нет чистых расходов по категориям.",
+      "totalSpent": "Всего расходов",
+      "otherCategories": "Прочее"
+    }
   },
   "transactions": {
     "title": "Операции",
@@ -397,6 +420,131 @@
     "categoryCreatedToast": "Категория создана.",
     "categoryUpdatedToast": "Категория обновлена.",
     "categoryDeletedToast": "Категория удалена."
+  },
+  "tour": {
+    "stepCounter": "Шаг {current} из {total}",
+    "skip": "Пропустить тур",
+    "finish": "Готово",
+    "settingsTitle": "Интерактивный тур",
+    "settingsSubtitle": "Пройдите короткое знакомство с интерфейсом, горячими клавишами и защитой приватности.",
+    "replayButton": "Повторить тур",
+    "steps": {
+      "hero-balance": {
+        "title": "Чистый капитал и Safe-to-Spend",
+        "description": "Здесь отображается ваш общий капитал по всем счетам за вычетом долгов, а также свободный остаток к трате."
+      },
+      "privacy-toggle": {
+        "title": "Режим приватности",
+        "description": "Нажмите на глаз, чтобы мгновенно размыть все суммы и графики, если открываете Strata в людном месте."
+      },
+      "quick-add": {
+        "title": "Быстрый ввод и калькулятор",
+        "description": "Добавляйте операции любого из 11 типов, пишите выражения вроде =320+185 или открывайте форму клавишей N."
+      },
+      "analytics-charts": {
+        "title": "Аналитика и структура трат",
+        "description": "Переключайте Месяц и Год, следите за нормой сбережений, динамикой капитала и лимитами по категориям."
+      },
+      "nav-sections": {
+        "title": "Разделы приложения",
+        "description": "История операций с фильтрами и экспортом CSV, управление счетами в «Капитале» и тонкие настройки."
+      },
+      "settings-link": {
+        "title": "Темы, 2FA и экспорт данных",
+        "description": "Настраивайте палитру акцентов, включайте двухфакторную защиту, управляйте сессиями, скачивайте бэкапы или повторяйте тур."
+      }
+    }
+  },
+  "export": {
+    "title": "Экспорт данных",
+    "subtitle": "Выгружайте полную резервную копию в JSON или таблицу операций в CSV для Excel.",
+    "jsonTitle": "Резервная копия JSON",
+    "jsonDescription": "Полный снимок профиля, счетов, категорий, операций, целей и долгов.",
+    "jsonButton": "Скачать JSON",
+    "csvTitle": "Таблица операций CSV",
+    "csvDescription": "UTF-8 файл для Excel и таблиц с учётом выбранного периода.",
+    "csvButton": "Скачать CSV",
+    "exportCsvShort": "Экспорт CSV",
+    "rangeMonth": "Текущий месяц",
+    "rangeYear": "Текущий год",
+    "rangeAll": "Всё время",
+    "downloading": "Экспорт...",
+    "jsonSuccess": "Резервная копия JSON скачана.",
+    "csvSuccess": "Файл CSV скачан."
+  },
+  "admin": {
+    "title": "Админ-панель",
+    "subtitle": "Агрегированная телеметрия платформы, управление инвайт-кодами и облачными флагами.",
+    "openConsole": "Открыть панель",
+    "privacyNoticeTitle": "Privacy by Design активен",
+    "privacyNoticeBody": "Администратору доступны только обезличенные агрегатные счётчики. Доступ к счетам, операциям, долгам и персональным суммам пользователей закрыт на уровне Postgres RLS.",
+    "telemetry": {
+      "title": "Телеметрия платформы",
+      "subtitle": "Агрегированные показатели без персональных данных.",
+      "refresh": "Обновить",
+      "totalUsers": "Пользователей",
+      "onboardedUsers": "Завершили онбординг",
+      "invitedUsers": "По инвайтам",
+      "activeInvites": "Активных инвайтов",
+      "totalAccounts": "Счетов",
+      "totalTransactions": "Операций всего",
+      "transactionsLast30d": "Операций за 30 дн.",
+      "totalGoals": "Целей",
+      "totalDebts": "Долгов",
+      "storyViewsTotal": "Просмотров сторис"
+    },
+    "invites": {
+      "title": "Инвайт-коды",
+      "subtitle": "Выдавайте и отзывайте приглашения для закрытой регистрации.",
+      "createButton": "Новый инвайт",
+      "createTitle": "Создать инвайт-код",
+      "createDescription": "Оставьте поле кода пустым для автоматической генерации надёжного кода.",
+      "codeLabel": "Код (необязательно)",
+      "codePlaceholder": "Напр. STRATA-BETA-2026",
+      "maxUsesLabel": "Максимум использований",
+      "expiresInputLabel": "Действует до (необязательно)",
+      "noteLabel": "Заметка (необязательно)",
+      "notePlaceholder": "Напр. Для друзей / бета-теста",
+      "createSubmit": "Создать код",
+      "empty": "Инвайт-коды ещё не созданы.",
+      "statusActive": "Активен",
+      "statusPaused": "На паузе",
+      "statusExhausted": "Исчерпан",
+      "statusExpired": "Истёк",
+      "expiresLabel": "До {date}",
+      "noExpiry": "Бессрочный",
+      "copyAria": "Скопировать инвайт-код",
+      "toggleAria": "Переключить активность инвайта {code}",
+      "deleteAria": "Удалить инвайт-код",
+      "deleteTitle": "Удалить инвайт-код?",
+      "deleteBody": "Код «{code}» будет удалён безвозвратно. Уже активированные аккаунты сохранят доступ.",
+      "createdToast": "Инвайт-код создан.",
+      "updatedToast": "Инвайт-код обновлён.",
+      "deletedToast": "Инвайт-код удалён.",
+      "copiedToast": "Инвайт-код скопирован.",
+      "duplicateError": "Такой инвайт-код уже существует.",
+      "invalidMaxUses": "Укажите лимит использований от 1 до 10000.",
+      "invalidCodeFormat": "Код должен содержать от 4 до 64 символов: латиница, цифры, - и _."
+    },
+    "flags": {
+      "title": "Облачные Feature Flags",
+      "subtitle": "Мгновенное управление функциями для Web и Android.",
+      "enabledLabel": "Включён",
+      "previewLabel": "Превью админа",
+      "on": "Вкл",
+      "off": "Выкл",
+      "previewBadge": "Admin Preview",
+      "updatedToast": "Feature flag обновлён.",
+      "confirmDisableInviteTitle": "Открыть публичную регистрацию?",
+      "confirmDisableInviteBody": "Отключение registration_invite_only разрешит любому новому пользователю входить без инвайт-кода.",
+      "confirmDisableInviteButton": "Отключить инвайт-гейт",
+      "descriptions": {
+        "registration_invite_only": "Требовать инвайт-код при регистрации новых аккаунтов.",
+        "wrapped_2026": "Сезонные итоги года Yearly Wrapped.",
+        "stories_feed": "Лента обучающих и продуктовых сторис.",
+        "android_push_drafts": "Черновики операций из банковских push-уведомлений Android."
+      }
+    }
   },
   "errors": {
     "generic": "Что-то пошло не так. Попробуйте ещё раз.",

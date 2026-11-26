@@ -11,8 +11,10 @@
   - **PR 4.5 — UX & Auth Polish** *(soft-edge Privacy Blur, neutral duplicate-signup handling, password confirmation, sign-out on onboarding, per-route skeletons, alive login & View Transition screen switching)* ✅ **Completed & Verified**.
   - **PR 5 — Account Security & Session Control** *(2FA TOTP via Supabase MFA with RLS/SSR/API enforcement, active session tracking & instant revocation with device/browser/OS/IP, permanent account deletion with password + TOTP confirmation)* ✅ **Completed & Verified**.
   - **PR 5.5 — 2FA UX Polish, Accent Palettes & Safe Email Change** *(post-2FA login flash animation, auto-verifying `Dot → Digit` OTP input without submit button, 5 accent palettes `emerald`/`ocean`/`amethyst`/`sunset`/`graphite` with warm amber Sunset contrast, and TOTP-or-password verified email change)* ✅ **Completed & Verified**.
-- **Next Up:**
-  - **PR 6 — Dashboard, Interactive Spotlight Onboarding Tour, Export, `/admin`, Playwright E2E** *(interactive feature tour with step highlights/skip/replay + analytics, export & admin panel)*.
+  - **PR 6 — Dashboard Analytics, Interactive Spotlight Tour, Export, `/admin` & Playwright E2E** *(Month/Year Recharts cashflow & net worth trends, category breakdown donut + budget progress, 6-step SVG Spotlight Tour with skip/replay, JSON/CSV export, Privacy-by-Design `/admin` console with 404 UI stealth for non-admins, and Playwright E2E across Mobile 360px / Tablet 768px / Desktop 1280px)* ✅ **Completed & Verified**.
+- **Stage 2 (Smart Planning & Wealth Engine):**
+  - **PR 7 — Savings Rules, Promo Radar & Recurring Payments** *(Next Up)*.
+  - **PR 8 — Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts**.
 
 ## Completed
 - Architecture, DB schema, UX navigation, Expressive Neobank visual style, and brand **Strata** approved.
@@ -52,6 +54,12 @@
   - Moved `triggerAuthFlash` + `entering` animation from `/login` to post-2FA verification on `/mfa-verify`, and built `OtpCodeInput` with `Dot → Digit` slot animation and immediate auto-verification on the 6th digit (no submit button).
   - Added `profiles.accent` migration (`20261126000005_profile_accent.sql`), 5 token-driven accent palettes (`emerald`, `ocean`, `amethyst`, `sunset`, `graphite` via `data-accent` + zero-FOUC init script + `AccentSwitcher` in Settings & Onboarding Step 1, keeping income/expense semantic colors intact and `sunset` strictly warm amber/bronze).
   - Added `POST /api/v1/security/verify-password` and `ChangeEmailDialog` (TOTP-only verification when 2FA is active; current password verification when 2FA is off).
+- **PR 6 (Dashboard Analytics, Spotlight Tour, Export, `/admin` & Playwright E2E):**
+  - Applied migration `20261126000006_tour_and_admin_hardening.sql` to live Supabase (`tsqnmgtbmofemqzdjrih`): `profiles.tour_completed_at`, `invite_codes` `RESTRICTIVE` MFA/session `SELECT` policy, and MFA-hardened `get_admin_telemetry()`.
+  - Extended `@strata/api-contract` (`admin.ts`, `export.ts`, `profile.ts`, `entities.ts`) and Hono OpenAPI 3.1 API with `GET /api/v1/export/json`, `GET /api/v1/export/csv` (UTF-8 BOM, integer-minor formatting, CSV formula-injection neutralization), and `/api/v1/admin/*` (`telemetry`, `invites`, `feature-flags` protected by `requireAdmin` + `requireMfaVerified`).
+  - Upgraded `/` Overview with Month/Year period selector, Savings Rate KPI, Recharts `CashflowTrendChart` (Cashflow bar chart & Net Worth area chart with Privacy Blur axis/tooltip masking) and `CategoryBreakdownCard` (donut + category budget bars), plus `?category=` filtering and CSV export on `/operations`.
+  - Built native React Portal + SVG mask `SpotlightTourProvider` / `SpotlightTourOverlay` (6 steps, keyboard navigation, DB-synced skip/completion, replay from `/settings`) and `DataExportCard` in `/settings`.
+  - Built `/admin` console (returns `404` via `notFound()` to non-admins; displays aggregate-only telemetry, invite code manager, and feature flag controls) and verified end-to-end with Playwright E2E across Mobile (`360px`), Tablet (`768px`), and Desktop (`1280px`).
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
@@ -59,4 +67,4 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 6:** Dashboard analytics, interactive spotlight onboarding tour, Export, `/admin`, Playwright E2E.
+- **PR 7:** Savings Rules, Promo Radar & Recurring Payments (`/plans` launch + Safe-to-Spend recurring deduction).

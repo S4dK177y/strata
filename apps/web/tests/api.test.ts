@@ -95,7 +95,11 @@ function createDefaultDbState(): MockDbState {
         max_uses: 5,
         used_count: 0,
         expires_at: null,
+        note: null,
         is_active: true,
+        created_by: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        created_at: now,
+        updated_at: now,
       },
       {
         id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
@@ -103,7 +107,11 @@ function createDefaultDbState(): MockDbState {
         max_uses: 1,
         used_count: 1,
         expires_at: null,
+        note: null,
         is_active: true,
+        created_by: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        created_at: now,
+        updated_at: now,
       },
     ],
     accounts: [],
@@ -124,7 +132,7 @@ class MockQueryBuilder {
   private maxRows: number | null = null;
   private rangeSlice: { from: number; to: number } | null = null;
   private wantsExactCount = false;
-  private mode: "select" | "update" | "upsert" | "insert" = "select";
+  private mode: "select" | "update" | "upsert" | "insert" | "delete" = "select";
   private mutationPayload: RowRecord | null = null;
   private insertRows: RowRecord[] = [];
 
@@ -215,8 +223,30 @@ class MockQueryBuilder {
     return this;
   }
 
-  private execute(): { rows: RowRecord[]; totalCount: number | null } {
+  delete() {
+    this.mode = "delete";
+    return this;
+  }
+
+  private execute(): {
+    rows: RowRecord[];
+    totalCount: number | null;
+    error: { code?: string; message: string } | null;
+  } {
     const rows = this.state[this.table];
+
+    if (this.mode === "delete") {
+      this.onWrite?.(this.table, "delete");
+      const deleted: RowRecord[] = [];
+      for (let i = rows.length - 1; i >= 0; i -= 1) {
+        const row = rows[i];
+        if (row && this.filters.every((fn) => fn(row))) {
+          deleted.push({ ...row });
+          rows.splice(i, 1);
+        }
+      }
+      return { rows: deleted.reverse(), totalCount: deleted.length, error: null };
+    }
 
     if (this.mode === "update" && this.mutationPayload) {
       this.onWrite?.(this.table, "update");
@@ -228,7 +258,7 @@ class MockQueryBuilder {
           updated.push({ ...row });
         }
       }
-      return { rows: updated, totalCount: updated.length };
+      return { rows: updated, totalCount: updated.length, error: null };
     }
 
     if (this.mode === "upsert" && this.mutationPayload) {
@@ -238,25 +268,37 @@ class MockQueryBuilder {
       if (idx >= 0) {
         const nextRow = { ...rows[idx], ...this.mutationPayload, updated_at: now };
         rows[idx] = nextRow;
-        return { rows: [{ ...nextRow }], totalCount: 1 };
+        return { rows: [{ ...nextRow }], totalCount: 1, error: null };
       }
       const inserted = { ...this.mutationPayload, updated_at: now };
       rows.push(inserted);
-      return { rows: [{ ...inserted }], totalCount: 1 };
+      return { rows: [{ ...inserted }], totalCount: 1, error: null };
     }
 
     if (this.mode === "insert") {
+      if (this.table === "invite_codes") {
+        const duplicate = this.insertRows.find((candidate) =>
+          rows.some((existing) => existing.code === candidate.code)
+        );
+        if (duplicate) {
+          return {
+            rows: [],
+            totalCount: 0,
+            error: { code: "23505", message: "duplicate key value violates unique constraint" },
+          };
+        }
+      }
       this.onWrite?.(this.table, "insert");
       const now = new Date().toISOString();
       const inserted = this.insertRows.map((row, idx) => ({
         id: row.id ?? `00000000-0000-4000-8000-${String(rows.length + idx + 1).padStart(12, "0")}`,
         created_at: now,
         updated_at: now,
-        deleted_at: null,
+        ...(this.table === "invite_codes" ? { used_count: 0 } : { deleted_at: null }),
         ...row,
       }));
       rows.push(...inserted);
-      return { rows: inserted.map((r) => ({ ...r })), totalCount: inserted.length };
+      return { rows: inserted.map((r) => ({ ...r })), totalCount: inserted.length, error: null };
     }
 
     let result = rows.filter((row) => this.filters.every((fn) => fn(row)));
@@ -282,33 +324,41 @@ class MockQueryBuilder {
     } else if (this.maxRows !== null) {
       result = result.slice(0, this.maxRows);
     }
-    return { rows: result.map((r) => ({ ...r })), totalCount };
+    return { rows: result.map((r) => ({ ...r })), totalCount, error: null };
   }
 
   async maybeSingle() {
-    const { rows } = this.execute();
+    const { rows, error } = this.execute();
+    if (error) return { data: null, error };
     return { data: rows[0] ?? null, error: null };
   }
 
   async single() {
-    const { rows } = this.execute();
+    const { rows, error } = this.execute();
+    if (error) return { data: null, error };
     if (!rows[0]) {
       return { data: null, error: { message: "Row not found" } };
     }
     return { data: rows[0], error: null };
   }
 
-  then<TResult1 = { data: RowRecord[]; error: null; count: number | null }>(
+  then<
+    TResult1 = {
+      data: RowRecord[];
+      error: { code?: string; message: string } | null;
+      count: number | null;
+    },
+  >(
     onfulfilled?: (value: {
       data: RowRecord[];
-      error: null;
+      error: { code?: string; message: string } | null;
       count: number | null;
     }) => TResult1 | PromiseLike<TResult1>
   ) {
-    const { rows, totalCount } = this.execute();
+    const { rows, totalCount, error } = this.execute();
     const res = {
-      data: rows,
-      error: null as null,
+      data: error ? [] : rows,
+      error,
       count: this.wantsExactCount ? totalCount : null,
     };
     return Promise.resolve(res).then(onfulfilled);
@@ -336,6 +386,30 @@ function createMockClient(
               mfa_required: false,
             },
           ],
+          error: null,
+        };
+      }
+      if (fnName === "get_admin_telemetry") {
+        const caller = state.profiles.find((p) => p.id === currentUserId);
+        if (!caller || caller.role !== "admin") {
+          return { data: null, error: { code: "42501", message: "Admin privileges required" } };
+        }
+        return {
+          data: {
+            total_users: state.profiles.length,
+            onboarded_users: state.profiles.filter((p) => p.onboarding_completed === true).length,
+            invited_users: state.profiles.filter((p) => p.invite_redeemed_at !== null).length,
+            total_accounts: state.accounts.filter((a) => !a.deleted_at).length,
+            total_transactions: state.transactions.filter((t) => !t.deleted_at).length,
+            transactions_last_30d: state.transactions.filter((t) => !t.deleted_at).length,
+            total_goals: state.goals.filter((g) => !g.deleted_at).length,
+            total_debts: state.debts.filter((d) => !d.deleted_at).length,
+            active_invites: state.invite_codes.filter(
+              (i) => i.is_active === true && Number(i.used_count) < Number(i.max_uses)
+            ).length,
+            story_views_total: 0,
+            generated_at: new Date().toISOString(),
+          },
           error: null,
         };
       }
@@ -1136,5 +1210,192 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
       headers: { Authorization: "Bearer token-invited" },
     });
     expect(delRes.status).toBe(200);
+  });
+
+  it("updates tour_completed_at via PATCH /api/v1/me and exports JSON & formula-safe CSV", async () => {
+    const { app } = createTestHarness();
+    const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+
+    const tourTs = "2026-11-26T21:00:00.000Z";
+    const patchTourRes = await app.request("http://localhost/api/v1/me", {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ tour_completed_at: tourTs }),
+    });
+    expect(patchTourRes.status).toBe(200);
+    const patchTourJson = (await patchTourRes.json()) as {
+      profile: { tour_completed_at: string | null };
+    };
+    expect(patchTourJson.profile.tour_completed_at).toBe(tourTs);
+
+    // Seed account, category, and formula-injection test transaction
+    const accRes = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Main Card",
+        type: "debit",
+        currency: "RUB",
+        initial_balance_minor: 500000,
+      }),
+    });
+    const { account } = (await accRes.json()) as { account: { id: string } };
+
+    const catRes = await app.request("http://localhost/api/v1/categories", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Продукты",
+        kind: "expense",
+      }),
+    });
+    const { category } = (await catRes.json()) as { category: { id: string } };
+
+    await app.request("http://localhost/api/v1/transactions", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "expense",
+        amount_minor: 15055,
+        account_from_id: account.id,
+        category_id: category.id,
+        comment: "=SUM(A1:A2), Coffee",
+      }),
+    });
+
+    const jsonExportRes = await app.request("http://localhost/api/v1/export/json", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(jsonExportRes.status).toBe(200);
+    expect(jsonExportRes.headers.get("content-disposition")).toContain("strata-backup-");
+    const jsonSnapshot = (await jsonExportRes.json()) as {
+      schema_version: string;
+      accounts: Array<{ user_id: string }>;
+      transactions: Array<{ amount_minor: number }>;
+    };
+    expect(jsonSnapshot.schema_version).toBe("1.0");
+    expect(jsonSnapshot.accounts.every((a) => a.user_id === userId)).toBe(true);
+    expect(jsonSnapshot.transactions[0]?.amount_minor).toBe(15055);
+
+    const csvExportRes = await app.request("http://localhost/api/v1/export/csv", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(csvExportRes.status).toBe(200);
+    expect(csvExportRes.headers.get("content-type")).toContain("text/csv");
+    const csvBytes = new Uint8Array(await csvExportRes.arrayBuffer());
+    // UTF-8 BOM: EF BB BF
+    expect(Array.from(csvBytes.slice(0, 3))).toEqual([0xef, 0xbb, 0xbf]);
+    const csvText = new TextDecoder("utf-8", { ignoreBOM: true }).decode(csvBytes);
+    expect(csvText.startsWith("\uFEFF")).toBe(true);
+    expect(csvText).toContain("15055,150.55,RUB,Main Card,,Продукты,\"'=SUM(A1:A2), Coffee\",web");
+  });
+
+  it("enforces 403 ADMIN_REQUIRED for non-admins and supports admin telemetry, invites & flags CRUD", async () => {
+    const { app } = createTestHarness();
+
+    const deniedRes = await app.request("http://localhost/api/v1/admin/telemetry", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(deniedRes.status).toBe(403);
+    expect(((await deniedRes.json()) as { error: string }).error).toBe("ADMIN_REQUIRED");
+
+    const telemetryRes = await app.request("http://localhost/api/v1/admin/telemetry", {
+      headers: { Authorization: "Bearer token-admin" },
+    });
+    expect(telemetryRes.status).toBe(200);
+    const telemetryJson = (await telemetryRes.json()) as {
+      telemetry: { total_users: number; active_invites: number };
+    };
+    expect(telemetryJson.telemetry.total_users).toBe(3);
+
+    // Create invite with auto-generated code
+    const createAutoRes = await app.request("http://localhost/api/v1/admin/invites", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-admin",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ max_uses: 3, note: "QA invite" }),
+    });
+    expect(createAutoRes.status).toBe(201);
+    const createdAuto = (await createAutoRes.json()) as {
+      invite: { id: string; code: string; is_active: boolean };
+    };
+    expect(createdAuto.invite.code).toMatch(/^STRATA-[A-Z0-9]{4}-[A-Z0-9]{4}$/);
+
+    // Duplicate invite returns 409
+    const dupRes = await app.request("http://localhost/api/v1/admin/invites", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-admin",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code: "STRATA-2026", max_uses: 2 }),
+    });
+    expect(dupRes.status).toBe(409);
+
+    // Pause invite
+    const patchInviteRes = await app.request(
+      `http://localhost/api/v1/admin/invites/${createdAuto.invite.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer token-admin",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_active: false }),
+      }
+    );
+    expect(patchInviteRes.status).toBe(200);
+    expect(
+      ((await patchInviteRes.json()) as { invite: { is_active: boolean } }).invite.is_active
+    ).toBe(false);
+
+    // Delete invite
+    const deleteInviteRes = await app.request(
+      `http://localhost/api/v1/admin/invites/${createdAuto.invite.id}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: "Bearer token-admin" },
+      }
+    );
+    expect(deleteInviteRes.status).toBe(200);
+
+    // Feature flags list + update
+    const flagsRes = await app.request("http://localhost/api/v1/admin/feature-flags", {
+      headers: { Authorization: "Bearer token-admin" },
+    });
+    expect(flagsRes.status).toBe(200);
+    const flagsJson = (await flagsRes.json()) as { flags: Array<{ key: string }> };
+    expect(flagsJson.flags.some((f) => f.key === "wrapped_2026")).toBe(true);
+
+    const patchFlagRes = await app.request(
+      "http://localhost/api/v1/admin/feature-flags/wrapped_2026",
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer token-admin",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ admin_preview: false }),
+      }
+    );
+    expect(patchFlagRes.status).toBe(200);
+    expect(
+      ((await patchFlagRes.json()) as { flag: { admin_preview: boolean } }).flag.admin_preview
+    ).toBe(false);
   });
 });

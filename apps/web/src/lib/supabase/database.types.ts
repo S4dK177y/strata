@@ -350,6 +350,7 @@ export type Database = {
           privacy_blur_default: boolean
           role: string
           theme: string
+          tour_completed_at: string | null
           updated_at: string
           wrapped_settings: Json
         }
@@ -365,6 +366,7 @@ export type Database = {
           privacy_blur_default?: boolean
           role?: string
           theme?: string
+          tour_completed_at?: string | null
           updated_at?: string
           wrapped_settings?: Json
         }
@@ -380,6 +382,7 @@ export type Database = {
           privacy_blur_default?: boolean
           role?: string
           theme?: string
+          tour_completed_at?: string | null
           updated_at?: string
           wrapped_settings?: Json
         }

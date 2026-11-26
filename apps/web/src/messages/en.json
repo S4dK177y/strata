@@ -20,7 +20,7 @@
     "restore": "Restore",
     "signOut": "Sign out",
     "inviteBadge": "Invite only",
-    "comingSoon": "Coming in PR 5",
+    "comingSoon": "Soon",
     "adminBadge": "Admin"
   },
   "nav": {
@@ -30,7 +30,8 @@
     "addOperation": "Add operation",
     "capital": "Capital",
     "plans": "Plans",
-    "settings": "Settings"
+    "settings": "Settings",
+    "admin": "Admin"
   },
   "theme": {
     "label": "Appearance",
@@ -253,7 +254,29 @@
     "allOperations": "All operations",
     "noOperations": "No operations yet — tap Add or press N to record your first one.",
     "creditAvailableLabel": "Available",
-    "archivedBadge": "Archived"
+    "archivedBadge": "Archived",
+    "analytics": {
+      "periodModeLabel": "Period mode",
+      "periodMonth": "Month",
+      "periodYear": "Year",
+      "prevPeriod": "Previous period",
+      "nextPeriod": "Next period",
+      "currentPeriod": "Current",
+      "savingsRate": "Savings rate",
+      "passiveShort": "Passive",
+      "refundOffset": "Refunds",
+      "trendTitle": "Monthly trend",
+      "trendCashflowSubtitle": "Income and net expenses for {year}",
+      "trendNetWorthSubtitle": "End-of-month net worth for {year}",
+      "modeCashflow": "Cashflow",
+      "modeNetWorth": "Net worth",
+      "noChartData": "No confirmed operations for this year yet.",
+      "categoriesTitle": "Spending breakdown",
+      "manageBudgets": "Limits",
+      "noCategorySpend": "No net category spending in this period.",
+      "totalSpent": "Total spent",
+      "otherCategories": "Other"
+    }
   },
   "transactions": {
     "title": "Operations",
@@ -397,6 +420,131 @@
     "categoryCreatedToast": "Category created.",
     "categoryUpdatedToast": "Category updated.",
     "categoryDeletedToast": "Category deleted."
+  },
+  "tour": {
+    "stepCounter": "Step {current} of {total}",
+    "skip": "Skip tour",
+    "finish": "Done",
+    "settingsTitle": "Interactive tour",
+    "settingsSubtitle": "Replay the quick walkthrough covering shortcuts, analytics, and privacy controls.",
+    "replayButton": "Replay tour",
+    "steps": {
+      "hero-balance": {
+        "title": "Net Worth & Safe-to-Spend",
+        "description": "See your total net worth across accounts minus debts alongside how much liquid cash is safe to spend."
+      },
+      "privacy-toggle": {
+        "title": "Privacy Blur mode",
+        "description": "Tap the eye icon anytime to blur all monetary values and chart axes in public spaces."
+      },
+      "quick-add": {
+        "title": "Quick Add & inline math",
+        "description": "Record any of the 11 operation types, type formulas like =320+185, or press N from anywhere."
+      },
+      "analytics-charts": {
+        "title": "Period analytics & budgets",
+        "description": "Switch between Month and Year views, track your savings rate, net worth trend, and category limits."
+      },
+      "nav-sections": {
+        "title": "Workspace navigation",
+        "description": "Filter your ledger and export CSV in Operations, manage accounts in Capital, or customize Strata in Settings."
+      },
+      "settings-link": {
+        "title": "Themes, 2FA & backups",
+        "description": "Customize accent palettes, enable 2FA, manage active sessions, export JSON/CSV, or replay this tour."
+      }
+    }
+  },
+  "export": {
+    "title": "Data export",
+    "subtitle": "Download a complete JSON backup or a filtered CSV spreadsheet of your operations.",
+    "jsonTitle": "Full JSON backup",
+    "jsonDescription": "Portable snapshot of your profile, accounts, categories, operations, goals, and debts.",
+    "jsonButton": "Download JSON",
+    "csvTitle": "Operations CSV",
+    "csvDescription": "UTF-8 spreadsheet ready for Excel across your selected date range.",
+    "csvButton": "Download CSV",
+    "exportCsvShort": "Export CSV",
+    "rangeMonth": "Current month",
+    "rangeYear": "Current year",
+    "rangeAll": "All time",
+    "downloading": "Exporting...",
+    "jsonSuccess": "JSON backup downloaded.",
+    "csvSuccess": "CSV export downloaded."
+  },
+  "admin": {
+    "title": "Admin Console",
+    "subtitle": "Aggregate platform telemetry, invite code management, and cloud feature flags.",
+    "openConsole": "Open console",
+    "privacyNoticeTitle": "Privacy by Design enforced",
+    "privacyNoticeBody": "Only anonymous aggregate counts are visible here. Individual user accounts, transactions, debts, and balances remain strictly inaccessible via Postgres RLS.",
+    "telemetry": {
+      "title": "Platform telemetry",
+      "subtitle": "Aggregate-only counts with zero PII or financial rows.",
+      "refresh": "Refresh",
+      "totalUsers": "Total users",
+      "onboardedUsers": "Onboarded",
+      "invitedUsers": "Invited users",
+      "activeInvites": "Active invites",
+      "totalAccounts": "Accounts",
+      "totalTransactions": "Operations",
+      "transactionsLast30d": "Ops (30d)",
+      "totalGoals": "Goals",
+      "totalDebts": "Debts",
+      "storyViewsTotal": "Story views"
+    },
+    "invites": {
+      "title": "Invite codes",
+      "subtitle": "Issue, pause, or revoke registration invites.",
+      "createButton": "New invite",
+      "createTitle": "Create invite code",
+      "createDescription": "Leave the code blank to auto-generate a secure random invite code.",
+      "codeLabel": "Custom code (optional)",
+      "codePlaceholder": "e.g. STRATA-BETA-2026",
+      "maxUsesLabel": "Max uses",
+      "expiresInputLabel": "Expires on (optional)",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "e.g. Friends & beta testers",
+      "createSubmit": "Create invite",
+      "empty": "No invite codes created yet.",
+      "statusActive": "Active",
+      "statusPaused": "Paused",
+      "statusExhausted": "Exhausted",
+      "statusExpired": "Expired",
+      "expiresLabel": "Expires {date}",
+      "noExpiry": "No expiration",
+      "copyAria": "Copy invite code",
+      "toggleAria": "Toggle invite {code}",
+      "deleteAria": "Delete invite code",
+      "deleteTitle": "Delete invite code?",
+      "deleteBody": "Invite \"{code}\" will be permanently deleted. Existing users keep their access.",
+      "createdToast": "Invite code created.",
+      "updatedToast": "Invite code updated.",
+      "deletedToast": "Invite code deleted.",
+      "copiedToast": "Invite code copied.",
+      "duplicateError": "An invite with this code already exists.",
+      "invalidMaxUses": "Max uses must be an integer between 1 and 10000.",
+      "invalidCodeFormat": "Code must be 4–64 chars using letters, digits, hyphens, or underscores."
+    },
+    "flags": {
+      "title": "Cloud Feature Flags",
+      "subtitle": "Control rollouts across Web PWA and Android without redeploying.",
+      "enabledLabel": "Enabled",
+      "previewLabel": "Admin preview",
+      "on": "On",
+      "off": "Off",
+      "previewBadge": "Admin Preview",
+      "updatedToast": "Feature flag updated.",
+      "confirmDisableInviteTitle": "Open public registration?",
+      "confirmDisableInviteBody": "Disabling registration_invite_only lets any newly registered user access Strata without an invite code.",
+      "confirmDisableInviteButton": "Disable invite gate",
+      "descriptions": {
+        "registration_invite_only": "Require an invite code for all newly registered accounts.",
+        "wrapped_2026": "Seasonal Yearly Wrapped summary experience.",
+        "stories_feed": "In-app product updates and educational stories feed.",
+        "android_push_drafts": "Automatic draft creation from Android bank push notifications."
+      }
+    }
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

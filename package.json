@@ -14,6 +14,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
+    "test:e2e": "npm run test:e2e --workspace=@strata/web",
     "format": "prettier --write ."
   },
   "devDependencies": {

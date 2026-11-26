@@ -25,6 +25,8 @@ export default async function OperationsPage({
   const resolvedParams = await searchParams;
   const rawAccount =
     typeof resolvedParams.account === "string" ? resolvedParams.account : "";
+  const rawCategory =
+    typeof resolvedParams.category === "string" ? resolvedParams.category : "";
   const rawType = typeof resolvedParams.type === "string" ? resolvedParams.type : "";
   const rawStatus = typeof resolvedParams.status === "string" ? resolvedParams.status : "";
 
@@ -50,6 +52,9 @@ export default async function OperationsPage({
 
   if (rawAccount && /^[0-9a-f-]{36}$/i.test(rawAccount)) {
     txQuery = txQuery.or(`account_from_id.eq.${rawAccount},account_to_id.eq.${rawAccount}`);
+  }
+  if (rawCategory && /^[0-9a-f-]{36}$/i.test(rawCategory)) {
+    txQuery = txQuery.eq("category_id", rawCategory);
   }
   if (parsedType.success) {
     txQuery = txQuery.eq("type", parsedType.data);
@@ -93,6 +98,7 @@ export default async function OperationsPage({
         initialPeriodYear={year}
         initialPeriodMonth={month}
         initialAccountFilter={rawAccount}
+        initialCategoryFilter={/^[0-9a-f-]{36}$/i.test(rawCategory) ? rawCategory : ""}
         initialTypeFilter={parsedType.success ? parsedType.data : ""}
         initialStatusFilter={parsedStatus.success ? parsedStatus.data : ""}
       />

@@ -218,6 +218,9 @@ export function createMeRouter(deps: ApiDependencies) {
     if (body.onboarding_completed !== undefined) {
       updatePatch.onboarding_completed = body.onboarding_completed;
     }
+    if (body.tour_completed_at !== undefined) {
+      updatePatch.tour_completed_at = body.tour_completed_at;
+    }
 
     if (body.wrapped_settings !== undefined) {
       const { data: existingRow, error: fetchError } = await auth.supabase

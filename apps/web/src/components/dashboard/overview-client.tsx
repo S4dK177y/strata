@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   Plus,
@@ -13,8 +16,10 @@ import {
 } from "lucide-react";
 import {
   computeAllAccountBalances,
+  computeCategoryBreakdown,
   computeCreditCardAvailable,
   computeDebtsLedger,
+  computeMonthlySeries,
   computeNetWorth,
   computePeriodSummary,
   computeSafeToSpend,
@@ -26,6 +31,8 @@ import type {
   Profile,
   Transaction,
 } from "@strata/api-contract";
+import { CashflowTrendChart } from "@/components/dashboard/cashflow-trend-chart";
+import { CategoryBreakdownCard } from "@/components/dashboard/category-breakdown-card";
 import { usePrivacy } from "@/components/providers/privacy-provider";
 import { useQuickAdd } from "@/components/transactions/quick-add-provider";
 import { AmountText } from "@/components/ui/amount-text";
@@ -39,10 +46,12 @@ import {
 } from "@/lib/category-icons";
 import {
   toCoreAccount,
+  toCoreCategory,
   toCoreDebt,
   toCoreTransaction,
 } from "@/lib/finance-mappers";
 import { useI18n } from "@/lib/i18n/client";
+import { cn } from "@/lib/utils";
 
 interface OverviewClientProps {
   profile: Profile;
@@ -63,9 +72,20 @@ export function OverviewClient({
   currentYear,
   currentMonth,
 }: OverviewClientProps) {
-  const { t } = useI18n();
+  const router = useRouter();
+  const { locale, t } = useI18n();
   const { privacyBlur, togglePrivacyBlur } = usePrivacy();
-  const { openQuickAdd } = useQuickAdd();
+  const { openQuickAdd, registerOnMutated } = useQuickAdd();
+
+  const [periodMode, setPeriodMode] = useState<"month" | "year">("month");
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+
+  useEffect(() => {
+    return registerOnMutated(() => {
+      router.refresh();
+    });
+  }, [registerOnMutated, router]);
 
   const activeAccounts = useMemo(
     () => accounts.filter((a) => a.is_active && !a.deleted_at),
@@ -77,6 +97,7 @@ export function OverviewClient({
 
   const metrics = useMemo(() => {
     const coreAccounts = accounts.map(toCoreAccount);
+    const coreCats = categories.map(toCoreCategory);
     const coreTxs = transactions.map(toCoreTransaction);
     const coreDebts = debts.map(toCoreDebt);
 
@@ -88,16 +109,70 @@ export function OverviewClient({
       debtLedger.totalBorrowedRemainingMinor
     );
     const safeToSpend = computeSafeToSpend(coreAccounts, balances, 0);
-    const monthSummary = computePeriodSummary(coreTxs, currentYear, currentMonth);
-    return { balances, netWorth, safeToSpend, monthSummary };
-  }, [accounts, transactions, debts, currentYear, currentMonth]);
+    const monthFilter = periodMode === "month" ? selectedMonth : null;
+    const periodSummary = computePeriodSummary(coreTxs, selectedYear, monthFilter);
+    const categoryBreakdown = computeCategoryBreakdown(
+      coreCats,
+      coreTxs,
+      selectedYear,
+      monthFilter
+    );
+    const monthlySeries = computeMonthlySeries(coreAccounts, coreTxs, coreDebts, selectedYear);
+
+    return {
+      balances,
+      netWorth,
+      safeToSpend,
+      periodSummary,
+      categoryBreakdown,
+      monthlySeries,
+    };
+  }, [accounts, categories, transactions, debts, periodMode, selectedYear, selectedMonth]);
 
   const recentTransactions = useMemo(() => transactions.slice(0, 6), [transactions]);
+
+  const periodLabel = useMemo(() => {
+    if (periodMode === "year") return String(selectedYear);
+    return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+      month: "long",
+      year: "numeric",
+    }).format(new Date(selectedYear, selectedMonth - 1, 1));
+  }, [periodMode, selectedYear, selectedMonth, locale]);
+
+  const isCurrentPeriod =
+    periodMode === "year"
+      ? selectedYear === currentYear
+      : selectedYear === currentYear && selectedMonth === currentMonth;
+
+  function shiftPeriod(delta: number) {
+    if (periodMode === "year") {
+      setSelectedYear((y) => y + delta);
+      return;
+    }
+    const next = new Date(selectedYear, selectedMonth - 1 + delta, 1);
+    setSelectedYear(next.getFullYear());
+    setSelectedMonth(next.getMonth() + 1);
+  }
+
+  function resetToCurrentPeriod() {
+    setSelectedYear(currentYear);
+    setSelectedMonth(currentMonth);
+  }
+
+  const savingsRateFormatted = useMemo(() => {
+    const pct = Math.round(metrics.periodSummary.savingsRate * 1000) / 10;
+    return `${new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US", {
+      maximumFractionDigits: 1,
+    }).format(pct)}%`;
+  }, [metrics.periodSummary.savingsRate, locale]);
 
   return (
     <div className="space-y-6">
       {/* Open Aurora Balance Header */}
-      <section className="strata-aurora-hero space-y-6 rounded-[28px] p-5 sm:p-8">
+      <section
+        data-tour="hero-balance"
+        className="strata-aurora-hero space-y-6 rounded-[28px] p-5 sm:p-8"
+      >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 space-y-2">
             <div className="text-xs font-medium text-[var(--strata-text-secondary)]">
@@ -193,50 +268,173 @@ export function OverviewClient({
         </div>
       </section>
 
-      {/* This Month Cashflow Snapshot */}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
-        <Card className="min-w-0 p-4">
-          <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-            {t.dashboard.monthIncome}
-          </div>
-          <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
-            <AmountText
-              minor={metrics.monthSummary.totalIncomeMinor}
-              currency={profile.base_currency}
-              showSign
-            />
-          </div>
-        </Card>
+      {/* Period Selector & Cashflow KPI Strip + Analytics */}
+      <section data-tour="analytics-charts" className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              aria-label={t.dashboard.analytics.prevPeriod}
+              onClick={() => shiftPeriod(-1)}
+            >
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            </Button>
+            <span className="min-w-28 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)] sm:min-w-36">
+              {periodLabel}
+            </span>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              aria-label={t.dashboard.analytics.nextPeriod}
+              onClick={() => shiftPeriod(1)}
+            >
+              <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            </Button>
 
-        <Card className="min-w-0 p-4">
-          <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-            {t.dashboard.monthExpense}
+            {!isCurrentPeriod ? (
+              <button
+                type="button"
+                onClick={resetToCurrentPeriod}
+                className="ml-1 min-h-9 cursor-pointer rounded-full border border-[var(--strata-border-subtle)] px-3 text-xs font-semibold text-[var(--strata-accent-brand)] transition hover:border-[var(--strata-border-strong)]"
+              >
+                {t.dashboard.analytics.currentPeriod}
+              </button>
+            ) : null}
           </div>
-          <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
-            <AmountText
-              minor={
-                metrics.monthSummary.netExpenseMinor > 0
-                  ? -metrics.monthSummary.netExpenseMinor
-                  : 0
-              }
-              currency={profile.base_currency}
-            />
-          </div>
-        </Card>
 
-        <Card className="col-span-2 min-w-0 p-4 sm:col-span-1">
-          <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-            {t.dashboard.monthSaldo}
+          <div
+            role="tablist"
+            aria-label={t.dashboard.analytics.periodModeLabel}
+            className="inline-flex rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] p-1"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={periodMode === "month"}
+              onClick={() => setPeriodMode("month")}
+              className={cn(
+                "min-h-8 cursor-pointer rounded-full px-3 text-xs font-semibold transition",
+                periodMode === "month"
+                  ? "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                  : "text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
+              )}
+            >
+              {t.dashboard.analytics.periodMonth}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={periodMode === "year"}
+              onClick={() => setPeriodMode("year")}
+              className={cn(
+                "min-h-8 cursor-pointer rounded-full px-3 text-xs font-semibold transition",
+                periodMode === "year"
+                  ? "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                  : "text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
+              )}
+            >
+              {t.dashboard.analytics.periodYear}
+            </button>
           </div>
-          <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
-            <AmountText
-              minor={metrics.monthSummary.netBalanceMinor}
-              currency={profile.base_currency}
-              showSign
-            />
-          </div>
-        </Card>
-      </div>
+        </div>
+
+        {/* 4 KPI Cards */}
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          <Card className="min-w-0 p-4">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+              {t.dashboard.monthIncome}
+            </div>
+            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
+              <AmountText
+                minor={metrics.periodSummary.totalIncomeMinor}
+                currency={profile.base_currency}
+                showSign
+              />
+            </div>
+            {metrics.periodSummary.passiveIncomeMinor > 0 ? (
+              <div className="mt-0.5 truncate text-[11px] text-[var(--strata-text-muted)]">
+                {t.dashboard.analytics.passiveShort}:{" "}
+                <AmountText
+                  minor={metrics.periodSummary.passiveIncomeMinor}
+                  currency={profile.base_currency}
+                />
+              </div>
+            ) : null}
+          </Card>
+
+          <Card className="min-w-0 p-4">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+              {t.dashboard.monthExpense}
+            </div>
+            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
+              <AmountText
+                minor={
+                  metrics.periodSummary.netExpenseMinor > 0
+                    ? -metrics.periodSummary.netExpenseMinor
+                    : 0
+                }
+                currency={profile.base_currency}
+              />
+            </div>
+            {metrics.periodSummary.compensationMinor > 0 ? (
+              <div className="mt-0.5 truncate text-[11px] text-[var(--strata-money-compensation)]">
+                {t.dashboard.analytics.refundOffset}:{" "}
+                <AmountText
+                  minor={metrics.periodSummary.compensationMinor}
+                  currency={profile.base_currency}
+                />
+              </div>
+            ) : null}
+          </Card>
+
+          <Card className="min-w-0 p-4">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+              {t.dashboard.monthSaldo}
+            </div>
+            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
+              <AmountText
+                minor={metrics.periodSummary.netBalanceMinor}
+                currency={profile.base_currency}
+                showSign
+              />
+            </div>
+          </Card>
+
+          <Card className="min-w-0 p-4">
+            <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
+              {t.dashboard.analytics.savingsRate}
+            </div>
+            <div
+              className={cn(
+                "strata-money mt-1 text-base font-bold sm:text-lg",
+                metrics.periodSummary.savingsRate > 0
+                  ? "text-[var(--strata-money-income)]"
+                  : metrics.periodSummary.savingsRate < 0
+                    ? "text-[var(--strata-money-expense)]"
+                    : "text-[var(--strata-text-primary)]"
+              )}
+            >
+              {savingsRateFormatted}
+            </div>
+          </Card>
+        </div>
+
+        <CashflowTrendChart
+          series={metrics.monthlySeries}
+          year={selectedYear}
+          baseCurrency={profile.base_currency}
+        />
+
+        <CategoryBreakdownCard
+          items={metrics.categoryBreakdown}
+          categories={categories}
+          baseCurrency={profile.base_currency}
+          periodLabel={periodLabel}
+        />
+      </section>
 
       {/* Grouped Matte Accounts Section Card */}
       <Card className="space-y-4">

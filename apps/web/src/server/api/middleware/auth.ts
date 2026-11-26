@@ -174,3 +174,44 @@ export const requireInviteGate: MiddlewareHandler<ApiEnv> = async (c, next) => {
   c.set("profileGate", result.gate);
   await next();
 };
+
+export const requireAdmin: MiddlewareHandler<ApiEnv> = async (c, next) => {
+  const auth = c.get("auth");
+  if (!auth) {
+    return c.json(
+      {
+        error: "UNAUTHORIZED",
+        message: "Authentication required",
+      },
+      401
+    );
+  }
+
+  const { data: profile, error } = await auth.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", auth.userId)
+    .maybeSingle();
+
+  if (error) {
+    return c.json(
+      {
+        error: "AUTH_PROFILE_LOOKUP_FAILED",
+        message: error.message,
+      },
+      500
+    );
+  }
+
+  if (profile?.role !== "admin") {
+    return c.json(
+      {
+        error: "ADMIN_REQUIRED",
+        message: "Administrator privileges required",
+      },
+      403
+    );
+  }
+
+  await next();
+};

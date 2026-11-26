@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Download,
   Plus,
   RotateCcw,
   Search,
@@ -51,6 +52,7 @@ interface OperationsClientProps {
   initialPeriodYear: number;
   initialPeriodMonth: number;
   initialAccountFilter?: string;
+  initialCategoryFilter?: string;
   initialTypeFilter?: TransactionType | "";
   initialStatusFilter?: TransactionStatus | "";
 }
@@ -80,6 +82,7 @@ export function OperationsClient({
   initialPeriodYear,
   initialPeriodMonth,
   initialAccountFilter = "",
+  initialCategoryFilter = "",
   initialTypeFilter = "",
   initialStatusFilter = "",
 }: OperationsClientProps) {
@@ -91,6 +94,7 @@ export function OperationsClient({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   // Filters
@@ -101,7 +105,7 @@ export function OperationsClient({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TransactionType | "">(initialTypeFilter);
   const [accountFilter, setAccountFilter] = useState(initialAccountFilter);
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState(initialCategoryFilter);
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "">(initialStatusFilter);
 
   const isFirstMountRef = useRef(true);
@@ -311,6 +315,44 @@ export function OperationsClient({
     }
   }
 
+  async function handleExportCsv() {
+    setExportingCsv(true);
+    try {
+      const params = new URLSearchParams();
+      if (!allTime) {
+        const { from, to } = getMonthBoundsIso(periodYear, periodMonth);
+        params.set("from", from);
+        params.set("to", to);
+      }
+      if (typeFilter) params.set("type", typeFilter);
+      if (accountFilter) params.set("account_id", accountFilter);
+      if (categoryFilter) params.set("category_id", categoryFilter);
+      if (statusFilter) params.set("status", statusFilter);
+
+      const qs = params.toString();
+      const res = await fetch(`/api/v1/export/csv${qs ? `?${qs}` : ""}`);
+      if (!res.ok) {
+        toast.error(t.errors.generic);
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `strata-operations-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success(t.export.csvSuccess);
+    } catch {
+      toast.error(t.errors.generic);
+    } finally {
+      setExportingCsv(false);
+    }
+  }
+
   const hasActiveFilters = Boolean(
     debouncedSearch || typeFilter || accountFilter || categoryFilter || statusFilter || allTime
   );
@@ -515,7 +557,7 @@ export function OperationsClient({
             ))}
           </div>
 
-          <div className="flex items-center gap-3 text-xs text-[var(--strata-text-muted)]">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--strata-text-muted)]">
             <span>
               {t.transactions.filters.showingCount
                 .replace("{shown}", String(transactions.length))
@@ -531,6 +573,16 @@ export function OperationsClient({
                 {t.transactions.filters.resetFilters}
               </button>
             ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={exportingCsv}
+              onClick={() => void handleExportCsv()}
+            >
+              <Download className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              {exportingCsv ? t.export.downloading : t.export.exportCsvShort}
+            </Button>
           </div>
         </div>
       </Card>

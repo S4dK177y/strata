@@ -38,5 +38,11 @@ jobs:
       - name: Build all apps & packages
         run: npm run build
 
+      - name: Install Playwright Chromium
+        run: npx --workspace=@strata/web playwright install --with-deps chromium
+
+      - name: Run public Playwright E2E checks
+        run: npx --workspace=@strata/web playwright test e2e/public-and-auth-gates.spec.ts
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high

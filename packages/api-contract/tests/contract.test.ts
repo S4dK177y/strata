@@ -3,9 +3,14 @@ import {
   AccentPaletteSchema,
   AccountCreateRequestSchema,
   ActiveSessionSchema,
+  AdminTelemetryResponseSchema,
   CategoryCreateRequestSchema,
+  CreateInviteCodeRequestSchema,
   DeleteAccountRequestSchema,
+  ExportCsvQuerySchema,
+  ExportJsonResponseSchema,
   HealthResponseSchema,
+  InviteCodeSchema,
   MeResponseSchema,
   OnboardingCompleteRequestSchema,
   ProfileUpdateRequestSchema,
@@ -16,6 +21,8 @@ import {
   TransactionCreateRequestSchema,
   TransactionSourceSchema,
   TransactionTypeSchema,
+  UpdateFeatureFlagRequestSchema,
+  UpdateInviteCodeRequestSchema,
   VerifyPasswordRequestSchema,
 } from "../src/index";
 
@@ -375,5 +382,105 @@ describe("@strata/api-contract", () => {
     expect(ProfileUpdateRequestSchema.safeParse({ accent: "neon-pink" }).success).toBe(false);
     expect(VerifyPasswordRequestSchema.safeParse({ password: "secret" }).success).toBe(true);
     expect(VerifyPasswordRequestSchema.safeParse({ password: "" }).success).toBe(false);
+  });
+
+  it("validates PR 6 tour, export, and admin schemas", () => {
+    expect(
+      ProfileUpdateRequestSchema.safeParse({
+        tour_completed_at: "2026-11-26T20:00:00.000Z",
+      }).success
+    ).toBe(true);
+    expect(
+      ProfileUpdateRequestSchema.safeParse({
+        tour_completed_at: null,
+      }).success
+    ).toBe(true);
+
+    expect(
+      CreateInviteCodeRequestSchema.parse({
+        max_uses: 5,
+        note: "Beta testers",
+      })
+    ).toMatchObject({
+      max_uses: 5,
+      note: "Beta testers",
+      is_active: true,
+    });
+    expect(
+      CreateInviteCodeRequestSchema.safeParse({
+        code: "bad space!",
+      }).success
+    ).toBe(false);
+
+    expect(UpdateInviteCodeRequestSchema.safeParse({}).success).toBe(false);
+    expect(UpdateInviteCodeRequestSchema.safeParse({ is_active: false }).success).toBe(true);
+
+    expect(UpdateFeatureFlagRequestSchema.safeParse({}).success).toBe(false);
+    expect(
+      UpdateFeatureFlagRequestSchema.safeParse({ enabled: true, admin_preview: false }).success
+    ).toBe(true);
+
+    const invite = InviteCodeSchema.parse({
+      id: UUID_1,
+      code: "STRATA-BETA-2026",
+      max_uses: 10,
+      used_count: 2,
+      expires_at: null,
+      note: null,
+      is_active: true,
+      created_by: UUID_2,
+      created_at: "2026-11-26T10:00:00.000Z",
+      updated_at: "2026-11-26T10:00:00.000Z",
+    });
+    expect(invite.code).toBe("STRATA-BETA-2026");
+
+    const telemetry = AdminTelemetryResponseSchema.parse({
+      telemetry: {
+        total_users: 10,
+        onboarded_users: 8,
+        invited_users: 9,
+        total_accounts: 24,
+        total_transactions: 120,
+        transactions_last_30d: 45,
+        total_goals: 5,
+        total_debts: 2,
+        active_invites: 3,
+        story_views_total: 12,
+        generated_at: "2026-11-26T10:00:00.000Z",
+      },
+    });
+    expect(telemetry.telemetry.total_users).toBe(10);
+
+    expect(
+      ExportCsvQuerySchema.safeParse({
+        type: "expense",
+        status: "confirmed",
+        account_id: UUID_1,
+      }).success
+    ).toBe(true);
+
+    const exportJson = ExportJsonResponseSchema.parse({
+      schema_version: "1.0",
+      exported_at: "2026-11-26T10:00:00.000Z",
+      profile: {
+        display_name: "Alex",
+        locale: "ru",
+        base_currency: "RUB",
+        theme: "dark",
+        accent: "emerald",
+        privacy_blur_default: false,
+        wrapped_settings: {},
+      },
+      accounts: [],
+      savings_rules: [],
+      categories: [],
+      goals: [],
+      goal_transfers: [],
+      recurring_payments: [],
+      recurring_payment_marks: [],
+      debts: [],
+      transactions: [],
+    });
+    expect(exportJson.schema_version).toBe("1.0");
   });
 });

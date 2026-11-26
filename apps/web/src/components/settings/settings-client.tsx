@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Palette, User } from "lucide-react";
+import { ArrowRight, Compass, Palette, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 import type { AalLevel, AccentPalette, Profile, Theme } from "@strata/api-contract";
 import { SUPPORTED_CURRENCIES } from "@/components/onboarding/starter-templates";
@@ -10,10 +11,11 @@ import { usePrivacy } from "@/components/providers/privacy-provider";
 import { ActiveSessionsCard } from "@/components/settings/active-sessions-card";
 import { ChangeEmailDialog } from "@/components/settings/change-email-dialog";
 import { DangerZoneCard } from "@/components/settings/danger-zone-card";
+import { DataExportCard } from "@/components/settings/data-export-card";
 import { TotpSecurityCard } from "@/components/settings/totp-security-card";
 import { AccentSwitcher } from "@/components/ui/accent-switcher";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -251,6 +253,47 @@ export function SettingsClient({
           </div>
         </Card>
       </form>
+
+      <DataExportCard />
+
+      <Card className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          <div className="flex items-center gap-2 text-base font-bold text-[var(--strata-text-primary)]">
+            <Compass
+              className="h-4 w-4 shrink-0 text-[var(--strata-text-muted)]"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            {t.tour.settingsTitle}
+          </div>
+          <CardDescription>{t.tour.settingsSubtitle}</CardDescription>
+        </div>
+        <Button type="button" variant="secondary" onClick={() => router.push("/?tour=1")}>
+          {t.tour.replayButton}
+        </Button>
+      </Card>
+
+      {profile.role === "admin" ? (
+        <Card className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2 text-base font-bold text-[var(--strata-text-primary)]">
+              <Shield
+                className="h-4 w-4 shrink-0 text-[var(--strata-accent-brand)]"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+              {t.admin.title}
+            </div>
+            <CardDescription>{t.admin.subtitle}</CardDescription>
+          </div>
+          <Button asChild variant="secondary">
+            <Link href="/admin">
+              {t.admin.openConsole}
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+            </Link>
+          </Button>
+        </Card>
+      ) : null}
 
       <TotpSecurityCard
         initialMfaEnabled={initialMfaEnabled}

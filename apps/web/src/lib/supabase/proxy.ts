@@ -62,5 +62,24 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   }
 
+  if (claimsData?.claims?.sub && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", claimsData.claims.sub)
+      .maybeSingle();
+
+    if (profile?.role !== "admin") {
+      const notFoundUrl = request.nextUrl.clone();
+      notFoundUrl.pathname = "/__not-found";
+      notFoundUrl.search = "";
+      const rewriteResponse = NextResponse.rewrite(notFoundUrl);
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        rewriteResponse.cookies.set(cookie);
+      });
+      return rewriteResponse;
+    }
+  }
+
   return supabaseResponse;
 }

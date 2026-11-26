@@ -20,6 +20,7 @@ import {
   QuickAddProvider,
   useQuickAdd,
 } from "@/components/transactions/quick-add-provider";
+import { SpotlightTourProvider } from "@/components/tour/spotlight-tour-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -98,6 +99,17 @@ function AppShellInner({
       active: pathname === "/settings",
       live: true,
     },
+    ...(profile.role === "admin"
+      ? [
+          {
+            href: "/admin",
+            label: t.nav.admin,
+            icon: Shield,
+            active: pathname.startsWith("/admin"),
+            live: true,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -128,6 +140,7 @@ function AppShellInner({
 
           <Button
             type="button"
+            data-tour="quick-add"
             onClick={() => openQuickAdd()}
             className="w-full justify-center shadow-[var(--strata-shadow-neon)]"
           >
@@ -138,7 +151,7 @@ function AppShellInner({
             </kbd>
           </Button>
 
-          <nav aria-label="Main navigation" className="space-y-1">
+          <nav aria-label="Main navigation" data-tour="nav-sections" className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               if (!item.live) {
@@ -152,8 +165,8 @@ function AppShellInner({
                       <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                       {item.label}
                     </span>
-                    <span className="strata-mono text-[10px] font-medium uppercase tracking-wider">
-                      PR5
+                    <span className="text-[11px] font-medium">
+                      {t.common.comingSoon}
                     </span>
                   </div>
                 );
@@ -163,6 +176,7 @@ function AppShellInner({
                 <TransitionLink
                   key={item.href}
                   href={item.href}
+                  data-tour={item.href === "/settings" ? "settings-link" : undefined}
                   className={cn(
                     "flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition",
                     item.active
@@ -206,7 +220,9 @@ function AppShellInner({
             </div>
 
             <div className="flex items-center gap-2">
-              <PrivacyToggle />
+              <div data-tour="privacy-toggle" className="inline-flex">
+                <PrivacyToggle />
+              </div>
               <LocaleSwitcher syncServer />
               <ThemeSwitcher variant="compact" syncServer />
             </div>
@@ -225,6 +241,7 @@ function AppShellInner({
       {/* Mobile bottom nav */}
       <nav
         aria-label="Mobile navigation"
+        data-tour="nav-sections"
         className="strata-vt-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] lg:hidden"
       >
         <TransitionLink
@@ -255,6 +272,7 @@ function AppShellInner({
 
         <button
           type="button"
+          data-tour="quick-add"
           onClick={() => openQuickAdd()}
           aria-label={t.nav.addOperation}
           title={t.nav.addOperation}
@@ -278,6 +296,7 @@ function AppShellInner({
 
         <TransitionLink
           href="/settings"
+          data-tour="settings-link"
           className={cn(
             "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
             pathname === "/settings"
@@ -310,9 +329,11 @@ export function AppShell({
       initialGoals={initialGoals}
       initialDebts={initialDebts}
     >
-      <AppShellInner profile={profile} email={email}>
-        {children}
-      </AppShellInner>
+      <SpotlightTourProvider profile={profile}>
+        <AppShellInner profile={profile} email={email}>
+          {children}
+        </AppShellInner>
+      </SpotlightTourProvider>
     </QuickAddProvider>
   );
 }
