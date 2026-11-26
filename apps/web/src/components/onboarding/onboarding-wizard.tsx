@@ -14,6 +14,7 @@ import type {
 import { usePrivacy } from "@/components/providers/privacy-provider";
 import { useTheme } from "@/components/providers/theme-provider";
 import { AmountText } from "@/components/ui/amount-text";
+import { AuroraCurtains } from "@/components/ui/aurora-curtains";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -233,7 +234,11 @@ export function OnboardingWizard({
   const incomeCategories = categories.filter((c) => c.kind === "income");
 
   return (
-    <div className="strata-aurora-screen flex min-h-screen flex-col">
+    <div
+      data-aurora="curtains"
+      className="strata-aurora-screen flex min-h-screen flex-col"
+    >
+      <AuroraCurtains state={submitting ? "submitting" : "idle"} />
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

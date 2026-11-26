@@ -102,7 +102,7 @@ function AppShellInner({
   return (
     <div className="min-h-screen overflow-x-clip lg:flex">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:overflow-y-auto lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
+      <aside className="strata-vt-sidebar hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:overflow-y-auto lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
         <div className="space-y-5">
           <Link href="/" className="flex items-center gap-3 rounded-2xl p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -190,7 +190,7 @@ function AppShellInner({
 
       {/* Main area */}
       <div className="min-w-0 flex-1 pb-28 lg:pb-10">
-        <header className="sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-3 backdrop-blur-xl lg:px-8">
+        <header className="strata-vt-header sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-3 backdrop-blur-xl lg:px-8">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-2.5 lg:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -224,7 +224,7 @@ function AppShellInner({
       {/* Mobile bottom nav */}
       <nav
         aria-label="Mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] lg:hidden"
+        className="strata-vt-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] lg:hidden"
       >
         <TransitionLink
           href="/"

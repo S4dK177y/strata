@@ -4,6 +4,8 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthTransition } from "@/components/providers/auth-transition-provider";
+import { AuroraCurtains } from "@/components/ui/aurora-curtains";
 import { Button } from "@/components/ui/button";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,7 @@ export function AuthCard({
 }: AuthCardProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const { triggerAuthFlash } = useAuthTransition();
 
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "check_email">("signin");
   const [email, setEmail] = useState("");
@@ -46,6 +49,8 @@ export function AuthCard({
   });
 
   const confirmRef = useRef<HTMLInputElement>(null);
+  const signInBtnRef = useRef<HTMLButtonElement>(null);
+  const signUpBtnRef = useRef<HTMLButtonElement>(null);
   const confirmErrorId = useId();
 
   const passwordsMismatch =
@@ -61,13 +66,22 @@ export function AuthCard({
     return message || t.errors.generic;
   }
 
-  async function completeLoginTransition() {
+  async function completeLoginTransition(originBtn?: HTMLButtonElement | null) {
     setAuthVisualState("entering");
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!reduced) {
-      await new Promise((resolve) => setTimeout(resolve, 240));
+      const rect = originBtn?.getBoundingClientRect();
+      triggerAuthFlash(
+        rect
+          ? {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            }
+          : undefined
+      );
+      await new Promise((resolve) => setTimeout(resolve, 380));
     }
     router.push(safeNext);
     router.refresh();
@@ -91,7 +105,7 @@ export function AuthCard({
         return;
       }
 
-      await completeLoginTransition();
+      await completeLoginTransition(signInBtnRef.current);
     } catch {
       setAuthVisualState("idle");
       setFormError(t.errors.generic);
@@ -135,7 +149,7 @@ export function AuthCard({
       }
 
       if (data.session) {
-        await completeLoginTransition();
+        await completeLoginTransition(signUpBtnRef.current);
         return;
       }
 
@@ -199,9 +213,11 @@ export function AuthCard({
   return (
     <div
       data-auth-state={authVisualState}
+      data-aurora="curtains"
       className="strata-aurora-screen flex min-h-screen flex-col"
     >
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
+      <AuroraCurtains state={authVisualState} />
+      <header className="strata-auth-header mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl shadow-sm" />
@@ -412,7 +428,7 @@ export function AuthCard({
                       </div>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button ref={signInBtnRef} type="submit" className="w-full" disabled={loading}>
                       {loading || authVisualState === "entering" ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                       ) : null}
@@ -532,7 +548,7 @@ export function AuthCard({
                       ) : null}
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button ref={signUpBtnRef} type="submit" className="w-full" disabled={loading}>
                       {loading || authVisualState === "entering" ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                       ) : null}

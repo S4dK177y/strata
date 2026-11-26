@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { Locale } from "@strata/api-contract";
 import { Toaster } from "sonner";
 import { I18nProvider } from "@/lib/i18n/client";
+import { AuthTransitionProvider } from "./auth-transition-provider";
 import { PrivacyProvider } from "./privacy-provider";
 import { ThemeProvider, useTheme } from "./theme-provider";
 
@@ -36,8 +37,10 @@ export function AppProviders({
     <I18nProvider initialLocale={initialLocale}>
       <ThemeProvider>
         <PrivacyProvider>
-          {children}
-          <StrataToaster />
+          <AuthTransitionProvider>
+            {children}
+            <StrataToaster />
+          </AuthTransitionProvider>
         </PrivacyProvider>
       </ThemeProvider>
     </I18nProvider>
