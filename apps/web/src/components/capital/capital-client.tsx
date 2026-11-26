@@ -302,7 +302,7 @@ export function CapitalClient({
               <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
                 {t.capital.liquidSummary}
               </div>
-              <div className="mt-1.5 truncate text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
+              <div className="mt-1.5 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
                 <AmountText minor={accountSummary.liquidMinor} currency={baseCurrency} />
               </div>
             </Card>
@@ -311,7 +311,7 @@ export function CapitalClient({
               <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
                 {t.capital.savingsSummary}
               </div>
-              <div className="mt-1.5 truncate text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
+              <div className="mt-1.5 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
                 <AmountText minor={accountSummary.savingsMinor} currency={baseCurrency} />
               </div>
             </Card>
@@ -322,7 +322,7 @@ export function CapitalClient({
               </div>
               <div
                 className={cn(
-                  "mt-1.5 truncate text-base font-bold sm:text-lg",
+                  "mt-1.5 overflow-visible text-base font-bold sm:text-lg",
                   accountSummary.creditDebtMinor > 0
                     ? "text-[var(--strata-money-expense)]"
                     : "text-[var(--strata-text-primary)]"

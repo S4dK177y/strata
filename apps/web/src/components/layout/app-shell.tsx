@@ -27,6 +27,7 @@ import { PrivacyToggle } from "@/components/ui/privacy-toggle";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
+import { notifyRouteChanged, TransitionLink } from "./transition-link";
 
 interface AppShellProps {
   profile: Profile;
@@ -53,6 +54,8 @@ function AppShellInner({
   const { setPrivacyBlur } = usePrivacy();
   const { openQuickAdd } = useQuickAdd();
   const hydratedProfileIdRef = useRef<string | null>(null);
+  const prevPathnameRef = useRef<string>(pathname);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (hydratedProfileIdRef.current === profile.id) return;
@@ -62,6 +65,13 @@ function AppShellInner({
     setLocale(profile.locale);
     setPrivacyBlur(profile.privacy_blur_default);
   }, [profile, setLocale, setPrivacyBlur, setTheme]);
+
+  useEffect(() => {
+    if (prevPathnameRef.current === pathname) return;
+    prevPathnameRef.current = pathname;
+    notifyRouteChanged();
+    mainRef.current?.focus({ preventScroll: true });
+  }, [pathname]);
 
   const navItems = [
     { href: "/", label: t.nav.overview, icon: LayoutDashboard, active: pathname === "/", live: true },
@@ -149,7 +159,7 @@ function AppShellInner({
               }
 
               return (
-                <Link
+                <TransitionLink
                   key={item.href}
                   href={item.href}
                   className={cn(
@@ -161,7 +171,7 @@ function AppShellInner({
                 >
                   <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                   {item.label}
-                </Link>
+                </TransitionLink>
               );
             })}
           </nav>
@@ -202,7 +212,13 @@ function AppShellInner({
           </div>
         </header>
 
-        <main className="mx-auto max-w-4xl px-4 py-6 lg:px-8">{children}</main>
+        <main
+          ref={mainRef}
+          tabIndex={-1}
+          className="strata-main-stage mx-auto max-w-4xl px-4 py-6 focus:outline-none lg:px-8"
+        >
+          {children}
+        </main>
       </div>
 
       {/* Mobile bottom nav */}
@@ -210,7 +226,7 @@ function AppShellInner({
         aria-label="Mobile navigation"
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 items-center border-t border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] lg:hidden"
       >
-        <Link
+        <TransitionLink
           href="/"
           className={cn(
             "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
@@ -221,9 +237,9 @@ function AppShellInner({
         >
           <LayoutDashboard className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
           <span className="max-w-full truncate">{t.nav.overview}</span>
-        </Link>
+        </TransitionLink>
 
-        <Link
+        <TransitionLink
           href="/operations"
           className={cn(
             "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
@@ -234,7 +250,7 @@ function AppShellInner({
         >
           <ArrowLeftRight className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
           <span className="max-w-full truncate">{t.nav.operations}</span>
-        </Link>
+        </TransitionLink>
 
         <button
           type="button"
@@ -246,7 +262,7 @@ function AppShellInner({
           <Plus className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
         </button>
 
-        <Link
+        <TransitionLink
           href="/capital"
           className={cn(
             "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
@@ -257,9 +273,9 @@ function AppShellInner({
         >
           <Wallet className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
           <span className="max-w-full truncate">{t.nav.capital}</span>
-        </Link>
+        </TransitionLink>
 
-        <Link
+        <TransitionLink
           href="/settings"
           className={cn(
             "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
@@ -270,7 +286,7 @@ function AppShellInner({
         >
           <Settings className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
           <span className="max-w-full truncate">{t.nav.settings}</span>
-        </Link>
+        </TransitionLink>
       </nav>
     </div>
   );

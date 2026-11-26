@@ -381,7 +381,7 @@ export function OperationsClient({
             <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthIncome}
             </div>
-            <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
+            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
               <AmountText
                 minor={periodSummary.totalIncomeMinor}
                 currency={baseCurrency}
@@ -394,7 +394,7 @@ export function OperationsClient({
             <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthExpense}
             </div>
-            <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
+            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
               <AmountText
                 minor={periodSummary.netExpenseMinor > 0 ? -periodSummary.netExpenseMinor : 0}
                 currency={baseCurrency}
@@ -406,7 +406,7 @@ export function OperationsClient({
             <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthSaldo}
             </div>
-            <div className="mt-1 truncate text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
+            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
               <AmountText
                 minor={periodSummary.netBalanceMinor}
                 currency={baseCurrency}

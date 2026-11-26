@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useI18n } from "@/lib/i18n/client";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 interface AuthCardProps {
   safeNext: string;
@@ -31,13 +32,24 @@ export function AuthCard({
   const [mode, setMode] = useState<"signin" | "signup" | "reset" | "check_email">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmTouched, setConfirmTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [authVisualState, setAuthVisualState] = useState<"idle" | "submitting" | "entering">(
+    "idle"
+  );
   const [formError, setFormError] = useState<string | null>(() => {
     if (initialError === "auth_callback_failed") return t.errors.authCallbackFailed;
     if (initialError === "confirm_failed") return t.errors.confirmFailed;
     return null;
   });
+
+  const confirmRef = useRef<HTMLInputElement>(null);
+  const confirmErrorId = useId();
+
+  const passwordsMismatch =
+    confirmTouched && confirmPassword.length > 0 && confirmPassword !== password;
 
   function mapAuthError(message: string): string {
     const lower = message.toLowerCase();
@@ -49,10 +61,23 @@ export function AuthCard({
     return message || t.errors.generic;
   }
 
+  async function completeLoginTransition() {
+    setAuthVisualState("entering");
+    const reduced =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduced) {
+      await new Promise((resolve) => setTimeout(resolve, 240));
+    }
+    router.push(safeNext);
+    router.refresh();
+  }
+
   async function handleSignIn(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
     setLoading(true);
+    setAuthVisualState("submitting");
     try {
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase.auth.signInWithPassword({
@@ -61,13 +86,14 @@ export function AuthCard({
       });
 
       if (error) {
+        setAuthVisualState("idle");
         setFormError(mapAuthError(error.message));
         return;
       }
 
-      router.push(safeNext);
-      router.refresh();
+      await completeLoginTransition();
     } catch {
+      setAuthVisualState("idle");
       setFormError(t.errors.generic);
     } finally {
       setLoading(false);
@@ -77,12 +103,20 @@ export function AuthCard({
   async function handleSignUp(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
+    setConfirmTouched(true);
+
     if (password.length < 8) {
       setFormError(t.errors.passwordMinLength);
       return;
     }
+    if (password !== confirmPassword) {
+      setFormError(t.errors.passwordsMismatch);
+      confirmRef.current?.focus();
+      return;
+    }
 
     setLoading(true);
+    setAuthVisualState("submitting");
     try {
       const supabase = createBrowserSupabaseClient();
       const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
@@ -95,18 +129,20 @@ export function AuthCard({
       });
 
       if (error) {
+        setAuthVisualState("idle");
         setFormError(mapAuthError(error.message));
         return;
       }
 
       if (data.session) {
-        router.push(safeNext);
-        router.refresh();
+        await completeLoginTransition();
         return;
       }
 
+      setAuthVisualState("idle");
       setMode("check_email");
     } catch {
+      setAuthVisualState("idle");
       setFormError(t.errors.generic);
     } finally {
       setLoading(false);
@@ -117,6 +153,7 @@ export function AuthCard({
     e.preventDefault();
     setFormError(null);
     setLoading(true);
+    setAuthVisualState("submitting");
     try {
       const supabase = createBrowserSupabaseClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -131,6 +168,7 @@ export function AuthCard({
     } catch {
       setFormError(t.errors.generic);
     } finally {
+      setAuthVisualState("idle");
       setLoading(false);
     }
   }
@@ -159,7 +197,10 @@ export function AuthCard({
     "bg-[var(--strata-bg-canvas)]/70 border border-[var(--strata-border-subtle)] focus:bg-[var(--strata-bg-surface)]";
 
   return (
-    <div className="strata-aurora-screen flex min-h-screen flex-col">
+    <div
+      data-auth-state={authVisualState}
+      className="strata-aurora-screen flex min-h-screen flex-col"
+    >
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -179,7 +220,7 @@ export function AuthCard({
       </header>
 
       <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col justify-center px-4 py-10">
-        <div className="strata-frosted space-y-6 rounded-[28px] p-6 sm:p-8">
+        <div className="strata-frosted strata-auth-card space-y-6 rounded-[28px] p-6 sm:p-8">
           {mode === "check_email" ? (
             <div className="space-y-5">
               <CardHeader>
@@ -194,14 +235,31 @@ export function AuthCard({
               </CardHeader>
               <div className="flex flex-col gap-2.5">
                 <Button
+                  type="button"
+                  onClick={() => {
+                    setFormError(null);
+                    setMode("signin");
+                  }}
+                >
+                  {t.auth.signInSubmit}
+                </Button>
+                <Button
+                  type="button"
                   variant="secondary"
+                  onClick={() => {
+                    setFormError(null);
+                    setMode("reset");
+                  }}
+                >
+                  {t.auth.forgotPassword}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={handleResendConfirmation}
                   disabled={loading}
                 >
                   {t.auth.resendEmail}
-                </Button>
-                <Button variant="ghost" onClick={() => setMode("signin")}>
-                  {t.auth.backToSignIn}
                 </Button>
               </div>
             </div>
@@ -242,6 +300,9 @@ export function AuthCard({
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : null}
                   {loading ? t.common.loading : t.auth.sendResetLink}
                 </Button>
                 <Button
@@ -279,6 +340,8 @@ export function AuthCard({
                 value={mode}
                 onValueChange={(v) => {
                   setFormError(null);
+                  setConfirmPassword("");
+                  setConfirmTouched(false);
                   setMode(v === "signup" ? "signup" : "signin");
                 }}
               >
@@ -350,6 +413,9 @@ export function AuthCard({
                     </div>
 
                     <Button type="submit" className="w-full" disabled={loading}>
+                      {loading || authVisualState === "entering" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : null}
                       {loading ? t.common.loading : t.auth.signInSubmit}
                     </Button>
                   </form>
@@ -392,7 +458,7 @@ export function AuthCard({
                           type={showPassword ? "text" : "password"}
                           autoComplete="new-password"
                           minLength={8}
-                          enterKeyHint="done"
+                          enterKeyHint="next"
                           required
                           aria-describedby="signup-password-rules"
                           value={password}
@@ -416,7 +482,60 @@ export function AuthCard({
                       </div>
                     </div>
 
+                    <div className="space-y-1.5">
+                      <Label htmlFor="signup-confirm-password">
+                        {t.auth.confirmPasswordLabel}
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          ref={confirmRef}
+                          id="signup-confirm-password"
+                          name="confirmPassword"
+                          type={showPassword ? "text" : "password"}
+                          autoComplete="new-password"
+                          minLength={8}
+                          enterKeyHint="done"
+                          required
+                          aria-invalid={passwordsMismatch ? "true" : "false"}
+                          aria-describedby={passwordsMismatch ? confirmErrorId : undefined}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          onBlur={() => setConfirmTouched(true)}
+                          className={cn(
+                            frostedInputClass,
+                            "pr-12",
+                            passwordsMismatch && "border-[var(--strata-money-expense)]"
+                          )}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          aria-label={
+                            showPassword ? t.auth.hidePassword : t.auth.showPassword
+                          }
+                          className="absolute inset-y-0 right-0 flex min-w-11 cursor-pointer items-center justify-center text-[var(--strata-text-muted)] transition hover:text-[var(--strata-text-primary)]"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          ) : (
+                            <Eye className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
+                      {passwordsMismatch ? (
+                        <p
+                          id={confirmErrorId}
+                          className="text-xs font-medium text-[var(--strata-money-expense)]"
+                        >
+                          {t.errors.passwordsMismatch}
+                        </p>
+                      ) : null}
+                    </div>
+
                     <Button type="submit" className="w-full" disabled={loading}>
+                      {loading || authVisualState === "entering" ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : null}
                       {loading ? t.common.loading : t.auth.signUpSubmit}
                     </Button>
                   </form>

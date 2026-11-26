@@ -117,7 +117,7 @@ export function OverviewClient({
                   <Eye className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
                 )}
               </button>
-              <div className="min-w-0 truncate text-[28px] leading-tight font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-5xl">
+              <div className="min-w-0 overflow-visible break-words text-[26px] leading-tight font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-5xl">
                 <AmountText
                   minor={metrics.netWorth}
                   currency={profile.base_currency}
@@ -135,7 +135,7 @@ export function OverviewClient({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
-          <span className="strata-frosted inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-medium text-[var(--strata-text-primary)]">
+          <span className="strata-frosted inline-flex items-center gap-2 overflow-visible rounded-full px-4 py-1.5 font-medium text-[var(--strata-text-primary)]">
             <span className="text-[var(--strata-text-secondary)]">{t.dashboard.safeToSpend}:</span>
             <AmountText
               minor={metrics.safeToSpend}
@@ -199,7 +199,7 @@ export function OverviewClient({
           <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
             {t.dashboard.monthIncome}
           </div>
-          <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
+          <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
             <AmountText
               minor={metrics.monthSummary.totalIncomeMinor}
               currency={profile.base_currency}
@@ -212,7 +212,7 @@ export function OverviewClient({
           <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
             {t.dashboard.monthExpense}
           </div>
-          <div className="mt-1 truncate text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
+          <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
             <AmountText
               minor={
                 metrics.monthSummary.netExpenseMinor > 0
@@ -228,7 +228,7 @@ export function OverviewClient({
           <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
             {t.dashboard.monthSaldo}
           </div>
-          <div className="mt-1 truncate text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
+          <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
             <AmountText
               minor={metrics.monthSummary.netBalanceMinor}
               currency={profile.base_currency}

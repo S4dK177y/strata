@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Check, CreditCard, Plus, Trash2 } from "lucide-react";
+import { Check, CreditCard, LogOut, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import type {
   AccountType,
@@ -259,6 +259,17 @@ export function OnboardingWizard({
             onChange={setSelectedTheme}
             className="strata-frosted border-[var(--strata-border-subtle)]"
           />
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              aria-label={t.common.signOut}
+              title={t.common.signOut}
+              className="strata-frosted inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--strata-border-subtle)] px-3 py-2 text-xs font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+            >
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              <span className="hidden sm:inline">{t.common.signOut}</span>
+            </button>
+          </form>
         </div>
       </header>
 
@@ -368,8 +379,8 @@ export function OnboardingWizard({
                         currency={baseCurrency}
                         alwaysShowDecimals
                         className={cn(
-                          "font-semibold text-[var(--strata-text-primary)]",
-                          (privacyDefault || privacyBlur) && "blur-[7px] select-none"
+                          "inline-block font-semibold text-[var(--strata-text-primary)] transition-[filter,opacity] duration-200",
+                          (privacyDefault || privacyBlur) && "opacity-80 blur-[8px] select-none"
                         )}
                       />
                     </div>

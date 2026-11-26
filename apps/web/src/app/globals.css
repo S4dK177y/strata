@@ -221,4 +221,91 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   .strata-skeleton {
     animation: strata-skeleton-pulse 1.5s ease-in-out infinite;
   }
+
+  .strata-auth-card {
+    transition:
+      opacity 240ms ease,
+      transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  [data-auth-state="submitting"] .strata-auth-card {
+    transform: scale(0.99);
+  }
+
+  [data-auth-state="entering"] .strata-auth-card {
+    opacity: 0;
+    transform: scale(1.03) translateY(-10px);
+  }
+}
+
+.strata-main-stage {
+  view-transition-name: strata-main;
+}
+
+@keyframes strata-vt-out-forward {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-18px, 0, 0);
+  }
+}
+
+@keyframes strata-vt-in-forward {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes strata-vt-out-backward {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0);
+  }
+}
+
+@keyframes strata-vt-in-backward {
+  from {
+    opacity: 0;
+    transform: translate3d(-18px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+html[data-nav-dir="forward"]::view-transition-old(strata-main) {
+  animation: strata-vt-out-forward 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-nav-dir="forward"]::view-transition-new(strata-main) {
+  animation: strata-vt-in-forward 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-nav-dir="backward"]::view-transition-old(strata-main) {
+  animation: strata-vt-out-backward 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-nav-dir="backward"]::view-transition-new(strata-main) {
+  animation: strata-vt-in-backward 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

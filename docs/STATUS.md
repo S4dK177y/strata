@@ -8,7 +8,10 @@
   - **PR 2 — Supabase SQL Migrations + RLS, Hono OpenAPI 3.1 REST API & Delta Sync** ✅ **Completed & Verified**.
   - **PR 3 — Auth (Email & Password), Invite-code gate (`redeem_invite_code`), 3-step Onboarding, Theme & RU/EN switcher** ✅ **Completed & Verified**.
   - **PR 4 — Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator** ✅ **Completed & Verified**.
-- **Next Active Task:** **PR 5 — Dashboard, Export, `/admin`, Playwright E2E.**
+  - **PR 4.5 — UX & Auth Polish** *(soft-edge Privacy Blur, neutral duplicate-signup handling, password confirmation, sign-out on onboarding, per-route skeletons, alive login & View Transition screen switching)* ✅ **Completed & Verified**.
+- **Next Up:**
+  - **PR 5 — Account Security & Session Control** *(permanent profile deletion with password confirmation, 2FA TOTP via Supabase MFA, active session management with device/browser/IP & revoke)*.
+  - **PR 6 — Dashboard, Interactive Spotlight Onboarding Tour, Export, `/admin`, Playwright E2E** *(interactive feature tour with step highlights/skip/replay + analytics, export & admin panel)*.
 
 ## Completed
 - Architecture, DB schema, UX navigation, Expressive Neobank visual style, and brand **Strata** approved.
@@ -46,4 +49,5 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 5:** Dashboard, Export, `/admin`, Playwright E2E.
+- **PR 5:** Account deletion, 2FA (TOTP), active sessions management (device/browser/IP & revoke).
+- **PR 6:** Dashboard analytics, interactive spotlight onboarding tour, Export, `/admin`, Playwright E2E.

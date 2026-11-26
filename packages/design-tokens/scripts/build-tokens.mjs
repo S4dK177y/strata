@@ -192,6 +192,24 @@ ${renderVars(tokens.themes.dark)}
     will-change: transform;
     animation: strata-aurora-drift-a 24s ease-in-out infinite alternate;
   }
+
+  .strata-aurora-screen[data-auth-state="submitting"]::before,
+  .strata-aurora-screen[data-auth-state="submitting"]::after {
+    animation-duration: 5s;
+    filter: brightness(1.18) saturate(1.15);
+  }
+
+  .strata-aurora-screen[data-auth-state="entering"]::before {
+    transform: translate3d(0, -3%, 0) scale(1.2);
+    filter: brightness(1.3) saturate(1.25);
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), filter 280ms ease;
+  }
+
+  .strata-aurora-screen[data-auth-state="entering"]::after {
+    transform: translate3d(0, 3%, 0) scale(1.16);
+    filter: brightness(1.25) saturate(1.2);
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), filter 280ms ease;
+  }
 }
 
 .strata-frosted {
@@ -230,12 +248,16 @@ ${renderVars(tokens.themes.dark)}
 }
 
 .strata-money {
+  display: inline-block;
   font-variant-numeric: tabular-nums;
-  transition: filter 180ms ease;
+  transition:
+    filter 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
 }
 
 .privacy-blur .strata-money {
-  filter: blur(7px);
+  filter: blur(8px);
+  opacity: 0.82;
   user-select: none;
 }
 `;
