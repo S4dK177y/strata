@@ -47,9 +47,11 @@ interface AppShellProps {
 function ProfileQuickMenu({
   profile,
   email,
+  showAdminLink = true,
 }: {
   profile: Profile;
   email: string | null;
+  showAdminLink?: boolean;
 }) {
   const { locale, setLocale, t } = useI18n();
   const { resolvedTheme, toggleCompactTheme } = useTheme();
@@ -199,7 +201,7 @@ function ProfileQuickMenu({
                 </span>
               </button>
 
-              {profile.role === "admin" ? (
+              {showAdminLink && profile.role === "admin" ? (
                 <TransitionLink
                   href="/admin"
                   role="menuitem"
@@ -439,7 +441,7 @@ function AppShellInner({
             </button>
 
             <PrivacyIconButton />
-            <ProfileQuickMenu profile={profile} email={email} />
+            <ProfileQuickMenu profile={profile} email={email} showAdminLink={false} />
           </div>
         </div>
       </header>
@@ -457,7 +459,7 @@ function AppShellInner({
 
           <div className="flex items-center gap-2">
             <PrivacyIconButton />
-            <ProfileQuickMenu profile={profile} email={email} />
+            <ProfileQuickMenu profile={profile} email={email} showAdminLink />
           </div>
         </div>
       </header>

@@ -116,12 +116,15 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
       .click();
     await expect(qaAmount).toBeHidden();
 
-    // 4. Operations page + CSV download
+    // 4. Operations page
     await page.goto("/operations");
     await expect(page.getByText("E2E Coffee")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Export CSV|Экспорт CSV/i })).toHaveCount(0);
 
+    // 5. Settings CSV + JSON backup + Replay Tour
+    await page.goto("/settings");
     const csvDownloadPromise = page.waitForEvent("download");
-    await page.getByRole("button", { name: /Export CSV|Экспорт CSV/i }).click();
+    await page.getByRole("button", { name: /Download CSV|Скачать CSV/i }).click();
     const csvDownload = await csvDownloadPromise;
     expect(csvDownload.suggestedFilename()).toMatch(/^strata-operations-.*\.csv$/);
     const csvPath = await csvDownload.path();
@@ -132,8 +135,6 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
       expect(csvText).toContain("200.00");
     }
 
-    // 5. Settings JSON backup + Replay Tour
-    await page.goto("/settings");
     const jsonDownloadPromise = page.waitForEvent("download");
     await page.getByRole("button", { name: /Download JSON|Скачать JSON/i }).click();
     const jsonDownload = await jsonDownloadPromise;
