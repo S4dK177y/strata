@@ -22,12 +22,31 @@ function renderVars(themeObj) {
 
 const css = `/* Auto-generated from tokens.json by scripts/build-tokens.mjs. Do not edit manually. */
 :root {
+  color-scheme: light dark;
 ${renderVars(tokens.themes.light)}
   --strata-radius-card: ${tokens.radii.card};
   --strata-radius-hero: ${tokens.radii.hero};
   --strata-radius-pill: ${tokens.radii.pill};
   --strata-shadow-card: ${tokens.shadows.cardLight};
   --strata-shadow-neon: ${tokens.shadows.neonGlow};
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
+}
+
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+${renderVars(tokens.themes.dark)
+  .split("\n")
+  .map((line) => `  ${line}`)
+  .join("\n")}
+    --strata-shadow-card: ${tokens.shadows.cardDark};
+  }
 }
 
 .dark {

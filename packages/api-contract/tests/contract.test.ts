@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   HealthResponseSchema,
+  OnboardingCompleteRequestSchema,
+  ProfileUpdateRequestSchema,
+  RedeemInviteRequestSchema,
   SyncPullResponseSchema,
   SyncPushRequestSchema,
   TransactionSourceSchema,
@@ -151,5 +154,59 @@ describe("@strata/api-contract", () => {
       },
     });
     expect(parsed.has_more).toBe(false);
+  });
+
+  it("validates ProfileUpdateRequestSchema, RedeemInviteRequestSchema, and OnboardingCompleteRequestSchema", () => {
+    expect(ProfileUpdateRequestSchema.safeParse({}).success).toBe(false);
+    expect(
+      ProfileUpdateRequestSchema.safeParse({
+        theme: "dark",
+        locale: "en",
+        privacy_blur_default: true,
+      }).success
+    ).toBe(true);
+
+    expect(RedeemInviteRequestSchema.safeParse({ code: " ab " }).success).toBe(false);
+    const inviteParsed = RedeemInviteRequestSchema.parse({ code: "  STRATA-2026  " });
+    expect(inviteParsed.code).toBe("STRATA-2026");
+
+    const onboardingValid = OnboardingCompleteRequestSchema.safeParse({
+      display_name: "Alex",
+      locale: "ru",
+      base_currency: "RUB",
+      theme: "system",
+      privacy_blur_default: false,
+      accounts: [
+        {
+          name: "Main Debit",
+          type: "debit",
+          currency: "RUB",
+          initial_balance_minor: 500000,
+        },
+      ],
+      categories: [
+        {
+          name: "Groceries",
+          kind: "expense",
+          is_passive: false,
+        },
+      ],
+    });
+    expect(onboardingValid.success).toBe(true);
+
+    const onboardingFloat = OnboardingCompleteRequestSchema.safeParse({
+      locale: "en",
+      base_currency: "USD",
+      theme: "dark",
+      accounts: [
+        {
+          name: "Checking",
+          type: "debit",
+          currency: "USD",
+          initial_balance_minor: 12.34,
+        },
+      ],
+    });
+    expect(onboardingFloat.success).toBe(false);
   });
 });

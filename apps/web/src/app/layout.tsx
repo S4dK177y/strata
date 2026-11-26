@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { AppProviders } from "@/components/providers/app-providers";
+import { getServerLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,15 +14,28 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4F46E5",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F3F5FB" },
+    { media: "(prefers-color-scheme: dark)", color: "#070913" },
+  ],
   width: "device-width",
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("strata-theme");var m=document.querySelector('meta[name="color-scheme"]');var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(m){m.content=(t==="light"||t==="dark")?t:"light dark";}var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);}catch(e){}})();`;
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const initialLocale = await getServerLocale();
+
   return (
-    <html lang="ru" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen antialiased">{children}</body>
+    <html lang={initialLocale} suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="light dark" />
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-screen antialiased">
+        <AppProviders initialLocale={initialLocale}>{children}</AppProviders>
+      </body>
     </html>
   );
 }

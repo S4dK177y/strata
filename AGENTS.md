@@ -38,7 +38,7 @@ Before making changes in any new chat or session:
 4. **Privacy by Design & RLS:**
    - Every user table MUST have RLS enabled using `(SELECT auth.uid()) = user_id`.
    - Role `admin` MUST NEVER have `SELECT` access to other users' financial tables (`accounts`, `transactions`, `debts`, `goals`, `savings_rules`, `recurring_payments`). Admin telemetry uses aggregate-only `SECURITY DEFINER` RPCs.
-   - `registration_invite_only` feature flag defaults to `true` (enforced for both Email and Google OAuth).
+   - `registration_invite_only` feature flag defaults to `true` (enforced for all new registrations).
 5. **Android & Offline Sync-Readiness:**
    - Every user-owned table has client-friendly `id UUID`, `created_at`, `updated_at` (trigger-maintained), and `deleted_at` (soft delete).
    - `transactions` carries `status` (`confirmed` | `draft`), `source` (`web` | `android` | `android_push` — CSV/XLSX import is intentionally excluded from scope), and `external_hash`.

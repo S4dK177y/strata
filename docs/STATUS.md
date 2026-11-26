@@ -6,7 +6,8 @@
 - **Stage 1 (Core MVP):**
   - **PR 1 — Foundation, Monorepo, Design Code, `finance-core` & CI/CD** ✅ **Completed & Verified**.
   - **PR 2 — Supabase SQL Migrations + RLS, Hono OpenAPI 3.1 REST API & Delta Sync** ✅ **Completed & Verified**.
-- **Next Active Task:** **PR 3 — Auth (Email + Google OAuth), Invite-code gate (`redeem_invite_code`), 3-step Onboarding, Theme & RU/EN switcher**.
+  - **PR 3 — Auth (Email & Password), Invite-code gate (`redeem_invite_code`), 3-step Onboarding, Theme & RU/EN switcher** ✅ **Completed & Verified**.
+- **Next Active Task:** **PR 4 — Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator.**
 
 ## Completed
 - Architecture, DB schema, UX navigation, Expressive Neobank visual style, and brand **Strata** approved.
@@ -25,6 +26,12 @@
   - Dual Cookie (`@supabase/ssr`) + Bearer JWT auth and `registration_invite_only` Invite Gate middleware (`403 INVITE_REQUIRED`).
   - Implemented `/api/v1/health` (with DB keepalive ping), `/api/v1/openapi.json`, `/api/v1/feature-flags`, `/api/v1/me`, `/api/v1/sync`, and `/api/v1/sync/push` (FK ordering + LWW conflict resolution + soft delete) + 6 passing Vitest API tests.
 - Verified cleanly with `npm run build:tokens && npm run typecheck && npm run lint && npm run test && npm run build && npm audit --omit=dev --audit-level=high` and live `next start` smoke test against Supabase.
+- **PR 3 (Auth, Invite Gate, Onboarding, Theme & i18n):**
+  - Updated `@strata/design-tokens` with `color-scheme: light dark` + `<meta name="color-scheme">` CSS mapping and OS fallback.
+  - Extended `@strata/api-contract` (`packages/api-contract/src/profile.ts`) and Hono OpenAPI 3.1 API with `PATCH /api/v1/me`, `POST /api/v1/invites/redeem` (wrapping `redeem_invite_code`), and `POST /api/v1/onboarding/complete` + 100% passing contract & API Vitest suites (6 + 9 + 9 tests).
+  - Implemented Next.js 16 `src/proxy.ts` (`updateSession` via `getClaims()`), `getServerSessionGate()`, `maybeBootstrapAdmin()`, and PKCE auth routes (`/auth/callback`, `/auth/confirm`, `/auth/signout`).
+  - Built Expressive Neobank UI primitives (`apps/web/src/components/ui/*` using Radix UI, `lucide-react`, `sonner` strictly on `--strata-*` tokens), zero-FOUC `ThemeProvider` (`system` | `light` | `dark`), SSR-synced `RU` / `EN` i18n, global `PrivacyProvider`, `AppShell`, `/login`, `/reset-password`, `/invite`, 3-step `/onboarding`, real DB-backed `/`, and `/settings`.
+  - Verified cleanly via `build:tokens`, `typecheck`, `lint`, `test` (24 Vitest tests total), `next build`, `npm audit --omit=dev --audit-level=high` (0 vulnerabilities), and live `next start` smoke test against Supabase.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
@@ -32,6 +39,5 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 3:** Auth (Email + Google OAuth), Invite-code gate, 3-step Onboarding, Theme & RU/EN switcher.
 - **PR 4:** Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator.
 - **PR 5:** Dashboard, Export, `/admin`, Playwright E2E.

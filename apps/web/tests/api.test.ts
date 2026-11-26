@@ -9,6 +9,7 @@ type RowRecord = Record<string, unknown>;
 interface MockDbState {
   feature_flags: RowRecord[];
   profiles: RowRecord[];
+  invite_codes: RowRecord[];
   accounts: RowRecord[];
   savings_rules: RowRecord[];
   categories: RowRecord[];
@@ -87,6 +88,24 @@ function createDefaultDbState(): MockDbState {
         updated_at: now,
       },
     ],
+    invite_codes: [
+      {
+        id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        code: "STRATA-2026",
+        max_uses: 5,
+        used_count: 0,
+        expires_at: null,
+        is_active: true,
+      },
+      {
+        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        code: "EXPIRED-CODE",
+        max_uses: 1,
+        used_count: 1,
+        expires_at: null,
+        is_active: true,
+      },
+    ],
     accounts: [],
     savings_rules: [],
     categories: [],
@@ -103,8 +122,9 @@ class MockQueryBuilder {
   private filters: Array<(row: RowRecord) => boolean> = [];
   private orderBy: { col: string; asc: boolean } | null = null;
   private maxRows: number | null = null;
-  private mode: "select" | "update" | "upsert" = "select";
+  private mode: "select" | "update" | "upsert" | "insert" = "select";
   private mutationPayload: RowRecord | null = null;
+  private insertRows: RowRecord[] = [];
 
   constructor(
     private readonly state: MockDbState,
@@ -148,6 +168,12 @@ class MockQueryBuilder {
     return this;
   }
 
+  insert(payload: RowRecord | RowRecord[]) {
+    this.mode = "insert";
+    this.insertRows = Array.isArray(payload) ? payload : [payload];
+    return this;
+  }
+
   private execute(): RowRecord[] {
     const rows = this.state[this.table];
 
@@ -176,6 +202,20 @@ class MockQueryBuilder {
       const inserted = { ...this.mutationPayload, updated_at: now };
       rows.push(inserted);
       return [{ ...inserted }];
+    }
+
+    if (this.mode === "insert") {
+      this.onWrite?.(this.table, "insert");
+      const now = new Date().toISOString();
+      const inserted = this.insertRows.map((row, idx) => ({
+        id: row.id ?? `00000000-0000-4000-8000-${String(rows.length + idx + 1).padStart(12, "0")}`,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+        ...row,
+      }));
+      rows.push(...inserted);
+      return inserted.map((r) => ({ ...r }));
     }
 
     let result = rows.filter((row) => this.filters.every((fn) => fn(row)));
@@ -216,44 +256,79 @@ class MockQueryBuilder {
 
 function createMockClient(
   state: MockDbState,
-  onWrite?: (table: keyof MockDbState, op: string) => void
+  onWrite?: (table: keyof MockDbState, op: string) => void,
+  currentUserId?: string
 ): AppSupabaseClient {
   return {
     from(table: keyof MockDbState) {
       return new MockQueryBuilder(state, table, onWrite);
+    },
+    async rpc(fnName: string, args?: Record<string, unknown>) {
+      if (fnName === "redeem_invite_code") {
+        const cleanCode = String(args?.p_code ?? "").trim();
+        const profile = state.profiles.find((p) => p.id === currentUserId);
+        if (!profile) {
+          return { data: null, error: { code: "P0002", message: "User profile not found" } };
+        }
+        if (profile.invite_redeemed_at) {
+          return { data: profile.invite_redeemed_at, error: null };
+        }
+        const invite = state.invite_codes.find(
+          (i) =>
+            i.code === cleanCode &&
+            i.is_active === true &&
+            Number(i.used_count) < Number(i.max_uses)
+        );
+        if (!invite) {
+          return {
+            data: null,
+            error: { code: "P0001", message: "INVALID_OR_EXPIRED_INVITE_CODE" },
+          };
+        }
+        const now = new Date().toISOString();
+        invite.used_count = Number(invite.used_count) + 1;
+        profile.invite_redeemed_at = now;
+        profile.updated_at = now;
+        return { data: now, error: null };
+      }
+      return { data: null, error: { message: `Unknown RPC: ${fnName}` } };
     },
   } as unknown as AppSupabaseClient;
 }
 
 function createTestHarness(state: MockDbState = createDefaultDbState()) {
   const writeLog: string[] = [];
-  const client = createMockClient(state, (table, op) => writeLog.push(`${op}:${table}`));
+  const onWrite = (table: keyof MockDbState, op: string) => writeLog.push(`${op}:${table}`);
+  const publicClient = createMockClient(state, onWrite);
 
   const deps: ApiDependencies = {
-    getPublicClient: () => client,
+    getPublicClient: () => publicClient,
     resolveAuth: async (request: Request): Promise<RequestAuthContext | null> => {
       const auth = request.headers.get("authorization");
       if (!auth) return null;
       if (auth === "Bearer token-invited") {
+        const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
         return {
-          supabase: client,
-          userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+          supabase: createMockClient(state, onWrite, userId),
+          userId,
           email: "invited@strata.app",
           authMode: "bearer",
         };
       }
       if (auth === "Bearer token-uninvited") {
+        const userId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
         return {
-          supabase: client,
-          userId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          supabase: createMockClient(state, onWrite, userId),
+          userId,
           email: "uninvited@strata.app",
           authMode: "bearer",
         };
       }
       if (auth === "Bearer token-admin") {
+        const userId = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
         return {
-          supabase: client,
-          userId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          supabase: createMockClient(state, onWrite, userId),
+          userId,
           email: "admin@strata.app",
           authMode: "bearer",
         };
@@ -290,6 +365,8 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
         "/api/v1/health",
         "/api/v1/feature-flags",
         "/api/v1/me",
+        "/api/v1/invites/redeem",
+        "/api/v1/onboarding/complete",
         "/api/v1/sync",
         "/api/v1/sync/push",
       ])
@@ -442,7 +519,8 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
       expect.objectContaining({ entity: "transactions", id: txId, status: "applied" }),
     ]);
 
-    // Soft-delete transaction
+    // Soft-delete transaction with a timestamp strictly newer than server upsert
+    const futureDeleteAt = new Date(Date.now() + 60_000).toISOString();
     const deleteRes = await app.request("http://localhost/api/v1/sync/push", {
       method: "POST",
       headers: {
@@ -455,7 +533,7 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
             entity: "transactions",
             operation: "delete",
             id: txId,
-            updated_at: "2026-11-26T06:00:00.000Z",
+            updated_at: futureDeleteAt,
           },
         ],
       }),
@@ -479,6 +557,165 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
     };
     expect(pullJson.has_more).toBe(false);
     expect(pullJson.changes.accounts).toHaveLength(1);
-    expect(pullJson.changes.transactions[0]?.deleted_at).toBe("2026-11-26T06:00:00.000Z");
+    expect(pullJson.changes.transactions[0]?.deleted_at).toBe(futureDeleteAt);
+  });
+
+  it("allows PATCH /api/v1/me without invite redemption and validates non-empty payload", async () => {
+    const { app } = createTestHarness();
+
+    const emptyRes = await app.request("http://localhost/api/v1/me", {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+    expect(emptyRes.status).toBe(400);
+
+    const patchRes = await app.request("http://localhost/api/v1/me", {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        display_name: "Elena",
+        locale: "ru",
+        theme: "dark",
+        privacy_blur_default: true,
+      }),
+    });
+    expect(patchRes.status).toBe(200);
+    const patchJson = (await patchRes.json()) as {
+      profile: {
+        display_name: string;
+        locale: string;
+        theme: string;
+        privacy_blur_default: boolean;
+      };
+      invite_required: boolean;
+    };
+    expect(patchJson.profile.display_name).toBe("Elena");
+    expect(patchJson.profile.locale).toBe("ru");
+    expect(patchJson.profile.theme).toBe("dark");
+    expect(patchJson.profile.privacy_blur_default).toBe(true);
+    expect(patchJson.invite_required).toBe(true);
+  });
+
+  it("redeems valid invite codes, rejects invalid codes, and unlocks financial endpoints", async () => {
+    const { app } = createTestHarness();
+
+    const badRes = await app.request("http://localhost/api/v1/invites/redeem", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code: "EXPIRED-CODE" }),
+    });
+    expect(badRes.status).toBe(400);
+    const badJson = (await badRes.json()) as { error: string };
+    expect(badJson.error).toBe("INVALID_OR_EXPIRED_INVITE_CODE");
+
+    const okRes = await app.request("http://localhost/api/v1/invites/redeem", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code: "STRATA-2026" }),
+    });
+    expect(okRes.status).toBe(200);
+    const okJson = (await okRes.json()) as {
+      invite_redeemed_at: string;
+      invite_required: boolean;
+    };
+    expect(okJson.invite_required).toBe(false);
+    expect(okJson.invite_redeemed_at).toBeTruthy();
+
+    const syncAfterRes = await app.request("http://localhost/api/v1/sync", {
+      headers: { Authorization: "Bearer token-uninvited" },
+    });
+    expect(syncAfterRes.status).toBe(200);
+  });
+
+  it("enforces invite gate on /onboarding/complete and seeds starter accounts & categories", async () => {
+    const { app, state } = createTestHarness();
+
+    const blockedRes = await app.request("http://localhost/api/v1/onboarding/complete", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        locale: "en",
+        base_currency: "USD",
+        theme: "system",
+        privacy_blur_default: false,
+      }),
+    });
+    expect(blockedRes.status).toBe(403);
+    const blockedJson = (await blockedRes.json()) as { error: string };
+    expect(blockedJson.error).toBe("INVITE_REQUIRED");
+
+    const redeemRes = await app.request("http://localhost/api/v1/invites/redeem", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ code: "STRATA-2026" }),
+    });
+    expect(redeemRes.status).toBe(200);
+
+    const completeRes = await app.request("http://localhost/api/v1/onboarding/complete", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-uninvited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        display_name: "Sam",
+        locale: "en",
+        base_currency: "USD",
+        theme: "dark",
+        privacy_blur_default: true,
+        accounts: [
+          {
+            name: "Main Checking",
+            type: "debit",
+            currency: "USD",
+            initial_balance_minor: 250000,
+          },
+        ],
+        categories: [
+          {
+            name: "Groceries",
+            kind: "expense",
+            is_passive: false,
+          },
+          {
+            name: "Cashback",
+            kind: "income",
+            is_passive: true,
+          },
+        ],
+      }),
+    });
+    expect(completeRes.status).toBe(200);
+    const completeJson = (await completeRes.json()) as {
+      profile: { onboarding_completed: boolean; base_currency: string; theme: string };
+      created_accounts_count: number;
+      created_categories_count: number;
+    };
+    expect(completeJson.profile.onboarding_completed).toBe(true);
+    expect(completeJson.profile.base_currency).toBe("USD");
+    expect(completeJson.profile.theme).toBe("dark");
+    expect(completeJson.created_accounts_count).toBe(1);
+    expect(completeJson.created_categories_count).toBe(2);
+    expect(state.accounts).toHaveLength(1);
+    expect(state.categories).toHaveLength(2);
   });
 });

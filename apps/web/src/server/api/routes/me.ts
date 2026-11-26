@@ -1,5 +1,17 @@
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
-import { ErrorResponseSchema, MeResponseSchema, WrappedSettingsSchema } from "@strata/api-contract";
+import {
+  ErrorResponseSchema,
+  MeResponseSchema,
+  ProfileUpdateRequestSchema,
+  WrappedSettingsSchema,
+} from "@strata/api-contract";
+import { maybeBootstrapAdmin } from "@/lib/auth/bootstrap-admin";
+import {
+  computeInviteRequired,
+  PROFILE_SELECT_COLUMNS,
+  serializeProfileRow,
+} from "@/lib/auth/profile-serializer";
+import type { Database } from "@/lib/supabase/database.types";
 import { createRequireAuth } from "../middleware/auth";
 import type { ApiDependencies, ApiEnv } from "../types";
 
@@ -47,6 +59,66 @@ const getMeRoute = createRoute({
   },
 });
 
+const patchMeRoute = createRoute({
+  method: "patch",
+  path: "/me",
+  tags: ["Profile"],
+  summary: "Update current user profile preferences (locale, theme, privacy blur, display name)",
+  security: AUTH_SECURITY,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: ProfileUpdateRequestSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Updated user profile",
+      content: {
+        "application/json": {
+          schema: MeResponseSchema,
+        },
+      },
+    },
+    400: {
+      description: "Validation error",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    401: {
+      description: "Authentication required",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Profile not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    500: {
+      description: "Failed to update profile",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
 export function createMeRouter(deps: ApiDependencies) {
   const router = new OpenAPIHono<ApiEnv>();
   const requireAuth = createRequireAuth(deps);
@@ -59,12 +131,12 @@ export function createMeRouter(deps: ApiDependencies) {
       return c.json({ error: "UNAUTHORIZED", message: "Authentication required" }, 401);
     }
 
+    await maybeBootstrapAdmin({ userId: auth.userId, email: auth.email });
+
     const [profileRes, flagRes] = await Promise.all([
       auth.supabase
         .from("profiles")
-        .select(
-          "id, role, display_name, locale, base_currency, theme, privacy_blur_default, onboarding_completed, invite_redeemed_at, wrapped_settings, created_at, updated_at"
-        )
+        .select(PROFILE_SELECT_COLUMNS)
         .eq("id", auth.userId)
         .maybeSingle(),
       auth.supabase
@@ -89,31 +161,109 @@ export function createMeRouter(deps: ApiDependencies) {
       );
     }
 
+    const profile = serializeProfileRow(row);
     const inviteOnlyEnabled = flagRes.data?.enabled ?? true;
-    const role: "admin" | "user" = row.role === "admin" ? "admin" : "user";
-    const theme: "light" | "dark" | "system" =
-      row.theme === "light" || row.theme === "dark" ? row.theme : "system";
-    const inviteRequired = inviteOnlyEnabled && role !== "admin" && row.invite_redeemed_at === null;
-    const wrappedParsed = WrappedSettingsSchema.safeParse(row.wrapped_settings ?? {});
+    const inviteRequired = computeInviteRequired(inviteOnlyEnabled, profile);
 
     return c.json(
       {
-        profile: {
-          id: row.id,
-          role,
-          display_name: row.display_name,
-          locale: row.locale === "en" ? ("en" as const) : ("ru" as const),
-          base_currency: row.base_currency,
-          theme,
-          privacy_blur_default: row.privacy_blur_default,
-          onboarding_completed: row.onboarding_completed,
-          invite_redeemed_at: row.invite_redeemed_at,
-          wrapped_settings: wrappedParsed.success
-            ? wrappedParsed.data
-            : WrappedSettingsSchema.parse({}),
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        },
+        profile,
+        email: auth.email,
+        invite_required: inviteRequired,
+      },
+      200
+    );
+  });
+
+  router.openapi(patchMeRoute, async (c) => {
+    const auth = c.get("auth");
+    if (!auth) {
+      return c.json({ error: "UNAUTHORIZED", message: "Authentication required" }, 401);
+    }
+
+    const body = c.req.valid("json");
+    const updatePatch: Database["public"]["Tables"]["profiles"]["Update"] = {};
+
+    if (body.display_name !== undefined) updatePatch.display_name = body.display_name;
+    if (body.locale !== undefined) updatePatch.locale = body.locale;
+    if (body.base_currency !== undefined) updatePatch.base_currency = body.base_currency;
+    if (body.theme !== undefined) updatePatch.theme = body.theme;
+    if (body.privacy_blur_default !== undefined) {
+      updatePatch.privacy_blur_default = body.privacy_blur_default;
+    }
+    if (body.onboarding_completed !== undefined) {
+      updatePatch.onboarding_completed = body.onboarding_completed;
+    }
+
+    if (body.wrapped_settings !== undefined) {
+      const { data: existingRow, error: fetchError } = await auth.supabase
+        .from("profiles")
+        .select("wrapped_settings")
+        .eq("id", auth.userId)
+        .maybeSingle();
+
+      if (fetchError) {
+        return c.json(
+          { error: "PROFILE_LOAD_FAILED", message: fetchError.message },
+          500
+        );
+      }
+
+      if (!existingRow) {
+        return c.json(
+          { error: "PROFILE_NOT_FOUND", message: "User profile does not exist" },
+          404
+        );
+      }
+
+      const existingWrapped = WrappedSettingsSchema.safeParse(
+        existingRow.wrapped_settings ?? {}
+      );
+      const baseWrapped = existingWrapped.success
+        ? existingWrapped.data
+        : WrappedSettingsSchema.parse({});
+
+      updatePatch.wrapped_settings = WrappedSettingsSchema.parse({
+        ...baseWrapped,
+        ...body.wrapped_settings,
+      });
+    }
+
+    const [updateRes, flagRes] = await Promise.all([
+      auth.supabase
+        .from("profiles")
+        .update(updatePatch)
+        .eq("id", auth.userId)
+        .select(PROFILE_SELECT_COLUMNS)
+        .maybeSingle(),
+      auth.supabase
+        .from("feature_flags")
+        .select("enabled")
+        .eq("key", "registration_invite_only")
+        .maybeSingle(),
+    ]);
+
+    if (updateRes.error) {
+      return c.json(
+        { error: "PROFILE_UPDATE_FAILED", message: updateRes.error.message },
+        500
+      );
+    }
+
+    if (!updateRes.data) {
+      return c.json(
+        { error: "PROFILE_NOT_FOUND", message: "User profile does not exist" },
+        404
+      );
+    }
+
+    const profile = serializeProfileRow(updateRes.data);
+    const inviteOnlyEnabled = flagRes.data?.enabled ?? true;
+    const inviteRequired = computeInviteRequired(inviteOnlyEnabled, profile);
+
+    return c.json(
+      {
+        profile,
         email: auth.email,
         invite_required: inviteRequired,
       },

@@ -16,3 +16,32 @@ body {
     background-color 200ms ease,
     color 200ms ease;
 }
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--strata-accent-brand);
+  outline-offset: 2px;
+}
+
+.strata-input:is(:user-invalid, .user-invalid-fallback) {
+  border-color: var(--strata-money-expense);
+}
+
+.strata-input:is(:user-valid, .user-valid-fallback) {
+  border-color: var(--strata-border-strong);
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}

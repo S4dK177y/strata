@@ -33,3 +33,5 @@ Thumbs.db
 .gemini/
 .cursor/
 .windsurf/
+.vercel
+.env*
