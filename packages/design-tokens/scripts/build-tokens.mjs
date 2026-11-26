@@ -56,21 +56,70 @@ ${renderVars(tokens.themes.dark)}
 
 .strata-glass {
   background: var(--strata-bg-glass);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(18px);
   border: 1px solid var(--strata-border-subtle);
   box-shadow: var(--strata-shadow-card);
 }
 
+.strata-aurora-screen {
+  background-color: var(--strata-bg-canvas);
+  background-image:
+    radial-gradient(62% 55% at 86% 18%, rgba(16, 185, 129, 0.22) 0%, transparent 65%),
+    radial-gradient(58% 60% at 52% 48%, rgba(6, 182, 212, 0.18) 0%, transparent 68%),
+    radial-gradient(65% 55% at 15% 88%, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+}
+
+.dark .strata-aurora-screen {
+  background-color: var(--strata-bg-canvas);
+  background-image:
+    radial-gradient(60% 55% at 88% 18%, rgba(52, 211, 153, 0.36) 0%, transparent 62%),
+    radial-gradient(55% 65% at 55% 46%, rgba(14, 165, 233, 0.30) 0%, transparent 66%),
+    radial-gradient(68% 55% at 12% 84%, rgba(16, 185, 129, 0.24) 0%, transparent 68%),
+    linear-gradient(135deg, #0b0c0e 0%, #111b1e 48%, #0d1615 100%);
+}
+
+.strata-aurora-hero {
+  background-color: var(--strata-bg-surface);
+  background-image:
+    radial-gradient(75% 95% at 82% 18%, rgba(16, 185, 129, 0.20) 0%, transparent 65%),
+    radial-gradient(65% 90% at 32% 24%, rgba(6, 182, 212, 0.16) 0%, transparent 65%);
+  border: 1px solid var(--strata-border-subtle);
+}
+
+.dark .strata-aurora-hero {
+  background-color: #0e1416;
+  background-image:
+    linear-gradient(180deg, rgba(11, 12, 14, 0) 68%, var(--strata-bg-canvas) 100%),
+    radial-gradient(78% 105% at 84% 16%, rgba(52, 211, 153, 0.38) 0%, transparent 64%),
+    radial-gradient(66% 95% at 44% 34%, rgba(14, 165, 233, 0.28) 0%, transparent 66%),
+    radial-gradient(60% 70% at 10% 10%, rgba(16, 185, 129, 0.18) 0%, transparent 60%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.strata-frosted {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  box-shadow: var(--strata-shadow-card);
+}
+
+.dark .strata-frosted {
+  background: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 48px -24px rgba(0, 0, 0, 0.7);
+}
+
 .strata-hero {
-  background: linear-gradient(135deg, #312e81 0%, #4338ca 48%, #0f766e 100%);
+  background: linear-gradient(135deg, #047857 0%, #0d9488 55%, #0284c7 100%);
   color: #f8fafc;
   box-shadow: var(--strata-shadow-neon);
 }
 
 .dark .strata-hero {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(99, 102, 241, 0.34) 0%, rgba(16, 185, 129, 0.16) 55%, rgba(14, 18, 36, 0.96) 100%);
-  border: 1px solid var(--strata-border-glow);
+    radial-gradient(120% 140% at 85% 0%, rgba(52, 211, 153, 0.28) 0%, rgba(14, 165, 233, 0.20) 52%, rgba(22, 23, 26, 0.96) 100%);
+  border: 1px solid var(--strata-border-strong);
 }
 
 .strata-story-ring {

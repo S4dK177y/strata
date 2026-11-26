@@ -64,7 +64,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
         <div className="space-y-6">
-          <Link href="/" className="flex items-center gap-3 rounded-xl p-1">
+          <Link href="/" className="flex items-center gap-3 rounded-2xl p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl" />
             <div>
@@ -93,7 +93,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
                   <div
                     key={item.href}
                     aria-disabled="true"
-                    className="flex min-h-11 items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-muted)] opacity-55"
+                    className="flex min-h-11 items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-muted)] opacity-55"
                   >
                     <span className="flex items-center gap-3">
                       <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
@@ -111,9 +111,9 @@ export function AppShell({ profile, email, children }: AppShellProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex min-h-11 items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition",
+                    "flex min-h-11 items-center gap-3 rounded-2xl px-3.5 py-2.5 text-sm font-semibold transition",
                     item.active
-                      ? "border border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                      ? "bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]"
                       : "text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
                   )}
                 >
@@ -128,7 +128,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-xl border border-[var(--strata-border-subtle)] px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+            className="flex min-h-11 w-full cursor-pointer items-center gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] px-3.5 py-2.5 text-sm font-medium text-[var(--strata-text-secondary)] transition hover:text-[var(--strata-text-primary)]"
           >
             <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             {t.common.signOut}
@@ -138,8 +138,8 @@ export function AppShell({ profile, email, children }: AppShellProps) {
 
       {/* Main area */}
       <div className="flex-1 pb-24 lg:pb-10">
-        <header className="sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-3 backdrop-blur-md lg:px-8">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
+        <header className="sticky top-0 z-30 border-b border-[var(--strata-border-subtle)] bg-[var(--strata-bg-glass)] px-4 py-3 backdrop-blur-xl lg:px-8">
+          <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
             <Link href="/" className="flex items-center gap-2.5 lg:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
@@ -160,7 +160,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           </div>
         </header>
 
-        <main className="mx-auto max-w-5xl px-4 py-6 lg:px-8">{children}</main>
+        <main className="mx-auto max-w-4xl px-4 py-6 lg:px-8">{children}</main>
       </div>
 
       {/* Mobile bottom nav */}
@@ -173,7 +173,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           className={cn(
             "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
             pathname === "/"
-              ? "text-[var(--strata-text-primary)]"
+              ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
@@ -192,7 +192,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
         <span
           aria-disabled="true"
           title={t.common.comingSoon}
-          className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--strata-accent-brand)] text-white opacity-55"
+          className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] opacity-55"
         >
           <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
         </span>
@@ -210,7 +210,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           className={cn(
             "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
             pathname === "/settings"
-              ? "text-[var(--strata-text-primary)]"
+              ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >

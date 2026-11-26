@@ -16,7 +16,7 @@ import { useTheme } from "@/components/providers/theme-provider";
 import { AmountText } from "@/components/ui/amount-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -229,31 +229,38 @@ export function OnboardingWizard({
   const incomeCategories = categories.filter((c) => c.kind === "income");
 
   return (
-    <div className="strata-canvas-ambient flex min-h-screen flex-col">
+    <div className="strata-aurora-screen flex min-h-screen flex-col">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
+          <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl shadow-sm" />
           <div>
             <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
               {t.common.brand}
             </span>
             {email ? (
-              <span className="ml-2.5 hidden text-xs text-[var(--strata-text-muted)] sm:inline">
+              <span className="ml-2.5 hidden text-xs text-[var(--strata-text-secondary)] sm:inline">
                 {email}
               </span>
             ) : null}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <LocaleSwitcher onChange={handleLocaleSwitch} />
-          <ThemeSwitcher variant="compact" onChange={setSelectedTheme} />
+          <LocaleSwitcher
+            onChange={handleLocaleSwitch}
+            className="strata-frosted border-[var(--strata-border-subtle)]"
+          />
+          <ThemeSwitcher
+            variant="compact"
+            onChange={setSelectedTheme}
+            className="strata-frosted border-[var(--strata-border-subtle)]"
+          />
         </div>
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-8">
         <div className="mb-5 space-y-2">
-          <div className="flex items-center justify-between text-xs font-medium text-[var(--strata-text-muted)]">
+          <div className="flex items-center justify-between text-xs font-medium text-[var(--strata-text-secondary)]">
             <span>{t.onboarding.stepLabel.replace("{step}", String(step))}</span>
             <span className="strata-mono">{Math.round((step / 3) * 100)}%</span>
           </div>
@@ -265,18 +272,20 @@ export function OnboardingWizard({
                   "h-1.5 rounded-full transition-colors duration-200",
                   idx <= step
                     ? "bg-[var(--strata-accent-brand)]"
-                    : "bg-[var(--strata-border-subtle)]"
+                    : "bg-[var(--strata-border-strong)]"
                 )}
               />
             ))}
           </div>
         </div>
 
-        <Card className="space-y-6">
+        <div className="strata-frosted space-y-6 rounded-[28px] p-6 sm:p-8">
           {step === 1 ? (
             <>
               <CardHeader>
-                <CardTitle>{t.onboarding.step1Title}</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  {t.onboarding.step1Title}
+                </CardTitle>
                 <CardDescription>{t.onboarding.step1Subtitle}</CardDescription>
               </CardHeader>
 
@@ -291,6 +300,7 @@ export function OnboardingWizard({
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder={t.onboarding.displayNamePlaceholder}
+                    className="border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/70 focus:bg-[var(--strata-bg-surface)]"
                   />
                 </div>
 
@@ -303,7 +313,7 @@ export function OnboardingWizard({
                         handleLocaleSwitch(val === "en" ? "en" : "ru")
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/70">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -316,7 +326,7 @@ export function OnboardingWizard({
                   <div className="space-y-1.5">
                     <Label>{t.onboarding.currencyLabel}</Label>
                     <Select value={baseCurrency} onValueChange={setBaseCurrency}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/70">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -339,7 +349,7 @@ export function OnboardingWizard({
                   />
                 </div>
 
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-4">
+                <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/65 p-4">
                   <div className="space-y-1">
                     <Label htmlFor="onboarding-privacy" className="text-sm font-semibold">
                       {t.onboarding.privacyDefaultLabel}
@@ -352,6 +362,7 @@ export function OnboardingWizard({
                       <AmountText
                         minor={14500000}
                         currency={baseCurrency}
+                        alwaysShowDecimals
                         className={cn(
                           "font-semibold text-[var(--strata-text-primary)]",
                           (privacyDefault || privacyBlur) && "blur-[7px] select-none"
@@ -379,7 +390,9 @@ export function OnboardingWizard({
           ) : step === 2 ? (
             <>
               <CardHeader>
-                <CardTitle>{t.onboarding.step2Title}</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  {t.onboarding.step2Title}
+                </CardTitle>
                 <CardDescription>{t.onboarding.step2Subtitle}</CardDescription>
               </CardHeader>
 
@@ -388,10 +401,10 @@ export function OnboardingWizard({
                   <div
                     key={acc.id}
                     className={cn(
-                      "space-y-3 rounded-xl border p-4 transition",
+                      "space-y-3 rounded-2xl border p-4 transition",
                       acc.selected
-                        ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)]"
-                        : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] opacity-60"
+                        ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)]/85"
+                        : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/55 opacity-65"
                     )}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -545,7 +558,9 @@ export function OnboardingWizard({
           ) : (
             <>
               <CardHeader>
-                <CardTitle>{t.onboarding.step3Title}</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  {t.onboarding.step3Title}
+                </CardTitle>
                 <CardDescription>{t.onboarding.step3Subtitle}</CardDescription>
               </CardHeader>
 
@@ -571,13 +586,13 @@ export function OnboardingWizard({
                         className={cn(
                           "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition",
                           cat.selected
-                            ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
-                            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] text-[var(--strata-text-muted)]"
+                            ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/55 text-[var(--strata-text-muted)]"
                         )}
                       >
                         {cat.selected ? (
                           <Check
-                            className="h-3.5 w-3.5 text-[var(--strata-text-primary)]"
+                            className="h-3.5 w-3.5 text-[var(--strata-accent-brand)]"
                             strokeWidth={2}
                             aria-hidden="true"
                           />
@@ -609,13 +624,13 @@ export function OnboardingWizard({
                         className={cn(
                           "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition",
                           cat.selected
-                            ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
-                            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] text-[var(--strata-text-muted)]"
+                            ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                            : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/55 text-[var(--strata-text-muted)]"
                         )}
                       >
                         {cat.selected ? (
                           <Check
-                            className="h-3.5 w-3.5 text-[var(--strata-text-primary)]"
+                            className="h-3.5 w-3.5 text-[var(--strata-accent-brand)]"
                             strokeWidth={2}
                             aria-hidden="true"
                           />
@@ -631,7 +646,7 @@ export function OnboardingWizard({
 
                 <form
                   onSubmit={handleAddCategory}
-                  className="flex flex-col gap-2.5 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-3 sm:flex-row sm:items-center"
+                  className="flex flex-col gap-2.5 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)]/65 p-3 sm:flex-row sm:items-center"
                 >
                   <Input
                     value={customCategoryName}
@@ -645,7 +660,7 @@ export function OnboardingWizard({
                       setCustomCategoryKind(v === "income" ? "income" : "expense")
                     }
                   >
-                    <SelectTrigger className="sm:w-44">
+                    <SelectTrigger className="bg-[var(--strata-bg-surface)] sm:w-44">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -679,7 +694,7 @@ export function OnboardingWizard({
               </div>
             </>
           )}
-        </Card>
+        </div>
       </main>
     </div>
   );

@@ -12,7 +12,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 const VARIANT_CLASSES: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-[var(--strata-accent-brand)] text-white shadow-sm hover:brightness-110 active:scale-[0.99]",
+    "bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] hover:brightness-110 active:scale-[0.99]",
   secondary:
     "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] border border-[var(--strata-border-subtle)] hover:border-[var(--strata-border-strong)]",
   outline:
@@ -25,9 +25,9 @@ const VARIANT_CLASSES: Record<NonNullable<ButtonProps["variant"]>, string> = {
 
 const SIZE_CLASSES: Record<NonNullable<ButtonProps["size"]>, string> = {
   sm: "min-h-10 px-3.5 py-2 text-xs rounded-xl",
-  md: "min-h-11 px-4 py-2.5 text-sm rounded-xl",
-  lg: "min-h-12 px-5 py-3 text-sm rounded-xl",
-  icon: "min-h-11 min-w-11 p-2.5 rounded-xl",
+  md: "min-h-11 px-4 py-2.5 text-sm rounded-2xl",
+  lg: "min-h-12 px-5 py-3 text-sm rounded-2xl",
+  icon: "min-h-11 min-w-11 p-2.5 rounded-2xl",
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

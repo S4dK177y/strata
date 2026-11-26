@@ -13,7 +13,7 @@ export const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "grid w-full grid-cols-2 gap-1 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-1",
+      "grid w-full grid-cols-2 gap-1 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] p-1",
       className
     )}
     {...props}
@@ -28,7 +28,7 @@ export const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "min-h-10 cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold text-[var(--strata-text-muted)] transition duration-150 hover:text-[var(--strata-text-secondary)] data-[state=active]:bg-[var(--strata-bg-elevated)] data-[state=active]:text-[var(--strata-text-primary)] data-[state=active]:shadow-sm",
+      "min-h-10 cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-[var(--strata-text-muted)] transition duration-150 hover:text-[var(--strata-text-secondary)] data-[state=active]:bg-[var(--strata-bg-surface)] data-[state=active]:text-[var(--strata-text-primary)] data-[state=active]:shadow-sm",
       className
     )}
     {...props}

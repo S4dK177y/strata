@@ -8,7 +8,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] p-6 shadow-[var(--strata-shadow-card)] sm:p-7",
+        "rounded-3xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] p-5 shadow-[var(--strata-shadow-card)] sm:p-6",
         className
       )}
       {...props}

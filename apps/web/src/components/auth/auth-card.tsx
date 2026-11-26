@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
@@ -155,29 +155,35 @@ export function AuthCard({
     }
   }
 
+  const frostedInputClass =
+    "bg-[var(--strata-bg-canvas)]/70 border border-[var(--strata-border-subtle)] focus:bg-[var(--strata-bg-surface)]";
+
   return (
-    <div className="strata-canvas-ambient flex min-h-screen flex-col">
+    <div className="strata-aurora-screen flex min-h-screen flex-col">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 pt-6 sm:px-6">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon.svg" alt={t.common.brand} className="h-8 w-8 rounded-lg" />
+          <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl shadow-sm" />
           <span className="text-base font-bold tracking-tight text-[var(--strata-text-primary)]">
             {t.common.brand}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          <LocaleSwitcher />
-          <ThemeSwitcher variant="compact" />
+          <LocaleSwitcher className="strata-frosted border-[var(--strata-border-subtle)]" />
+          <ThemeSwitcher
+            variant="compact"
+            className="strata-frosted border-[var(--strata-border-subtle)]"
+          />
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-center px-4 py-10">
-        <Card className="space-y-6">
+      <main className="mx-auto flex w-full max-w-[430px] flex-1 flex-col justify-center px-4 py-10">
+        <div className="strata-frosted space-y-6 rounded-[28px] p-6 sm:p-8">
           {mode === "check_email" ? (
             <div className="space-y-5">
               <CardHeader>
-                <div className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-muted)]">
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
                   <Mail className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
                   <span>{email}</span>
                 </div>
@@ -209,7 +215,7 @@ export function AuthCard({
               {formError ? (
                 <div
                   role="alert"
-                  className="rounded-xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
+                  className="rounded-2xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)]/75 px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
                 >
                   {formError}
                 </div>
@@ -232,6 +238,7 @@ export function AuthCard({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
+                    className={frostedInputClass}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -253,14 +260,16 @@ export function AuthCard({
           ) : (
             <>
               <CardHeader>
-                <CardTitle>{t.auth.welcomeTitle}</CardTitle>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  {t.auth.welcomeTitle}
+                </CardTitle>
                 <CardDescription>{t.auth.welcomeSubtitle}</CardDescription>
               </CardHeader>
 
               {formError ? (
                 <div
                   role="alert"
-                  className="rounded-xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)] px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
+                  className="rounded-2xl border border-[var(--strata-money-expense)] bg-[var(--strata-bg-canvas)]/75 px-3.5 py-2.5 text-xs font-medium text-[var(--strata-money-expense)]"
                 >
                   {formError}
                 </div>
@@ -273,7 +282,7 @@ export function AuthCard({
                   setMode(v === "signup" ? "signup" : "signin");
                 }}
               >
-                <TabsList>
+                <TabsList className="bg-[var(--strata-bg-canvas)]/60">
                   <TabsTrigger value="signin">{t.auth.signInTab}</TabsTrigger>
                   <TabsTrigger value="signup">{t.auth.signUpTab}</TabsTrigger>
                 </TabsList>
@@ -293,6 +302,7 @@ export function AuthCard({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
+                        className={frostedInputClass}
                       />
                     </div>
 
@@ -320,7 +330,7 @@ export function AuthCard({
                           required
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pr-12"
+                          className={`${frostedInputClass} pr-12`}
                         />
                         <button
                           type="button"
@@ -363,6 +373,7 @@ export function AuthCard({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="you@example.com"
+                        className={frostedInputClass}
                       />
                     </div>
 
@@ -386,7 +397,7 @@ export function AuthCard({
                           aria-describedby="signup-password-rules"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pr-12"
+                          className={`${frostedInputClass} pr-12`}
                         />
                         <button
                           type="button"
@@ -413,10 +424,10 @@ export function AuthCard({
               </Tabs>
             </>
           )}
-        </Card>
+        </div>
 
         {inviteOnlyEnabled ? (
-          <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[var(--strata-text-muted)]">
+          <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[var(--strata-text-secondary)]">
             <Lock className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
             <span>{t.common.inviteBadge}</span>
           </p>

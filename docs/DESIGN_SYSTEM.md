@@ -1,7 +1,7 @@
 # Strata — Unified Design System ("Expressive Neobank")
 
 ## Core Aesthetic
-**Expressive Neobank**: deep obsidian canvas in dark mode (`#070913`) and airy cool mist in light mode (`#F3F5FB`), paired with subtle translucent surfaces, crisp indigo→cyan→emerald neon gradients, smooth `150–250ms` transitions, and strict `tabular-nums` alignment for all financial figures.
+**Expressive Neobank (Sber-inspired Graphite + Strata Aurora):** pure carbon-graphite surfaces in dark mode (`#0B0C0E` canvas, `#16171A` matte cards, `#212328` nested tiles) and crisp soft mist in light mode (`#F2F4F7` canvas, `#FFFFFF` cards), paired with organic emerald→cyan→indigo aurora backdrops (`.strata-aurora-screen`, `.strata-aurora-hero`), frosted squircle glass (`.strata-frosted`), split-decimal `AmountText` typography with `tabular-nums`, and smooth `150–250ms` transitions.
 
 ## 3-Layer Enforcement
 1. **`packages/design-tokens/tokens.json`**: Single source of truth for Light & Dark semantic tokens, radii, and shadows. Run `npm run build:tokens` after any token edit.

@@ -78,7 +78,7 @@ export function SettingsClient({
         <p className="text-sm text-[var(--strata-text-muted)]">{t.settings.subtitle}</p>
       </div>
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-5">
         <Card className="space-y-5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -164,7 +164,7 @@ export function SettingsClient({
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-canvas)] p-4">
+          <div className="flex items-center justify-between gap-4 rounded-2xl bg-[var(--strata-bg-elevated)] p-4">
             <div className="space-y-0.5">
               <Label htmlFor="settings-privacy" className="text-sm font-semibold">
                 {t.onboarding.privacyDefaultLabel}
