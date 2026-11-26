@@ -93,7 +93,9 @@ export function InviteGateCard({ email }: { email: string | null }) {
             <CardTitle className="text-2xl font-bold tracking-tight">
               {t.invite.title}
             </CardTitle>
-            <CardDescription>{t.invite.subtitle}</CardDescription>
+            <CardDescription className="text-[var(--strata-text-secondary)]">
+              {t.invite.subtitle}
+            </CardDescription>
           </CardHeader>
 
           {email ? (

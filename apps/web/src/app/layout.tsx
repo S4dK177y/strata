@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   title: "Strata — Personal Finance",
   description: "Open-source privacy-first personal finance, goals & seasonal Wrapped PWA",
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Strata",
+  },
   icons: {
     icon: "/icon.svg",
   },
@@ -30,15 +35,15 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F3F5FB" },
-    { media: "(prefers-color-scheme: dark)", color: "#070913" },
+    { media: "(prefers-color-scheme: light)", color: "#F2F4F7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B0C0E" },
   ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("strata-theme");var m=document.querySelector('meta[name="color-scheme"]');var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(m){m.content=(t==="light"||t==="dark")?t:"light dark";}var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("strata-theme");var m=document.querySelector('meta[name="color-scheme"]');var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(m){m.content=(t==="light"||t==="dark")?t:"light dark";}var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);if(t==="light"||t==="dark"){var tc=d?"#0B0C0E":"#F2F4F7";document.querySelectorAll('meta[name="theme-color"]').forEach(function(el){el.setAttribute("content",tc);});}}catch(e){}})();`;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const initialLocale = await getServerLocale();

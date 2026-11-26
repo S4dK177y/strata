@@ -245,7 +245,7 @@ export function AuthCard({
                   <span>{email}</span>
                 </div>
                 <CardTitle>{t.auth.checkEmailTitle}</CardTitle>
-                <CardDescription>
+                <CardDescription className="text-[var(--strata-text-secondary)]">
                   {t.auth.checkEmailBody.replace("{email}", email)}
                 </CardDescription>
               </CardHeader>
@@ -283,7 +283,9 @@ export function AuthCard({
             <div className="space-y-5">
               <CardHeader>
                 <CardTitle>{t.auth.resetTitle}</CardTitle>
-                <CardDescription>{t.auth.resetSubtitle}</CardDescription>
+                <CardDescription className="text-[var(--strata-text-secondary)]">
+                  {t.auth.resetSubtitle}
+                </CardDescription>
               </CardHeader>
 
               {formError ? (
@@ -340,7 +342,9 @@ export function AuthCard({
                 <CardTitle className="text-2xl font-bold tracking-tight">
                   {t.auth.welcomeTitle}
                 </CardTitle>
-                <CardDescription>{t.auth.welcomeSubtitle}</CardDescription>
+                <CardDescription className="text-[var(--strata-text-secondary)]">
+                  {t.auth.welcomeSubtitle}
+                </CardDescription>
               </CardHeader>
 
               {formError ? (
@@ -562,7 +566,7 @@ export function AuthCard({
         </div>
 
         {inviteOnlyEnabled ? (
-          <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-[var(--strata-text-secondary)]">
+          <p className="mt-5 flex items-center justify-center gap-1.5 text-xs font-medium text-[var(--strata-text-primary)]/85 dark:drop-shadow-[0_1px_6px_rgba(0,0,0,0.65)]">
             <Lock className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
             <span>{t.common.inviteBadge}</span>
           </p>

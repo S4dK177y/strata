@@ -306,7 +306,9 @@ export function OnboardingWizard({
                 <CardTitle className="text-2xl font-bold tracking-tight">
                   {t.onboarding.step1Title}
                 </CardTitle>
-                <CardDescription>{t.onboarding.step1Subtitle}</CardDescription>
+                <CardDescription className="text-[var(--strata-text-secondary)]">
+                  {t.onboarding.step1Subtitle}
+                </CardDescription>
               </CardHeader>
 
               <div className="space-y-5">
@@ -413,7 +415,9 @@ export function OnboardingWizard({
                 <CardTitle className="text-2xl font-bold tracking-tight">
                   {t.onboarding.step2Title}
                 </CardTitle>
-                <CardDescription>{t.onboarding.step2Subtitle}</CardDescription>
+                <CardDescription className="text-[var(--strata-text-secondary)]">
+                  {t.onboarding.step2Subtitle}
+                </CardDescription>
               </CardHeader>
 
               <div className="space-y-3">
@@ -581,7 +585,9 @@ export function OnboardingWizard({
                 <CardTitle className="text-2xl font-bold tracking-tight">
                   {t.onboarding.step3Title}
                 </CardTitle>
-                <CardDescription>{t.onboarding.step3Subtitle}</CardDescription>
+                <CardDescription className="text-[var(--strata-text-secondary)]">
+                  {t.onboarding.step3Subtitle}
+                </CardDescription>
               </CardHeader>
 
               <div className="space-y-5">

@@ -4,8 +4,8 @@
   "description": "Open-source privacy-first personal finance, goals & yearly Wrapped PWA",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#070913",
-  "theme_color": "#4F46E5",
+  "background_color": "#0B0C0E",
+  "theme_color": "#0B0C0E",
   "icons": [
     {
       "src": "/icon.svg",

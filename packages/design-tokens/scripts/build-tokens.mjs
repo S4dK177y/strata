@@ -213,17 +213,17 @@ ${renderVars(tokens.themes.dark)}
 }
 
 .strata-frosted {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(22px);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(140%);
   border: 1px solid rgba(15, 20, 25, 0.08);
   box-shadow: var(--strata-shadow-card);
 }
 
 .dark .strata-frosted {
-  background: rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(24px);
+  background: rgba(11, 14, 18, 0.72);
+  backdrop-filter: blur(26px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 20px 48px -24px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 24px 56px -20px rgba(0, 0, 0, 0.82);
 }
 
 .strata-hero {

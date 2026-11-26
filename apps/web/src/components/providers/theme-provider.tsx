@@ -50,6 +50,20 @@ function applyThemeToDom(theme: Theme, systemTheme: ResolvedTheme) {
     meta.setAttribute("content", theme === "system" ? "light dark" : theme);
   }
 
+  const themeMetas = document.querySelectorAll('meta[name="theme-color"]');
+  themeMetas.forEach((el) => {
+    if (theme === "system") {
+      const media = el.getAttribute("media") ?? "";
+      if (media.includes("light")) {
+        el.setAttribute("content", "#F2F4F7");
+      } else {
+        el.setAttribute("content", "#0B0C0E");
+      }
+    } else {
+      el.setAttribute("content", resolved === "dark" ? "#0B0C0E" : "#F2F4F7");
+    }
+  });
+
   const root = document.documentElement;
   root.classList.toggle("dark", resolved === "dark");
   root.classList.toggle("light", resolved === "light");

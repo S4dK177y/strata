@@ -77,7 +77,9 @@ export function ResetPasswordCard() {
             <CardTitle className="text-2xl font-bold tracking-tight">
               {t.auth.newPasswordTitle}
             </CardTitle>
-            <CardDescription>{t.auth.newPasswordSubtitle}</CardDescription>
+            <CardDescription className="text-[var(--strata-text-secondary)]">
+              {t.auth.newPasswordSubtitle}
+            </CardDescription>
           </CardHeader>
 
           {error ? (

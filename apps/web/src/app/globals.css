@@ -247,9 +247,29 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   }
 }
 
+.strata-aurora-screen[data-aurora="curtains"],
+.dark .strata-aurora-screen[data-aurora="curtains"] {
+  background-color: var(--strata-bg-canvas);
+  background-image: none;
+}
+
 .strata-aurora-screen[data-aurora="curtains"]::before,
 .strata-aurora-screen[data-aurora="curtains"]::after {
   display: none;
+}
+
+.strata-frosted {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(15, 20, 25, 0.08);
+  box-shadow: var(--strata-shadow-card);
+}
+
+.dark .strata-frosted {
+  background: rgba(11, 14, 18, 0.72);
+  backdrop-filter: blur(26px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 56px -20px rgba(0, 0, 0, 0.82);
 }
 
 .strata-curtain-layer {
@@ -264,11 +284,11 @@ dialog[open].strata-dialog[data-closing]::backdrop {
 }
 
 .dark .strata-curtain-layer {
-  opacity: 0.86;
+  opacity: 0.78;
 }
 
 .strata-curtain-layer[data-aurora-state="submitting"] {
-  opacity: 0.96;
+  opacity: 0.94;
   filter: saturate(1.25) brightness(1.12);
 }
 
