@@ -182,12 +182,29 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await page.keyboard.press("Escape");
     await expect(profileMenu).toBeHidden();
 
+    // Desktop liquid droplet nav indicator check
+    const desktopNav = page.locator('nav[aria-label="Main navigation"]');
+    await expect(desktopNav).toHaveAttribute("data-liquid-ready", "true");
+    await expect(desktopNav.locator(".strata-liquid-svg")).toBeVisible();
+    await desktopNav.locator('[data-nav-key="/operations"]').click();
+    await page.waitForURL("**/operations");
+    await expect(desktopNav.locator('[data-nav-key="/operations"]')).toHaveAttribute(
+      "data-active",
+      "true"
+    );
+
     for (const route of ["/", "/operations", "/capital", "/settings"]) {
       await page.goto(route);
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
         await page.waitForTimeout(100);
         await assertNoHorizontalOverflow(page);
+
+        if (route === "/" && vp.name === "mobile") {
+          const mobileNav = page.locator('nav[aria-label="Mobile navigation"]');
+          await expect(mobileNav).toHaveAttribute("data-liquid-ready", "true");
+          await expect(mobileNav.locator(".strata-liquid-svg")).toBeVisible();
+        }
 
         if (route === "/settings" && vp.name === "mobile") {
           const totpTitleBox = await page

@@ -302,6 +302,29 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   box-shadow: 0 24px 56px -16px rgba(0, 0, 0, 0.86);
 }
 
+/* Liquid droplet navbar indicator */
+.strata-liquid-nav:not([data-liquid-ready="true"]) .strata-liquid-item[data-active="true"] {
+  background-color: var(--strata-accent-brand);
+}
+
+.strata-vt-bottom-nav.strata-liquid-nav:not([data-liquid-ready="true"])
+  .strata-liquid-item[data-active="true"] {
+  background-color: color-mix(in srgb, var(--strata-accent-brand) 18%, transparent);
+}
+
+.strata-liquid-desktop-svg {
+  filter: drop-shadow(0 4px 12px color-mix(in srgb, var(--strata-accent-brand) 30%, transparent));
+}
+
+.strata-liquid-mobile-svg {
+  opacity: 0.16;
+  transition: opacity 200ms ease;
+}
+
+.dark .strata-liquid-mobile-svg {
+  opacity: 0.22;
+}
+
 .strata-curtain-layer {
   position: fixed;
   inset: -28%;

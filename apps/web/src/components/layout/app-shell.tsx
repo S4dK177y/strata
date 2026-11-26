@@ -31,6 +31,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
+import { LiquidNavIndicator } from "./liquid-nav-indicator";
 import { notifyRouteChanged, TransitionLink } from "./transition-link";
 
 interface AppShellProps {
@@ -275,6 +276,9 @@ function AppShellInner({
   const hydratedProfileIdRef = useRef<string | null>(null);
   const prevPathnameRef = useRef<string>(pathname);
   const mainRef = useRef<HTMLElement>(null);
+  const desktopNavRef = useRef<HTMLElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
 
   useEffect(() => {
     if (hydratedProfileIdRef.current === profile.id) return;
@@ -287,26 +291,31 @@ function AppShellInner({
   }, [profile, setAccent, setLocale, setPrivacyBlur, setTheme]);
 
   useEffect(() => {
-    if (prevPathnameRef.current === pathname) return;
-    prevPathnameRef.current = pathname;
-    notifyRouteChanged();
-    mainRef.current?.focus({ preventScroll: true });
+    const resetId = window.setTimeout(() => setPendingHref(null), 0);
+    if (prevPathnameRef.current !== pathname) {
+      prevPathnameRef.current = pathname;
+      notifyRouteChanged();
+      mainRef.current?.focus({ preventScroll: true });
+    }
+    return () => window.clearTimeout(resetId);
   }, [pathname]);
 
+  const effectivePath = pendingHref ?? pathname;
+
   const navItems = [
-    { href: "/", label: t.nav.overview, icon: LayoutDashboard, active: pathname === "/", live: true },
+    { href: "/", label: t.nav.overview, icon: LayoutDashboard, active: effectivePath === "/", live: true },
     {
       href: "/operations",
       label: t.nav.operations,
       icon: ArrowLeftRight,
-      active: pathname.startsWith("/operations"),
+      active: effectivePath.startsWith("/operations"),
       live: true,
     },
     {
       href: "/capital",
       label: t.nav.capital,
       icon: Wallet,
-      active: pathname.startsWith("/capital"),
+      active: effectivePath.startsWith("/capital"),
       live: true,
     },
     { href: "#plans", label: t.nav.plans, icon: Compass, active: false, live: false },
@@ -314,7 +323,7 @@ function AppShellInner({
       href: "/settings",
       label: t.nav.settings,
       icon: Settings,
-      active: pathname === "/settings",
+      active: effectivePath === "/settings",
       live: true,
     },
     ...(profile.role === "admin"
@@ -323,12 +332,24 @@ function AppShellInner({
             href: "/admin",
             label: t.nav.admin,
             icon: Shield,
-            active: pathname.startsWith("/admin"),
+            active: effectivePath.startsWith("/admin"),
             live: true,
           },
         ]
       : []),
   ];
+
+  const activeDesktopKey = navItems.find((item) => item.live && item.active)?.href ?? null;
+  const activeMobileKey =
+    effectivePath === "/"
+      ? "/"
+      : effectivePath.startsWith("/operations")
+        ? "/operations"
+        : effectivePath.startsWith("/capital")
+          ? "/capital"
+          : effectivePath === "/settings"
+            ? "/settings"
+            : null;
 
   return (
     <div className="min-h-screen overflow-x-clip">
@@ -344,10 +365,16 @@ function AppShellInner({
           </Link>
 
           <nav
+            ref={desktopNavRef}
             aria-label="Main navigation"
             data-tour="nav-sections"
-            className="flex min-w-0 items-center gap-1"
+            className="strata-liquid-nav relative flex min-w-0 items-center gap-1"
           >
+            <LiquidNavIndicator
+              containerRef={desktopNavRef}
+              activeKey={activeDesktopKey}
+              variant="desktop"
+            />
             {navItems.map((item) => {
               const Icon = item.icon;
               if (!item.live) {
@@ -356,7 +383,7 @@ function AppShellInner({
                     key={item.href}
                     aria-disabled="true"
                     title={t.common.comingSoon}
-                    className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-[var(--strata-text-muted)] opacity-55"
+                    className="relative z-10 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium text-[var(--strata-text-muted)] opacity-55"
                   >
                     <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
                     <span>{item.label}</span>
@@ -368,15 +395,29 @@ function AppShellInner({
                 <TransitionLink
                   key={item.href}
                   href={item.href}
+                  data-nav-key={item.href}
+                  data-active={item.active ? "true" : "false"}
                   data-tour={item.href === "/settings" ? "settings-link" : undefined}
+                  onClick={() => {
+                    if (item.href !== pathname) {
+                      setPendingHref(item.href);
+                    }
+                  }}
                   className={cn(
-                    "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition",
+                    "strata-liquid-item relative z-10 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors duration-200 active:scale-95",
                     item.active
-                      ? "bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-sm"
-                      : "text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
+                      ? "text-[var(--strata-text-onAccent)]"
+                      : "text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)]/70 hover:text-[var(--strata-text-primary)]"
                   )}
                 >
-                  <Icon className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  <Icon
+                    className={cn(
+                      "h-3.5 w-3.5 transition-transform duration-300 ease-out",
+                      item.active && "scale-105"
+                    )}
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
                   <span>{item.label}</span>
                 </TransitionLink>
               );
@@ -431,33 +472,64 @@ function AppShellInner({
 
       {/* Mobile Floating Glass Bottom Dock (Variant A) */}
       <nav
+        ref={mobileNavRef}
         aria-label="Mobile navigation"
         data-tour="nav-sections"
-        className="strata-vt-bottom-nav strata-frosted fixed inset-x-3 bottom-[calc(0.625rem+env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-md grid-cols-5 items-center rounded-[26px] px-1.5 py-1.5 shadow-2xl lg:hidden"
+        className="strata-vt-bottom-nav strata-frosted strata-liquid-nav fixed inset-x-3 bottom-[calc(0.625rem+env(safe-area-inset-bottom))] z-40 mx-auto grid max-w-md grid-cols-5 items-center rounded-[26px] px-1.5 py-1.5 shadow-2xl lg:hidden"
       >
+        <LiquidNavIndicator
+          containerRef={mobileNavRef}
+          activeKey={activeMobileKey}
+          variant="mobile"
+        />
+
         <TransitionLink
           href="/"
+          data-nav-key="/"
+          data-active={activeMobileKey === "/" ? "true" : "false"}
+          onClick={() => {
+            if (pathname !== "/") setPendingHref("/");
+          }}
           className={cn(
-            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
-            pathname === "/"
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            activeMobileKey === "/"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <LayoutDashboard className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <LayoutDashboard
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
+              activeMobileKey === "/" && "-translate-y-0.5 scale-110"
+            )}
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
           <span className="max-w-full truncate">{t.nav.overview}</span>
         </TransitionLink>
 
         <TransitionLink
           href="/operations"
+          data-nav-key="/operations"
+          data-active={activeMobileKey === "/operations" ? "true" : "false"}
+          onClick={() => {
+            if (!pathname.startsWith("/operations")) setPendingHref("/operations");
+          }}
           className={cn(
-            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
-            pathname.startsWith("/operations")
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            activeMobileKey === "/operations"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <ArrowLeftRight className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <ArrowLeftRight
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
+              activeMobileKey === "/operations" && "-translate-y-0.5 scale-110"
+            )}
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
           <span className="max-w-full truncate">{t.nav.operations}</span>
         </TransitionLink>
 
@@ -467,35 +539,59 @@ function AppShellInner({
           onClick={() => openQuickAdd()}
           aria-label={t.nav.addOperation}
           title={t.nav.addOperation}
-          className="mx-auto flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-[var(--strata-shadow-neon)] transition hover:brightness-110 active:scale-95"
+          className="relative z-20 mx-auto flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-[var(--strata-shadow-neon)] transition hover:brightness-110 active:scale-95"
         >
           <Plus className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
         </button>
 
         <TransitionLink
           href="/capital"
+          data-nav-key="/capital"
+          data-active={activeMobileKey === "/capital" ? "true" : "false"}
+          onClick={() => {
+            if (!pathname.startsWith("/capital")) setPendingHref("/capital");
+          }}
           className={cn(
-            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
-            pathname.startsWith("/capital")
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            activeMobileKey === "/capital"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <Wallet className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <Wallet
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
+              activeMobileKey === "/capital" && "-translate-y-0.5 scale-110"
+            )}
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
           <span className="max-w-full truncate">{t.nav.capital}</span>
         </TransitionLink>
 
         <TransitionLink
           href="/settings"
+          data-nav-key="/settings"
+          data-active={activeMobileKey === "/settings" ? "true" : "false"}
           data-tour="settings-link"
+          onClick={() => {
+            if (pathname !== "/settings") setPendingHref("/settings");
+          }}
           className={cn(
-            "flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 text-[11px] font-semibold",
-            pathname === "/settings"
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            activeMobileKey === "/settings"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <Settings className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+          <Settings
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
+              activeMobileKey === "/settings" && "-translate-y-0.5 scale-110"
+            )}
+            strokeWidth={1.75}
+            aria-hidden="true"
+          />
           <span className="max-w-full truncate">{t.nav.settings}</span>
         </TransitionLink>
       </nav>
