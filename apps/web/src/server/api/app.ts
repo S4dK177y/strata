@@ -1,11 +1,14 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { createPublicSupabaseClient, resolveRequestAuth } from "@/lib/supabase/server";
+import { createAccountsRouter } from "./routes/accounts";
+import { createCategoriesRouter } from "./routes/categories";
 import { createFeatureFlagsRouter } from "./routes/feature-flags";
 import { createHealthRouter } from "./routes/health";
 import { createInvitesRouter } from "./routes/invites";
 import { createMeRouter } from "./routes/me";
 import { createOnboardingRouter } from "./routes/onboarding";
 import { createSyncRouter } from "./routes/sync";
+import { createTransactionsRouter } from "./routes/transactions";
 import type { ApiDependencies, ApiEnv } from "./types";
 
 const defaultDeps: ApiDependencies = {
@@ -70,6 +73,9 @@ export function createApiApp(deps: ApiDependencies = defaultDeps) {
   app.route("/", createMeRouter(deps));
   app.route("/", createInvitesRouter(deps));
   app.route("/", createOnboardingRouter(deps));
+  app.route("/", createAccountsRouter(deps));
+  app.route("/", createCategoriesRouter(deps));
+  app.route("/", createTransactionsRouter(deps));
   app.route("/", createSyncRouter(deps));
 
   app.doc31("/openapi.json", {

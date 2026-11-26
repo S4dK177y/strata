@@ -1,9 +1,8 @@
 /**
- * Safe recursive-descent arithmetic expression evaluator for Quick Add.
+ * Internal recursive-descent arithmetic parser.
  * Supports +, -, *, /, parentheses, spaces, comma/dot decimals, and optional leading '='.
- * Returns positive integer minor units (kopecks/cents) or null if invalid / <= 0.
  */
-export function evaluateAmountExpression(rawInput: string): number | null {
+function evaluateExpressionNumber(rawInput: string): number | null {
   let expr = rawInput.trim();
   if (!expr) return null;
   if (expr.startsWith("=")) {
@@ -100,10 +99,36 @@ export function evaluateAmountExpression(rawInput: string): number | null {
   }
 
   const result = parseExpression();
-  if (result === null || pos !== normalized.length || !Number.isFinite(result) || result <= 0) {
+  if (result === null || pos !== normalized.length || !Number.isFinite(result)) {
+    return null;
+  }
+  return result;
+}
+
+/**
+ * Safe recursive-descent arithmetic expression evaluator for Quick Add.
+ * Supports +, -, *, /, parentheses, spaces, comma/dot decimals, and optional leading '='.
+ * Returns positive integer minor units (kopecks/cents) or null if invalid / <= 0.
+ */
+export function evaluateAmountExpression(rawInput: string): number | null {
+  const result = evaluateExpressionNumber(rawInput);
+  if (result === null || result <= 0) {
     return null;
   }
 
   const minor = Math.round(result * 100);
   return minor > 0 ? minor : null;
+}
+
+/**
+ * Signed arithmetic expression evaluator for account initial balances (supports 0 and negative values).
+ */
+export function evaluateSignedAmountExpression(rawInput: string): number | null {
+  const result = evaluateExpressionNumber(rawInput);
+  if (result === null) {
+    return null;
+  }
+
+  const minor = Math.round(result * 100);
+  return Object.is(minor, -0) ? 0 : minor;
 }

@@ -1,4 +1,7 @@
-import { evaluateAmountExpression } from "@strata/finance-core";
+import {
+  evaluateAmountExpression,
+  evaluateSignedAmountExpression,
+} from "@strata/finance-core";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { Locale } from "@strata/api-contract";
@@ -62,4 +65,42 @@ export function parseAmountInputToMinor(raw: string): number | null {
     return 0;
   }
   return evaluateAmountExpression(trimmed);
+}
+
+export function parseSignedAmountInputToMinor(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return 0;
+  }
+  return evaluateSignedAmountExpression(trimmed);
+}
+
+export function minorToEditableInput(minor: number): string {
+  const truncated = Math.trunc(minor);
+  const sign = truncated < 0 ? "-" : "";
+  const abs = Math.abs(truncated);
+  const whole = Math.floor(abs / 100);
+  const cents = abs % 100;
+  if (cents === 0) {
+    return `${sign}${whole}`;
+  }
+  const centsStr = String(cents).padStart(2, "0").replace(/0+$/, "");
+  return `${sign}${whole}.${centsStr}`;
+}
+
+export function toLocalDateTimeInputValue(isoOrDate: string | Date): string {
+  const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  if (Number.isNaN(d.getTime())) {
+    return toLocalDateTimeInputValue(new Date());
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function localDateTimeInputToIso(localVal: string): string {
+  const parsed = new Date(localVal);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().toISOString();
+  }
+  return parsed.toISOString();
 }

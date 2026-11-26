@@ -139,3 +139,18 @@ export const HealthResponseSchema = z
   })
   .openapi("HealthResponse");
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
+
+export const EntityIdParamSchema = z.object({
+  id: z.uuid().openapi({
+    param: { name: "id", in: "path" },
+    example: "11111111-1111-4111-8111-111111111111",
+  }),
+});
+
+export const DeletedEntityResponseSchema = z
+  .object({
+    id: z.uuid(),
+    deleted_at: IsoDateTimeSchema,
+  })
+  .openapi("DeletedEntityResponse");
+export type DeletedEntityResponse = z.infer<typeof DeletedEntityResponseSchema>;

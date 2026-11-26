@@ -30,7 +30,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
 import { useI18n } from "@/lib/i18n/client";
-import { cn, parseAmountInputToMinor } from "@/lib/utils";
+import { cn, parseAmountInputToMinor, parseSignedAmountInputToMinor } from "@/lib/utils";
 import {
   localizeTemplateName,
   STARTER_ACCOUNT_TEMPLATES,
@@ -55,6 +55,7 @@ interface CategoryDraft {
   name: string;
   kind: CategoryKind;
   isPassive: boolean;
+  icon: string;
   selected: boolean;
 }
 
@@ -101,6 +102,7 @@ export function OnboardingWizard({
       name: localizeTemplateName(tpl, locale),
       kind: tpl.kind,
       isPassive: tpl.isPassive,
+      icon: tpl.icon,
       selected: tpl.selected,
     }))
   );
@@ -154,6 +156,7 @@ export function OnboardingWizard({
         name: trimmed,
         kind: customCategoryKind,
         isPassive: false,
+        icon: "tag",
         selected: true,
       },
     ]);
@@ -166,7 +169,7 @@ export function OnboardingWizard({
       const selectedAccounts = accounts.filter((a) => a.selected && a.name.trim().length > 0);
       const parsedAccounts = [];
       for (const acc of selectedAccounts) {
-        const balanceMinor = parseAmountInputToMinor(acc.initialBalanceText);
+        const balanceMinor = parseSignedAmountInputToMinor(acc.initialBalanceText);
         const limitMinor =
           acc.type === "credit" ? parseAmountInputToMinor(acc.creditLimitText) : 0;
 
@@ -194,6 +197,7 @@ export function OnboardingWizard({
               name: c.name.trim(),
               kind: c.kind,
               is_passive: c.isPassive,
+              icon: c.icon,
             }));
 
       const res = await fetch("/api/v1/onboarding/complete", {

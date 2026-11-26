@@ -7,7 +7,8 @@
   - **PR 1 — Foundation, Monorepo, Design Code, `finance-core` & CI/CD** ✅ **Completed & Verified**.
   - **PR 2 — Supabase SQL Migrations + RLS, Hono OpenAPI 3.1 REST API & Delta Sync** ✅ **Completed & Verified**.
   - **PR 3 — Auth (Email & Password), Invite-code gate (`redeem_invite_code`), 3-step Onboarding, Theme & RU/EN switcher** ✅ **Completed & Verified**.
-- **Next Active Task:** **PR 4 — Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator.**
+  - **PR 4 — Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator** ✅ **Completed & Verified**.
+- **Next Active Task:** **PR 5 — Dashboard, Export, `/admin`, Playwright E2E.**
 
 ## Completed
 - Architecture, DB schema, UX navigation, Expressive Neobank visual style, and brand **Strata** approved.
@@ -32,6 +33,11 @@
   - Implemented Next.js 16 `src/proxy.ts` (`updateSession` via `getClaims()`), `getServerSessionGate()`, `maybeBootstrapAdmin()`, and PKCE auth routes (`/auth/callback`, `/auth/confirm`, `/auth/signout`).
   - Built Expressive Neobank UI primitives (`apps/web/src/components/ui/*` using Radix UI, `lucide-react`, `sonner` strictly on `--strata-*` tokens), zero-FOUC `ThemeProvider` (`system` | `light` | `dark`), SSR-synced `RU` / `EN` i18n, global `PrivacyProvider`, `AppShell`, `/login`, `/reset-password`, `/invite`, 3-step `/onboarding`, real DB-backed `/`, and `/settings`.
   - Verified cleanly via `build:tokens`, `typecheck`, `lint`, `test` (24 Vitest tests total), `next build`, `npm audit --omit=dev --audit-level=high` (0 vulnerabilities), and live `next start` smoke test against Supabase.
+- **PR 4 (Accounts, Categories, Transactions across all 11 types & Global Quick Add):**
+  - Extended `@strata/finance-core` (`evaluateSignedAmountExpression`) and `@strata/api-contract` (`accounts.ts`, `categories.ts`, `transactions.ts` OpenAPI 3.1 CRUD & invariant schemas).
+  - Implemented authenticated, invite-gated REST endpoints `/api/v1/accounts`, `/api/v1/categories`, and `/api/v1/transactions` (with FK reference ownership verification, filtering, pagination, draft confirmation, and soft-delete sync tombstones).
+  - Built native `<dialog>` modal/bottom-sheet primitive (`apps/web/src/components/ui/dialog.tsx` with `DialogPortalContext` for Radix `Select` top-layer support and accessible post-interaction error validation), curated monochrome icon registry (`src/lib/category-icons.ts`), and global `QuickAddProvider` + `QuickAddDialog` (all 11 types, inline calculator + operator toolbar, Swap transfers, `draft` support, `N` shortcut).
+  - Implemented `/operations` (month switcher, `computePeriodSummary` KPI strip, search/type/account/category/status filters, date-grouped ledger, 1-click draft confirmation), `/capital` (Accounts & Categories tabs with live balances, credit limit utilization, monthly category spend progress, archive/restore, and soft delete), and upgraded `/` Overview (live Aurora Hero quick actions, Monthly Snapshot, Recent Operations).
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
@@ -39,5 +45,4 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 4:** Accounts, Categories, Transactions (all 11 types), Quick Add with inline calculator.
 - **PR 5:** Dashboard, Export, `/admin`, Playwright E2E.

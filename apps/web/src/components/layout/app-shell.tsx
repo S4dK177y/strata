@@ -13,10 +13,15 @@ import {
   Shield,
   Wallet,
 } from "lucide-react";
-import type { Profile } from "@strata/api-contract";
+import type { Account, Category, Debt, Goal, Profile } from "@strata/api-contract";
 import { usePrivacy } from "@/components/providers/privacy-provider";
 import { useTheme } from "@/components/providers/theme-provider";
+import {
+  QuickAddProvider,
+  useQuickAdd,
+} from "@/components/transactions/quick-add-provider";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { LocaleSwitcher } from "@/components/ui/locale-switcher";
 import { PrivacyToggle } from "@/components/ui/privacy-toggle";
 import { ThemeSwitcher } from "@/components/ui/theme-switcher";
@@ -26,14 +31,27 @@ import { cn } from "@/lib/utils";
 interface AppShellProps {
   profile: Profile;
   email: string | null;
+  initialAccounts?: Account[];
+  initialCategories?: Category[];
+  initialGoals?: Goal[];
+  initialDebts?: Debt[];
   children: ReactNode;
 }
 
-export function AppShell({ profile, email, children }: AppShellProps) {
+function AppShellInner({
+  profile,
+  email,
+  children,
+}: {
+  profile: Profile;
+  email: string | null;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const { t, setLocale } = useI18n();
   const { setTheme } = useTheme();
   const { setPrivacyBlur } = usePrivacy();
+  const { openQuickAdd } = useQuickAdd();
   const hydratedProfileIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -47,8 +65,20 @@ export function AppShell({ profile, email, children }: AppShellProps) {
 
   const navItems = [
     { href: "/", label: t.nav.overview, icon: LayoutDashboard, active: pathname === "/", live: true },
-    { href: "#operations", label: t.nav.operations, icon: ArrowLeftRight, active: false, live: false },
-    { href: "#capital", label: t.nav.capital, icon: Wallet, active: false, live: false },
+    {
+      href: "/operations",
+      label: t.nav.operations,
+      icon: ArrowLeftRight,
+      active: pathname.startsWith("/operations"),
+      live: true,
+    },
+    {
+      href: "/capital",
+      label: t.nav.capital,
+      icon: Wallet,
+      active: pathname.startsWith("/capital"),
+      live: true,
+    },
     { href: "#plans", label: t.nav.plans, icon: Compass, active: false, live: false },
     {
       href: "/settings",
@@ -63,7 +93,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
     <div className="min-h-screen lg:flex">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:justify-between lg:border-r lg:border-[var(--strata-border-subtle)] lg:bg-[var(--strata-bg-surface)] lg:p-5">
-        <div className="space-y-6">
+        <div className="space-y-5">
           <Link href="/" className="flex items-center gap-3 rounded-2xl p-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icon.svg" alt={t.common.brand} className="h-9 w-9 rounded-xl" />
@@ -85,6 +115,18 @@ export function AppShell({ profile, email, children }: AppShellProps) {
             </div>
           </Link>
 
+          <Button
+            type="button"
+            onClick={() => openQuickAdd()}
+            className="w-full justify-center shadow-[var(--strata-shadow-neon)]"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+            <span>{t.nav.addOperation}</span>
+            <kbd className="strata-mono ml-auto rounded-md bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold">
+              N
+            </kbd>
+          </Button>
+
           <nav aria-label="Main navigation" className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -100,7 +142,7 @@ export function AppShell({ profile, email, children }: AppShellProps) {
                       {item.label}
                     </span>
                     <span className="strata-mono text-[10px] font-medium uppercase tracking-wider">
-                      PR4
+                      PR5
                     </span>
                   </div>
                 );
@@ -181,29 +223,41 @@ export function AppShell({ profile, email, children }: AppShellProps) {
           <span>{t.nav.overview}</span>
         </Link>
 
-        <span
-          aria-disabled="true"
-          className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--strata-text-muted)] opacity-50"
+        <Link
+          href="/operations"
+          className={cn(
+            "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+            pathname.startsWith("/operations")
+              ? "text-[var(--strata-accent-brand)]"
+              : "text-[var(--strata-text-muted)]"
+          )}
         >
           <ArrowLeftRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           <span>{t.nav.operations}</span>
-        </span>
+        </Link>
 
-        <span
-          aria-disabled="true"
-          title={t.common.comingSoon}
-          className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] opacity-55"
+        <button
+          type="button"
+          onClick={() => openQuickAdd()}
+          aria-label={t.nav.addOperation}
+          title={t.nav.addOperation}
+          className="mx-auto flex h-11 w-11 cursor-pointer items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-[var(--strata-shadow-neon)] transition hover:brightness-110 active:scale-95"
         >
-          <Plus className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-        </span>
+          <Plus className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+        </button>
 
-        <span
-          aria-disabled="true"
-          className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-medium text-[var(--strata-text-muted)] opacity-50"
+        <Link
+          href="/capital"
+          className={cn(
+            "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold",
+            pathname.startsWith("/capital")
+              ? "text-[var(--strata-accent-brand)]"
+              : "text-[var(--strata-text-muted)]"
+          )}
         >
           <Wallet className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
           <span>{t.nav.capital}</span>
-        </span>
+        </Link>
 
         <Link
           href="/settings"
@@ -219,5 +273,29 @@ export function AppShell({ profile, email, children }: AppShellProps) {
         </Link>
       </nav>
     </div>
+  );
+}
+
+export function AppShell({
+  profile,
+  email,
+  initialAccounts,
+  initialCategories,
+  initialGoals,
+  initialDebts,
+  children,
+}: AppShellProps) {
+  return (
+    <QuickAddProvider
+      baseCurrency={profile.base_currency}
+      initialAccounts={initialAccounts}
+      initialCategories={initialCategories}
+      initialGoals={initialGoals}
+      initialDebts={initialDebts}
+    >
+      <AppShellInner profile={profile} email={email}>
+        {children}
+      </AppShellInner>
+    </QuickAddProvider>
   );
 }

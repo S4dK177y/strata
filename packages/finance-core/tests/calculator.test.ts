@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateAmountExpression } from "../src/calculator";
+import { evaluateAmountExpression, evaluateSignedAmountExpression } from "../src/calculator";
 
 describe("evaluateAmountExpression", () => {
   it("evaluates simple integers and Google Sheet style expressions", () => {
@@ -17,5 +17,21 @@ describe("evaluateAmountExpression", () => {
     expect(evaluateAmountExpression("100 / 0")).toBeNull();
     expect(evaluateAmountExpression("alert(1)")).toBeNull();
     expect(evaluateAmountExpression("100 +")).toBeNull();
+  });
+});
+
+describe("evaluateSignedAmountExpression", () => {
+  it("supports zero, negative, and positive expressions", () => {
+    expect(evaluateSignedAmountExpression("0")).toBe(0);
+    expect(evaluateSignedAmountExpression("-0")).toBe(0);
+    expect(evaluateSignedAmountExpression("-15000")).toBe(-1500000);
+    expect(evaluateSignedAmountExpression("=100 - 250.50")).toBe(-15050);
+    expect(evaluateSignedAmountExpression("=320+185")).toBe(50500);
+  });
+
+  it("rejects invalid expressions and division by zero", () => {
+    expect(evaluateSignedAmountExpression("")).toBeNull();
+    expect(evaluateSignedAmountExpression("100 / 0")).toBeNull();
+    expect(evaluateSignedAmountExpression("alert(1)")).toBeNull();
   });
 });

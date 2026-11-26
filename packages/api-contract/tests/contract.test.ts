@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  AccountCreateRequestSchema,
+  CategoryCreateRequestSchema,
   HealthResponseSchema,
   OnboardingCompleteRequestSchema,
   ProfileUpdateRequestSchema,
   RedeemInviteRequestSchema,
   SyncPullResponseSchema,
   SyncPushRequestSchema,
+  TransactionCreateRequestSchema,
   TransactionSourceSchema,
   TransactionTypeSchema,
 } from "../src/index";
@@ -208,5 +211,86 @@ describe("@strata/api-contract", () => {
       ],
     });
     expect(onboardingFloat.success).toBe(false);
+  });
+
+  it("validates PR 4 Account, Category, and Transaction CRUD schemas & domain invariants", () => {
+    expect(
+      AccountCreateRequestSchema.safeParse({
+        name: "Credit Card",
+        type: "credit",
+        currency: "RUB",
+        initial_balance_minor: -1500000,
+        credit_limit_minor: 10000000,
+      }).success
+    ).toBe(true);
+
+    expect(
+      CategoryCreateRequestSchema.safeParse({
+        name: "Invalid Expense",
+        kind: "expense",
+        is_passive: true,
+      }).success
+    ).toBe(false);
+
+    expect(
+      CategoryCreateRequestSchema.safeParse({
+        name: "Cashback",
+        kind: "income",
+        is_passive: true,
+      }).success
+    ).toBe(true);
+
+    expect(
+      TransactionCreateRequestSchema.safeParse({
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "expense",
+        amount_minor: 50000,
+        account_from_id: null,
+        status: "confirmed",
+      }).success
+    ).toBe(false);
+
+    expect(
+      TransactionCreateRequestSchema.safeParse({
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "expense",
+        amount_minor: 50000,
+        account_from_id: null,
+        status: "draft",
+      }).success
+    ).toBe(true);
+
+    expect(
+      TransactionCreateRequestSchema.safeParse({
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "expense",
+        amount_minor: 50000,
+        account_from_id: UUID_1,
+        account_to_id: UUID_2,
+        status: "confirmed",
+      }).success
+    ).toBe(false);
+
+    expect(
+      TransactionCreateRequestSchema.safeParse({
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "transfer",
+        amount_minor: 50000,
+        account_from_id: UUID_1,
+        account_to_id: UUID_1,
+        status: "confirmed",
+      }).success
+    ).toBe(false);
+
+    expect(
+      TransactionCreateRequestSchema.safeParse({
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "transfer",
+        amount_minor: 50000,
+        account_from_id: UUID_1,
+        account_to_id: UUID_2,
+        status: "confirmed",
+      }).success
+    ).toBe(true);
   });
 });

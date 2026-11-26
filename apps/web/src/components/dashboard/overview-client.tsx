@@ -1,85 +1,103 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   ArrowLeftRight,
-  Banknote,
-  Calculator,
-  CreditCard,
+  ArrowRight,
   Eye,
   EyeOff,
-  Landmark,
-  Layers,
-  PiggyBank,
   Plus,
   SlidersHorizontal,
   Wallet,
 } from "lucide-react";
 import {
   computeAllAccountBalances,
+  computeCreditCardAvailable,
   computeDebtsLedger,
   computeNetWorth,
+  computePeriodSummary,
   computeSafeToSpend,
-  evaluateAmountExpression,
-  type Account,
-  type Debt,
-  type Transaction,
 } from "@strata/finance-core";
-import type { Profile } from "@strata/api-contract";
+import type {
+  Account,
+  Category,
+  Debt,
+  Profile,
+  Transaction,
+} from "@strata/api-contract";
 import { usePrivacy } from "@/components/providers/privacy-provider";
+import { useQuickAdd } from "@/components/transactions/quick-add-provider";
 import { AmountText } from "@/components/ui/amount-text";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  ACCOUNT_TYPE_ICONS,
+  getCategoryIcon,
+  TRANSACTION_TYPE_META,
+} from "@/lib/category-icons";
+import {
+  toCoreAccount,
+  toCoreDebt,
+  toCoreTransaction,
+} from "@/lib/finance-mappers";
 import { useI18n } from "@/lib/i18n/client";
 
 interface OverviewClientProps {
   profile: Profile;
   accounts: Account[];
+  categories: Category[];
   transactions: Transaction[];
   debts: Debt[];
-  categoriesCount: number;
+  currentYear: number;
+  currentMonth: number;
 }
-
-const ACCOUNT_ICONS = {
-  debit: CreditCard,
-  credit: CreditCard,
-  cash: Banknote,
-  savings: PiggyBank,
-  deposit: Landmark,
-} as const;
 
 export function OverviewClient({
   profile,
   accounts,
+  categories,
   transactions,
   debts,
-  categoriesCount,
+  currentYear,
+  currentMonth,
 }: OverviewClientProps) {
   const { t } = useI18n();
   const { privacyBlur, togglePrivacyBlur } = usePrivacy();
-  const [calcInput, setCalcInput] = useState("=320+185");
+  const { openQuickAdd } = useQuickAdd();
+
+  const activeAccounts = useMemo(
+    () => accounts.filter((a) => a.is_active && !a.deleted_at),
+    [accounts]
+  );
+
+  const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
+  const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
   const metrics = useMemo(() => {
-    const balances = computeAllAccountBalances(accounts, transactions);
-    const debtLedger = computeDebtsLedger(debts, transactions);
+    const coreAccounts = accounts.map(toCoreAccount);
+    const coreTxs = transactions.map(toCoreTransaction);
+    const coreDebts = debts.map(toCoreDebt);
+
+    const balances = computeAllAccountBalances(coreAccounts, coreTxs);
+    const debtLedger = computeDebtsLedger(coreDebts, coreTxs);
     const netWorth = computeNetWorth(
-      accounts,
+      coreAccounts,
       balances,
       debtLedger.totalBorrowedRemainingMinor
     );
-    const safeToSpend = computeSafeToSpend(accounts, balances, 0);
-    return { balances, netWorth, safeToSpend };
-  }, [accounts, transactions, debts]);
+    const safeToSpend = computeSafeToSpend(coreAccounts, balances, 0);
+    const monthSummary = computePeriodSummary(coreTxs, currentYear, currentMonth);
+    return { balances, netWorth, safeToSpend, monthSummary };
+  }, [accounts, transactions, debts, currentYear, currentMonth]);
 
-  const parsedMinor = useMemo(() => evaluateAmountExpression(calcInput), [calcInput]);
+  const recentTransactions = useMemo(() => transactions.slice(0, 6), [transactions]);
 
   return (
     <div className="space-y-6">
-      {/* Open Aurora Balance Header (Sber-inspired) */}
-      <section className="strata-aurora-hero rounded-[28px] p-6 sm:p-8 space-y-6">
+      {/* Open Aurora Balance Header */}
+      <section className="strata-aurora-hero space-y-6 rounded-[28px] p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <div className="text-xs font-medium text-[var(--strata-text-secondary)]">
@@ -109,9 +127,11 @@ export function OverviewClient({
             </div>
           </div>
 
-          <Badge className="strata-frosted border-[var(--strata-border-subtle)] px-3 py-1">
-            {t.dashboard.categoriesCount}: {categoriesCount}
-          </Badge>
+          <Link href="/capital?tab=categories">
+            <Badge className="strata-frosted border-[var(--strata-border-subtle)] px-3 py-1 transition hover:brightness-105">
+              {t.dashboard.categoriesCount}: {categories.length}
+            </Badge>
+          </Link>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 text-xs">
@@ -128,33 +148,44 @@ export function OverviewClient({
 
         {/* 3 Frosted Squircle Quick Action Tiles */}
         <div className="grid grid-cols-3 gap-3">
-          <div
-            aria-disabled="true"
-            title={t.common.comingSoon}
-            className="strata-frosted flex min-h-20 flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center opacity-60"
+          <button
+            type="button"
+            onClick={() => openQuickAdd()}
+            className="strata-frosted flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center transition hover:brightness-105 active:scale-[0.98]"
           >
-            <Plus className="h-5 w-5 text-[var(--strata-text-primary)]" strokeWidth={1.75} aria-hidden="true" />
+            <Plus
+              className="h-5 w-5 text-[var(--strata-text-primary)]"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
             <span className="text-xs font-medium text-[var(--strata-text-primary)]">
               {t.nav.quickAdd}
             </span>
-          </div>
+          </button>
 
-          <div
-            aria-disabled="true"
-            title={t.common.comingSoon}
-            className="strata-frosted flex min-h-20 flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center opacity-60"
+          <Link
+            href="/operations"
+            className="strata-frosted flex min-h-20 flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center transition hover:brightness-105"
           >
-            <ArrowLeftRight className="h-5 w-5 text-[var(--strata-text-primary)]" strokeWidth={1.75} aria-hidden="true" />
+            <ArrowLeftRight
+              className="h-5 w-5 text-[var(--strata-text-primary)]"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
             <span className="text-xs font-medium text-[var(--strata-text-primary)]">
               {t.nav.operations}
             </span>
-          </div>
+          </Link>
 
           <Link
             href="/settings"
             className="strata-frosted flex min-h-20 flex-col items-center justify-center gap-2 rounded-[22px] p-3 text-center transition hover:brightness-105"
           >
-            <SlidersHorizontal className="h-5 w-5 text-[var(--strata-text-primary)]" strokeWidth={1.75} aria-hidden="true" />
+            <SlidersHorizontal
+              className="h-5 w-5 text-[var(--strata-text-primary)]"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
             <span className="text-xs font-medium text-[var(--strata-text-primary)]">
               {t.nav.settings}
             </span>
@@ -162,30 +193,88 @@ export function OverviewClient({
         </div>
       </section>
 
+      {/* This Month Cashflow Snapshot */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card className="p-4">
+          <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+            {t.dashboard.monthIncome}
+          </div>
+          <div className="mt-1 text-lg font-bold text-[var(--strata-money-income)]">
+            <AmountText
+              minor={metrics.monthSummary.totalIncomeMinor}
+              currency={profile.base_currency}
+              showSign
+            />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+            {t.dashboard.monthExpense}
+          </div>
+          <div className="mt-1 text-lg font-bold text-[var(--strata-money-expense)]">
+            <AmountText
+              minor={
+                metrics.monthSummary.netExpenseMinor > 0
+                  ? -metrics.monthSummary.netExpenseMinor
+                  : 0
+              }
+              currency={profile.base_currency}
+            />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+            {t.dashboard.monthSaldo}
+          </div>
+          <div className="mt-1 text-lg font-bold text-[var(--strata-text-primary)]">
+            <AmountText
+              minor={metrics.monthSummary.netBalanceMinor}
+              currency={profile.base_currency}
+              showSign
+            />
+          </div>
+        </Card>
+      </div>
+
       {/* Grouped Matte Accounts Section Card */}
       <Card className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
             {t.dashboard.accountsTitle}
           </h2>
-          <span className="strata-mono text-xs text-[var(--strata-text-muted)]">
-            {accounts.length}
-          </span>
+          <Link
+            href="/capital"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
+          >
+            {t.dashboard.manageAccounts}
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+          </Link>
         </div>
 
-        {accounts.length === 0 ? (
-          <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
-            {t.dashboard.noAccounts}
+        {activeAccounts.length === 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
+            <span>{t.dashboard.noAccounts}</span>
+            <Button asChild size="sm" variant="secondary">
+              <Link href="/capital">{t.dashboard.addFirstAccount}</Link>
+            </Button>
           </div>
         ) : (
           <div className="divide-y divide-[var(--strata-border-subtle)]">
-            {accounts.map((acc) => {
-              const balance = metrics.balances[acc.id] ?? acc.initialBalanceMinor;
-              const AccountIcon = ACCOUNT_ICONS[acc.type] ?? Wallet;
+            {activeAccounts.map((acc) => {
+              const balance = metrics.balances[acc.id] ?? acc.initial_balance_minor;
+              const AccountIcon = ACCOUNT_TYPE_ICONS[acc.type] ?? Wallet;
+              const creditAvailable =
+                acc.type === "credit" && acc.credit_limit_minor > 0
+                  ? computeCreditCardAvailable(toCoreAccount(acc), balance)
+                  : null;
+
               return (
-                <div
+                <Link
                   key={acc.id}
-                  className="flex min-h-14 items-center justify-between gap-4 py-3 first:pt-1 last:pb-1"
+                  href={`/operations?account=${acc.id}`}
+                  className="flex min-h-14 items-center justify-between gap-4 py-3 transition first:pt-1 last:pb-1 hover:opacity-85"
                 >
                   <div className="flex min-w-0 items-center gap-3.5">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
@@ -197,53 +286,103 @@ export function OverviewClient({
                       </div>
                       <div className="text-xs text-[var(--strata-text-muted)]">
                         {t.onboarding.accountTypes[acc.type]}
+                        {creditAvailable !== null ? (
+                          <span>
+                            {" "}
+                            · {t.dashboard.creditAvailableLabel}:{" "}
+                            <AmountText minor={creditAvailable} currency={acc.currency} />
+                          </span>
+                        ) : null}
                       </div>
                     </div>
                   </div>
                   <div className="shrink-0 text-right text-base font-bold text-[var(--strata-text-primary)]">
-                    <AmountText minor={balance} currency={profile.base_currency} />
+                    <AmountText minor={balance} currency={acc.currency} />
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
         )}
       </Card>
 
-      {/* Quick Add Calculator sandbox */}
-      <Card className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Label htmlFor="strata-calc" className="flex items-center gap-2 text-sm font-semibold text-[var(--strata-text-primary)]">
-            <Calculator className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
-            {t.dashboard.calculatorTitle}
-          </Label>
-          <span className="flex items-center gap-1.5 text-xs text-[var(--strata-text-muted)]">
-            <Layers className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-            {t.dashboard.pr4Notice}
-          </span>
+      {/* Recent Operations Card */}
+      <Card className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
+            {t.dashboard.recentOperationsTitle}
+          </h2>
+          <Link
+            href="/operations"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
+          >
+            {t.dashboard.allOperations}
+            <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+          </Link>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Input
-            id="strata-calc"
-            value={calcInput}
-            onChange={(e) => setCalcInput(e.target.value)}
-            placeholder={t.dashboard.calculatorPlaceholder}
-            className="flex-1"
-          />
-          <div className="min-h-11 rounded-2xl bg-[var(--strata-bg-elevated)] px-4 py-2.5 text-sm font-semibold">
-            {parsedMinor !== null ? (
-              <span className="text-[var(--strata-money-income)]">
-                {t.dashboard.calculatorParsed}:{" "}
-                <AmountText minor={parsedMinor} currency={profile.base_currency} mutedFraction={false} />
-              </span>
-            ) : (
-              <span className="text-[var(--strata-money-expense)]">
-                {t.dashboard.calculatorInvalid}
-              </span>
-            )}
+        {recentTransactions.length === 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
+            <span>{t.dashboard.noOperations}</span>
+            <Button type="button" size="sm" onClick={() => openQuickAdd()}>
+              <Plus className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
+              {t.nav.quickAdd}
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="divide-y divide-[var(--strata-border-subtle)]">
+            {recentTransactions.map((tx) => {
+              const meta = TRANSACTION_TYPE_META[tx.type];
+              const category = tx.category_id ? categoryMap.get(tx.category_id) : null;
+              const fromAcc = tx.account_from_id ? accountMap.get(tx.account_from_id) : null;
+              const toAcc = tx.account_to_id ? accountMap.get(tx.account_to_id) : null;
+              const Icon = category ? getCategoryIcon(category.icon) : meta.icon;
+              const signedMinor = meta.sign === "-" ? -tx.amount_minor : tx.amount_minor;
+              const displayCurrency = fromAcc?.currency ?? profile.base_currency;
+
+              return (
+                <button
+                  key={tx.id}
+                  type="button"
+                  onClick={() => openQuickAdd({ transaction: tx })}
+                  className="flex min-h-14 w-full cursor-pointer items-center justify-between gap-4 py-3 text-left transition first:pt-1 last:pb-1 hover:opacity-85"
+                >
+                  <div className="flex min-w-0 items-center gap-3.5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
+                      <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
+                          {category?.name ?? t.transactions.types[tx.type]}
+                        </span>
+                        {tx.status === "draft" ? (
+                          <Badge tone="warn">{t.transactions.draftBadge}</Badge>
+                        ) : null}
+                      </div>
+                      <div className="truncate text-xs text-[var(--strata-text-muted)]">
+                        {tx.type === "transfer"
+                          ? `${fromAcc?.name ?? t.transactions.filters.unknownAccount} → ${toAcc?.name ?? t.transactions.filters.unknownAccount}`
+                          : fromAcc?.name ?? t.transactions.noAccountOption}
+                        {tx.comment ? ` · ${tx.comment}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="shrink-0 text-right text-base font-bold"
+                    style={{ color: meta.colorVar }}
+                  >
+                    <AmountText
+                      minor={signedMinor}
+                      currency={displayCurrency}
+                      showSign={meta.sign === "+"}
+                    />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -120,8 +120,10 @@ function createDefaultDbState(): MockDbState {
 
 class MockQueryBuilder {
   private filters: Array<(row: RowRecord) => boolean> = [];
-  private orderBy: { col: string; asc: boolean } | null = null;
+  private orderBys: Array<{ col: string; asc: boolean }> = [];
   private maxRows: number | null = null;
+  private rangeSlice: { from: number; to: number } | null = null;
+  private wantsExactCount = false;
   private mode: "select" | "update" | "upsert" | "insert" = "select";
   private mutationPayload: RowRecord | null = null;
   private insertRows: RowRecord[] = [];
@@ -132,7 +134,10 @@ class MockQueryBuilder {
     private readonly onWrite?: (table: keyof MockDbState, op: string) => void
   ) {}
 
-  select() {
+  select(_cols?: string, opts?: { count?: "exact" }) {
+    if (opts?.count === "exact") {
+      this.wantsExactCount = true;
+    }
     return this;
   }
 
@@ -141,18 +146,54 @@ class MockQueryBuilder {
     return this;
   }
 
+  is(col: string, val: null | boolean) {
+    this.filters.push((row) => (row[col] ?? null) === val);
+    return this;
+  }
+
   gte(col: string, val: string) {
     this.filters.push((row) => String(row[col] ?? "") >= val);
     return this;
   }
 
+  lte(col: string, val: string) {
+    this.filters.push((row) => String(row[col] ?? "") <= val);
+    return this;
+  }
+
+  ilike(col: string, pattern: string) {
+    const clean = pattern.replace(/^%|%$/g, "").replace(/\\([%_\\])/g, "$1").toLowerCase();
+    this.filters.push((row) => String(row[col] ?? "").toLowerCase().includes(clean));
+    return this;
+  }
+
+  or(expr: string) {
+    const clauses = expr.split(",").map((part) => part.trim());
+    this.filters.push((row) =>
+      clauses.some((clause) => {
+        const [col, op, ...rest] = clause.split(".");
+        const val = rest.join(".");
+        if (op === "eq" && col) {
+          return String(row[col] ?? "") === val;
+        }
+        return false;
+      })
+    );
+    return this;
+  }
+
   order(col: string, opts?: { ascending?: boolean }) {
-    this.orderBy = { col, asc: opts?.ascending ?? true };
+    this.orderBys.push({ col, asc: opts?.ascending ?? true });
     return this;
   }
 
   limit(n: number) {
     this.maxRows = n;
+    return this;
+  }
+
+  range(from: number, to: number) {
+    this.rangeSlice = { from, to };
     return this;
   }
 
@@ -174,7 +215,7 @@ class MockQueryBuilder {
     return this;
   }
 
-  private execute(): RowRecord[] {
+  private execute(): { rows: RowRecord[]; totalCount: number | null } {
     const rows = this.state[this.table];
 
     if (this.mode === "update" && this.mutationPayload) {
@@ -187,7 +228,7 @@ class MockQueryBuilder {
           updated.push({ ...row });
         }
       }
-      return updated;
+      return { rows: updated, totalCount: updated.length };
     }
 
     if (this.mode === "upsert" && this.mutationPayload) {
@@ -197,11 +238,11 @@ class MockQueryBuilder {
       if (idx >= 0) {
         const nextRow = { ...rows[idx], ...this.mutationPayload, updated_at: now };
         rows[idx] = nextRow;
-        return [{ ...nextRow }];
+        return { rows: [{ ...nextRow }], totalCount: 1 };
       }
       const inserted = { ...this.mutationPayload, updated_at: now };
       rows.push(inserted);
-      return [{ ...inserted }];
+      return { rows: [{ ...inserted }], totalCount: 1 };
     }
 
     if (this.mode === "insert") {
@@ -215,41 +256,61 @@ class MockQueryBuilder {
         ...row,
       }));
       rows.push(...inserted);
-      return inserted.map((r) => ({ ...r }));
+      return { rows: inserted.map((r) => ({ ...r })), totalCount: inserted.length };
     }
 
     let result = rows.filter((row) => this.filters.every((fn) => fn(row)));
-    if (this.orderBy) {
-      const { col, asc } = this.orderBy;
+    const totalCount = result.length;
+
+    if (this.orderBys.length > 0) {
       result = [...result].sort((a, b) => {
-        const av = String(a[col] ?? "");
-        const bv = String(b[col] ?? "");
-        return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+        for (const { col, asc } of this.orderBys) {
+          const av = a[col];
+          const bv = b[col];
+          if (typeof av === "number" && typeof bv === "number") {
+            if (av !== bv) return asc ? av - bv : bv - av;
+            continue;
+          }
+          const cmp = String(av ?? "").localeCompare(String(bv ?? ""));
+          if (cmp !== 0) return asc ? cmp : -cmp;
+        }
+        return 0;
       });
     }
-    if (this.maxRows !== null) {
+    if (this.rangeSlice !== null) {
+      result = result.slice(this.rangeSlice.from, this.rangeSlice.to + 1);
+    } else if (this.maxRows !== null) {
       result = result.slice(0, this.maxRows);
     }
-    return result.map((r) => ({ ...r }));
+    return { rows: result.map((r) => ({ ...r })), totalCount };
   }
 
   async maybeSingle() {
-    const data = this.execute();
-    return { data: data[0] ?? null, error: null };
+    const { rows } = this.execute();
+    return { data: rows[0] ?? null, error: null };
   }
 
   async single() {
-    const data = this.execute();
-    if (!data[0]) {
+    const { rows } = this.execute();
+    if (!rows[0]) {
       return { data: null, error: { message: "Row not found" } };
     }
-    return { data: data[0], error: null };
+    return { data: rows[0], error: null };
   }
 
-  then<TResult1 = { data: RowRecord[]; error: null }>(
-    onfulfilled?: (value: { data: RowRecord[]; error: null }) => TResult1 | PromiseLike<TResult1>
+  then<TResult1 = { data: RowRecord[]; error: null; count: number | null }>(
+    onfulfilled?: (value: {
+      data: RowRecord[];
+      error: null;
+      count: number | null;
+    }) => TResult1 | PromiseLike<TResult1>
   ) {
-    const res = { data: this.execute(), error: null as null };
+    const { rows, totalCount } = this.execute();
+    const res = {
+      data: rows,
+      error: null as null,
+      count: this.wantsExactCount ? totalCount : null,
+    };
     return Promise.resolve(res).then(onfulfilled);
   }
 }
@@ -367,6 +428,12 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
         "/api/v1/me",
         "/api/v1/invites/redeem",
         "/api/v1/onboarding/complete",
+        "/api/v1/accounts",
+        "/api/v1/accounts/{id}",
+        "/api/v1/categories",
+        "/api/v1/categories/{id}",
+        "/api/v1/transactions",
+        "/api/v1/transactions/{id}",
         "/api/v1/sync",
         "/api/v1/sync/push",
       ])
@@ -717,5 +784,337 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
     expect(completeJson.created_categories_count).toBe(2);
     expect(state.accounts).toHaveLength(1);
     expect(state.categories).toHaveLength(2);
+  });
+
+  it("enforces invite gate and supports Accounts & Categories CRUD with soft delete", async () => {
+    const { app } = createTestHarness();
+
+    for (const path of ["/api/v1/accounts", "/api/v1/categories", "/api/v1/transactions"]) {
+      const blocked = await app.request(`http://localhost${path}`, {
+        headers: { Authorization: "Bearer token-uninvited" },
+      });
+      expect(blocked.status).toBe(403);
+      const json = (await blocked.json()) as { error: string };
+      expect(json.error).toBe("INVITE_REQUIRED");
+    }
+
+    // Create Credit Card with negative initial balance
+    const accCreateRes = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Tinkoff Black Credit",
+        type: "credit",
+        currency: "RUB",
+        initial_balance_minor: -1500000,
+        credit_limit_minor: 10000000,
+        bank_name: "T-Bank",
+        last4_digits: "4242",
+      }),
+    });
+    expect(accCreateRes.status).toBe(201);
+    const { account: createdAcc } = (await accCreateRes.json()) as {
+      account: { id: string; initial_balance_minor: number; is_active: boolean };
+    };
+    expect(createdAcc.initial_balance_minor).toBe(-1500000);
+    expect(createdAcc.is_active).toBe(true);
+
+    // Archive account via PATCH
+    const accPatchRes = await app.request(`http://localhost/api/v1/accounts/${createdAcc.id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ is_active: false, name: "Archived Card" }),
+    });
+    expect(accPatchRes.status).toBe(200);
+
+    const activeOnlyRes = await app.request("http://localhost/api/v1/accounts?active_only=true", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(activeOnlyRes.status).toBe(200);
+    expect(((await activeOnlyRes.json()) as { accounts: unknown[] }).accounts).toHaveLength(0);
+
+    // Soft-delete account and confirm tombstone appears in /sync
+    const accDeleteRes = await app.request(`http://localhost/api/v1/accounts/${createdAcc.id}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(accDeleteRes.status).toBe(200);
+
+    const syncRes = await app.request("http://localhost/api/v1/sync", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    const syncJson = (await syncRes.json()) as {
+      changes: { accounts: Array<{ id: string; deleted_at: string | null }> };
+    };
+    expect(syncJson.changes.accounts[0]?.deleted_at).toBeTruthy();
+
+    // Categories CRUD & passive-expense validation
+    const invalidCatRes = await app.request("http://localhost/api/v1/categories", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Invalid",
+        kind: "expense",
+        is_passive: true,
+      }),
+    });
+    expect(invalidCatRes.status).toBe(400);
+
+    const catCreateRes = await app.request("http://localhost/api/v1/categories", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Groceries",
+        kind: "expense",
+        monthly_limit_minor: 3000000,
+        icon: "shopping-cart",
+      }),
+    });
+    expect(catCreateRes.status).toBe(201);
+    const { category: createdCat } = (await catCreateRes.json()) as {
+      category: { id: string; monthly_limit_minor: number | null };
+    };
+    expect(createdCat.monthly_limit_minor).toBe(3000000);
+
+    const catDeleteRes = await app.request(`http://localhost/api/v1/categories/${createdCat.id}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(catDeleteRes.status).toBe(200);
+  });
+
+  it("handles all transaction types, reference validation, filters, pagination, and draft confirmation", async () => {
+    const { app, state } = createTestHarness();
+
+    // Seed two accounts for invited user and one foreign account
+    const acc1Res = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "Main Debit", type: "debit", currency: "RUB" }),
+    });
+    const acc1 = ((await acc1Res.json()) as { account: { id: string } }).account;
+
+    const acc2Res = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "Savings Vault", type: "savings", currency: "RUB" }),
+    });
+    const acc2 = ((await acc2Res.json()) as { account: { id: string } }).account;
+
+    const catRes = await app.request("http://localhost/api/v1/categories", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "Dining", kind: "expense" }),
+    });
+    const cat = ((await catRes.json()) as { category: { id: string } }).category;
+
+    state.accounts.push({
+      id: "99999999-9999-4999-8999-999999999999",
+      user_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      name: "Foreign Account",
+      type: "debit",
+      currency: "RUB",
+      initial_balance_minor: 0,
+      credit_limit_minor: 0,
+      bank_name: null,
+      last4_digits: null,
+      is_active: true,
+      sort_order: 0,
+      created_at: "2026-11-26T04:00:00.000Z",
+      updated_at: "2026-11-26T04:00:00.000Z",
+      deleted_at: null,
+    });
+
+    // Reject foreign account reference
+    const foreignRefRes = await app.request("http://localhost/api/v1/transactions", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        occurred_at: "2026-11-26T10:00:00.000Z",
+        type: "expense",
+        amount_minor: 50000,
+        account_from_id: "99999999-9999-4999-8999-999999999999",
+      }),
+    });
+    expect(foreignRefRes.status).toBe(400);
+    expect(((await foreignRefRes.json()) as { error: string }).error).toBe("INVALID_REFERENCE");
+
+    // Reject confirmed transfer with identical accounts
+    const badTransferRes = await app.request("http://localhost/api/v1/transactions", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        occurred_at: "2026-11-26T10:00:00.000Z",
+        type: "transfer",
+        amount_minor: 50000,
+        account_from_id: acc1.id,
+        account_to_id: acc1.id,
+      }),
+    });
+    expect(badTransferRes.status).toBe(400);
+
+    // Create expense, compensation, transfer, debt_given, and draft
+    const txs = [
+      {
+        occurred_at: "2026-11-26T12:00:00.000Z",
+        type: "expense",
+        amount_minor: 50500,
+        account_from_id: acc1.id,
+        category_id: cat.id,
+        comment: "Team lunch",
+      },
+      {
+        occurred_at: "2026-11-26T13:00:00.000Z",
+        type: "compensation",
+        amount_minor: 25000,
+        account_from_id: acc1.id,
+        category_id: cat.id,
+        comment: "Split lunch refund",
+      },
+      {
+        occurred_at: "2026-11-26T14:00:00.000Z",
+        type: "transfer",
+        amount_minor: 100000,
+        account_from_id: acc1.id,
+        account_to_id: acc2.id,
+        comment: "Move to savings",
+      },
+      {
+        occurred_at: "2026-11-26T15:00:00.000Z",
+        type: "debt_given",
+        amount_minor: 30000,
+        account_from_id: acc1.id,
+        comment: "Ivan taxi",
+      },
+      {
+        occurred_at: "2026-11-26T16:00:00.000Z",
+        type: "expense",
+        amount_minor: 19900,
+        account_from_id: null,
+        comment: "Draft coffee",
+        status: "draft",
+      },
+    ];
+
+    const createdIds: string[] = [];
+    for (const payload of txs) {
+      const res = await app.request("http://localhost/api/v1/transactions", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      expect(res.status).toBe(201);
+      const { transaction } = (await res.json()) as { transaction: { id: string } };
+      createdIds.push(transaction.id);
+    }
+
+    // Filter by destination account_id (should include the transfer to acc2)
+    const acc2FilterRes = await app.request(
+      `http://localhost/api/v1/transactions?account_id=${acc2.id}`,
+      { headers: { Authorization: "Bearer token-invited" } }
+    );
+    expect(acc2FilterRes.status).toBe(200);
+    const acc2FilterJson = (await acc2FilterRes.json()) as {
+      transactions: Array<{ type: string }>;
+      total: number;
+    };
+    expect(acc2FilterJson.total).toBe(1);
+    expect(acc2FilterJson.transactions[0]?.type).toBe("transfer");
+
+    // Search + pagination
+    const page1Res = await app.request(
+      "http://localhost/api/v1/transactions?limit=2&offset=0",
+      { headers: { Authorization: "Bearer token-invited" } }
+    );
+    const page1Json = (await page1Res.json()) as {
+      transactions: unknown[];
+      total: number;
+      has_more: boolean;
+    };
+    expect(page1Json.total).toBe(5);
+    expect(page1Json.transactions).toHaveLength(2);
+    expect(page1Json.has_more).toBe(true);
+
+    const searchRes = await app.request(
+      "http://localhost/api/v1/transactions?search=lunch",
+      { headers: { Authorization: "Bearer token-invited" } }
+    );
+    const searchJson = (await searchRes.json()) as { total: number };
+    expect(searchJson.total).toBe(2);
+
+    // Confirm draft via PATCH
+    const draftId = createdIds[4];
+    const confirmDraftRes = await app.request(
+      `http://localhost/api/v1/transactions/${draftId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: "confirmed", account_from_id: acc1.id }),
+      }
+    );
+    expect(confirmDraftRes.status).toBe(200);
+    expect(
+      ((await confirmDraftRes.json()) as { transaction: { status: string } }).transaction.status
+    ).toBe("confirmed");
+
+    // Switch transfer -> expense auto-clears account_to_id
+    const transferId = createdIds[2];
+    const switchRes = await app.request(
+      `http://localhost/api/v1/transactions/${transferId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ type: "expense", category_id: cat.id }),
+      }
+    );
+    expect(switchRes.status).toBe(200);
+    const switched = ((await switchRes.json()) as {
+      transaction: { type: string; account_to_id: string | null };
+    }).transaction;
+    expect(switched.type).toBe("expense");
+    expect(switched.account_to_id).toBeNull();
+
+    // Soft-delete transaction
+    const delRes = await app.request(`http://localhost/api/v1/transactions/${draftId}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(delRes.status).toBe(200);
   });
 });

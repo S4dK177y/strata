@@ -16,6 +16,7 @@ export interface StarterCategoryTemplate {
   nameEn: string;
   kind: CategoryKind;
   isPassive: boolean;
+  icon: string;
   selected: boolean;
 }
 
@@ -68,18 +69,18 @@ export const STARTER_ACCOUNT_TEMPLATES: StarterAccountTemplate[] = [
 ];
 
 export const STARTER_CATEGORY_TEMPLATES: StarterCategoryTemplate[] = [
-  { key: "groceries", nameRu: "Продукты", nameEn: "Groceries", kind: "expense", isPassive: false, selected: true },
-  { key: "dining", nameRu: "Кафе и рестораны", nameEn: "Dining & Coffee", kind: "expense", isPassive: false, selected: true },
-  { key: "transport", nameRu: "Транспорт", nameEn: "Transport", kind: "expense", isPassive: false, selected: true },
-  { key: "housing", nameRu: "Жильё и ЖКУ", nameEn: "Housing & Utilities", kind: "expense", isPassive: false, selected: true },
-  { key: "subscriptions", nameRu: "Подписки и связь", nameEn: "Subscriptions", kind: "expense", isPassive: false, selected: true },
-  { key: "health", nameRu: "Здоровье", nameEn: "Health", kind: "expense", isPassive: false, selected: true },
-  { key: "shopping", nameRu: "Покупки и одежда", nameEn: "Shopping", kind: "expense", isPassive: false, selected: false },
-  { key: "travel", nameRu: "Путешествия", nameEn: "Travel", kind: "expense", isPassive: false, selected: false },
-  { key: "salary", nameRu: "Зарплата", nameEn: "Salary", kind: "income", isPassive: false, selected: true },
-  { key: "freelance", nameRu: "Подработка", nameEn: "Freelance", kind: "income", isPassive: false, selected: false },
-  { key: "cashback", nameRu: "Кэшбэк", nameEn: "Cashback", kind: "income", isPassive: true, selected: true },
-  { key: "interest", nameRu: "Проценты по вкладу", nameEn: "Savings Interest", kind: "income", isPassive: true, selected: true },
+  { key: "groceries", nameRu: "Продукты", nameEn: "Groceries", kind: "expense", isPassive: false, icon: "shopping-cart", selected: true },
+  { key: "dining", nameRu: "Кафе и рестораны", nameEn: "Dining & Coffee", kind: "expense", isPassive: false, icon: "utensils", selected: true },
+  { key: "transport", nameRu: "Транспорт", nameEn: "Transport", kind: "expense", isPassive: false, icon: "car", selected: true },
+  { key: "housing", nameRu: "Жильё и ЖКУ", nameEn: "Housing & Utilities", kind: "expense", isPassive: false, icon: "home", selected: true },
+  { key: "subscriptions", nameRu: "Подписки и связь", nameEn: "Subscriptions", kind: "expense", isPassive: false, icon: "smartphone", selected: true },
+  { key: "health", nameRu: "Здоровье", nameEn: "Health", kind: "expense", isPassive: false, icon: "heart-pulse", selected: true },
+  { key: "shopping", nameRu: "Покупки и одежда", nameEn: "Shopping", kind: "expense", isPassive: false, icon: "shopping-bag", selected: false },
+  { key: "travel", nameRu: "Путешествия", nameEn: "Travel", kind: "expense", isPassive: false, icon: "plane", selected: false },
+  { key: "salary", nameRu: "Зарплата", nameEn: "Salary", kind: "income", isPassive: false, icon: "briefcase", selected: true },
+  { key: "freelance", nameRu: "Подработка", nameEn: "Freelance", kind: "income", isPassive: false, icon: "laptop", selected: false },
+  { key: "cashback", nameRu: "Кэшбэк", nameEn: "Cashback", kind: "income", isPassive: true, icon: "percent", selected: true },
+  { key: "interest", nameRu: "Проценты по вкладу", nameEn: "Savings Interest", kind: "income", isPassive: true, icon: "landmark", selected: true },
 ];
 
 export function localizeTemplateName(

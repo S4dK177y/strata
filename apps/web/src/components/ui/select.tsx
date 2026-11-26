@@ -3,6 +3,7 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
+import { DialogPortalContext } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export const Select = SelectPrimitive.Root;
@@ -31,22 +32,25 @@ SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;
 export const SelectContent = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", ...props }, ref) => (
-  <SelectPrimitive.Portal>
-    <SelectPrimitive.Content
-      ref={ref}
-      position={position}
-      className={cn(
-        "z-50 min-w-[8rem] overflow-hidden rounded-2xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] shadow-[var(--strata-shadow-card)]",
-        position === "popper" && "translate-y-1",
-        className
-      )}
-      {...props}
-    >
-      <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
-    </SelectPrimitive.Content>
-  </SelectPrimitive.Portal>
-));
+>(({ className, children, position = "popper", ...props }, ref) => {
+  const portalContainer = React.useContext(DialogPortalContext);
+  return (
+    <SelectPrimitive.Portal container={portalContainer ?? undefined}>
+      <SelectPrimitive.Content
+        ref={ref}
+        position={position}
+        className={cn(
+          "z-50 max-h-72 min-w-[8rem] overflow-y-auto rounded-2xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] shadow-[var(--strata-shadow-card)]",
+          position === "popper" && "translate-y-1",
+          className
+        )}
+        {...props}
+      >
+        <SelectPrimitive.Viewport className="p-1">{children}</SelectPrimitive.Viewport>
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  );
+});
 SelectContent.displayName = SelectPrimitive.Content.displayName;
 
 export const SelectItem = React.forwardRef<

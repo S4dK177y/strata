@@ -70,3 +70,19 @@ a:focus-visible {
   border: 0 !important;
   white-space: nowrap !important;
 }
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog[open].strata-dialog {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(4, 6, 10, 0.58);
+  backdrop-filter: blur(6px);
+}
