@@ -81,6 +81,7 @@
   - Refreshed all 5 route `loading.tsx` skeletons (`/`, `/operations`, `/capital`, `/settings`, `/admin`) to match current layouts and added a permanent Skeleton Parity rule to `AGENTS.md` and `.agents/skills/strata-ui/SKILL.md`.
   - Enlarged desktop floating pill navbar slightly (`max-w-6xl`, comfortable vertical thickness) with expressive Neobank `+` FAB/badge styling and full-width Save button in Settings Preferences.
   - Switched Capital credit card available-limit bar to accent color reflecting available headroom, made Active Sessions header/action buttons symmetrical across mobile and desktop, added the Net Balance (Saldo) line to Monthly Trend chart, and enlarged desktop Category Breakdown donut chart with right-aligned category list.
+  - Widened/raised desktop `QuickAddDialog` (`sm:max-w-[560px]`, `sm:max-h-[92dvh]`) with multi-row vertically scrollable category pills and added a compact conditional Credit Card Available Limit & Debt bar inside the Overview Hero card.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`

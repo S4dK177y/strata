@@ -760,7 +760,7 @@ function QuickAddFormBody({
             </div>
           )}
 
-          {/* Category Horizontal Pill Rail Row */}
+          {/* Category Wrapped Scrollable Pills Row */}
           {typeMeta.categoryFilter ? (
             <div className="space-y-2 px-3.5 py-3">
               <div className="flex items-center justify-between gap-2">
@@ -773,7 +773,7 @@ function QuickAddFormBody({
                 </span>
               </div>
 
-              <div className="strata-no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <div className="strata-scroll flex max-h-36 flex-wrap items-center gap-1.5 overflow-y-auto pr-0.5">
                 <button
                   type="button"
                   onClick={() => setCategoryId("")}
@@ -1046,7 +1046,7 @@ export function QuickAddDialog({
         onOpenChange={onOpenChange}
         title={preset?.transaction ? t.transactions.editTitle : t.transactions.quickAddTitle}
         dismissible={!submitting && !deleting}
-        maxWidthClassName="sm:max-w-[490px]"
+        maxWidthClassName="sm:max-w-[560px]"
       >
         <QuickAddFormBody
           key={formKey}

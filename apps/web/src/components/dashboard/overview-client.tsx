@@ -11,6 +11,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   Eye,
   EyeOff,
   GripVertical,
@@ -158,6 +159,24 @@ export function OverviewClient({
     );
     const monthlySeries = computeMonthlySeries(coreAccounts, coreTxs, coreDebts, selectedYear);
 
+    const creditAccounts = accounts.filter(
+      (a) => a.type === "credit" && a.is_active && !a.deleted_at
+    );
+    const creditLimitMinor = creditAccounts.reduce(
+      (sum, a) => sum + Math.max(0, a.credit_limit_minor),
+      0
+    );
+    const creditAvailableMinor = creditAccounts.reduce(
+      (sum, a) =>
+        sum + computeCreditCardAvailable(toCoreAccount(a), balances[a.id] ?? a.initial_balance_minor),
+      0
+    );
+    const creditDebtMinor = creditAccounts.reduce(
+      (sum, a) => sum + Math.max(0, -(balances[a.id] ?? a.initial_balance_minor)),
+      0
+    );
+    const hasCreditCards = creditAccounts.length > 0;
+
     return {
       balances,
       netWorth,
@@ -165,6 +184,10 @@ export function OverviewClient({
       periodSummary,
       categoryBreakdown,
       monthlySeries,
+      hasCreditCards,
+      creditLimitMinor,
+      creditAvailableMinor,
+      creditDebtMinor,
     };
   }, [accounts, categories, transactions, debts, periodMode, selectedYear, selectedMonth]);
 
@@ -586,6 +609,64 @@ export function OverviewClient({
             </div>
           </div>
         </div>
+
+        {metrics.hasCreditCards ? (
+          <Link
+            href="/capital"
+            className="mt-3.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/45 px-3.5 py-2.5 text-xs transition hover:border-[var(--strata-border-strong)] lg:mt-4"
+          >
+            <span className="inline-flex items-center gap-2 text-[var(--strata-text-secondary)]">
+              <CreditCard
+                className="h-3.5 w-3.5 shrink-0 text-[var(--strata-accent-brand)]"
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+              <span>{t.dashboard.creditLimitAvailable}:</span>
+              <strong className="font-bold text-[var(--strata-text-primary)]">
+                <AmountText
+                  minor={metrics.creditAvailableMinor}
+                  currency={profile.base_currency}
+                />
+              </strong>
+            </span>
+
+            {metrics.creditLimitMinor > 0 ? (
+              <span
+                aria-hidden="true"
+                className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-[var(--strata-bg-surface)] sm:block"
+              >
+                <span
+                  className="block h-full rounded-full bg-[var(--strata-accent-brand)]"
+                  style={{
+                    width: `${Math.round(
+                      Math.max(
+                        0,
+                        Math.min(1, metrics.creditAvailableMinor / metrics.creditLimitMinor)
+                      ) * 100
+                    )}%`,
+                  }}
+                />
+              </span>
+            ) : null}
+
+            <span className="inline-flex items-center gap-1.5 text-[var(--strata-text-secondary)]">
+              <span>{t.dashboard.creditDebtShort}:</span>
+              <strong
+                className={cn(
+                  "font-bold",
+                  metrics.creditDebtMinor > 0
+                    ? "text-[var(--strata-money-expense)]"
+                    : "text-[var(--strata-text-primary)]"
+                )}
+              >
+                <AmountText
+                  minor={metrics.creditDebtMinor}
+                  currency={profile.base_currency}
+                />
+              </strong>
+            </span>
+          </Link>
+        ) : null}
       </section>
 
       {/* Period Selector & Layout Customize Controls */}

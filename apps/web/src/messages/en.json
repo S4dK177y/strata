@@ -244,6 +244,8 @@
     "safeToSpendNote": "Based on liquid accounts & credit obligations",
     "periodNetMonth": "Month net",
     "periodNetYear": "Year net",
+    "creditLimitAvailable": "Credit available",
+    "creditDebtShort": "Debt",
     "accountsTitle": "Your accounts",
     "manageAccounts": "Manage",
     "noAccounts": "No accounts yet — add your first account in Capital.",

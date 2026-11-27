@@ -278,7 +278,7 @@ export function ModalDialog({
       {...closedByProps}
       className={cn(
         "strata-dialog fixed inset-x-0 bottom-0 m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-[28px] border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] p-0 text-[var(--strata-text-primary)] shadow-[var(--strata-shadow-card)]",
-        "sm:inset-0 sm:m-auto sm:max-h-[88dvh] sm:rounded-3xl",
+        "sm:inset-0 sm:m-auto sm:max-h-[92dvh] sm:rounded-3xl",
         maxWidthClassName
       )}
     >

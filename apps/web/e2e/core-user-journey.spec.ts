@@ -225,8 +225,11 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
             .getByText(/Two-factor authentication|Двухфакторная аутентификация/i)
             .first();
           await expect(totpTitle).toBeVisible({ timeout: 10_000 });
-          const totpTitleBox = await totpTitle.boundingBox();
-          expect(totpTitleBox?.width ?? 0).toBeGreaterThanOrEqual(240);
+          await totpTitle.scrollIntoViewIfNeeded();
+          const totpWidth = await totpTitle.evaluate(
+            (el) => el.getBoundingClientRect().width
+          );
+          expect(totpWidth).toBeGreaterThanOrEqual(240);
           await assertNoHorizontalOverflow(page);
         }
       }
