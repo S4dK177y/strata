@@ -42,7 +42,7 @@ export default function OverviewLoading() {
       </div>
 
       {/* Category Breakdown Skeleton */}
-      <div className="strata-skeleton h-52 rounded-3xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]" />
+      <div className="strata-skeleton h-56 rounded-3xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] lg:h-80" />
 
       {/* Cashflow Trend Chart Skeleton */}
       <div className="strata-skeleton h-64 rounded-3xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]" />

@@ -375,11 +375,9 @@ export function CapitalClient({
                   acc.type === "credit" && acc.credit_limit_minor > 0
                     ? computeCreditCardAvailable(coreAcc, balanceMinor)
                     : null;
-                const creditUsed =
-                  acc.type === "credit" ? Math.max(0, -balanceMinor) : 0;
-                const creditUtilRatio =
-                  acc.type === "credit" && acc.credit_limit_minor > 0
-                    ? Math.min(1, creditUsed / acc.credit_limit_minor)
+                const creditAvailableRatio =
+                  creditAvailable !== null && acc.credit_limit_minor > 0
+                    ? Math.max(0, Math.min(1, creditAvailable / acc.credit_limit_minor))
                     : 0;
 
                 return (
@@ -438,13 +436,8 @@ export function CapitalClient({
                           <div
                             className="h-full rounded-full transition-all duration-500 ease-out"
                             style={{
-                              width: `${Math.round(creditUtilRatio * 100)}%`,
-                              backgroundColor:
-                                creditUtilRatio >= 0.85
-                                  ? "var(--strata-money-expense)"
-                                  : creditUtilRatio >= 0.5
-                                    ? "var(--strata-radar-warn)"
-                                    : "var(--strata-accent-brand)",
+                              width: `${Math.round(creditAvailableRatio * 100)}%`,
+                              backgroundColor: "var(--strata-accent-brand)",
                             }}
                           />
                         </div>

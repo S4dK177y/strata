@@ -269,7 +269,7 @@
       "passiveShort": "Passive",
       "refundOffset": "Refunds",
       "trendTitle": "Monthly trend",
-      "trendCashflowSubtitle": "Income and net expenses for {year}",
+      "trendCashflowSubtitle": "Income, net expenses, and net balance for {year}",
       "trendNetWorthSubtitle": "End-of-month net worth for {year}",
       "modeCashflow": "Cashflow",
       "modeNetWorth": "Net worth",

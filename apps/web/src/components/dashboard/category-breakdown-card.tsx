@@ -134,7 +134,7 @@ export function CategoryBreakdownCard({
           <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
             {t.dashboard.analytics.categoriesTitle}
           </h2>
-          <p className="truncate text-xs capitalize text-[var(--strata-text-muted)]">
+          <p className="truncate text-xs text-[var(--strata-text-muted)]">
             {periodLabel}
           </p>
         </div>
@@ -153,9 +153,9 @@ export function CategoryBreakdownCard({
           {t.dashboard.analytics.noCategorySpend}
         </div>
       ) : (
-        <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[220px_1fr]">
+        <div className="grid grid-cols-1 items-center gap-6 md:grid-cols-[280px_minmax(0,1fr)] lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-10">
           {/* Donut Chart */}
-          <div className="relative mx-auto h-52 w-52 shrink-0">
+          <div className="relative mx-auto h-56 w-56 shrink-0 md:h-64 md:w-64 lg:h-72 lg:w-72">
             {mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -188,19 +188,19 @@ export function CategoryBreakdownCard({
             )}
 
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-              <span className="text-[11px] font-medium text-[var(--strata-text-muted)]">
+              <span className="text-[11px] font-medium text-[var(--strata-text-muted)] lg:text-xs">
                 {t.dashboard.analytics.totalSpent}
               </span>
               <AmountText
                 minor={totalSpentMinor}
                 currency={baseCurrency}
-                className="text-sm font-extrabold text-[var(--strata-text-primary)]"
+                className="text-sm font-extrabold text-[var(--strata-text-primary)] lg:text-lg"
               />
             </div>
           </div>
 
           {/* Ranked Category List */}
-          <div className="min-w-0 divide-y divide-[var(--strata-border-subtle)]">
+          <div className="min-w-0 divide-y divide-[var(--strata-border-subtle)] md:pl-2 lg:ml-auto lg:w-full lg:max-w-[500px] lg:pl-4">
             {ranked.map((item, idx) => {
               const cat = categoryMap.get(item.categoryId);
               const Icon = getCategoryIcon(cat?.icon ?? null);

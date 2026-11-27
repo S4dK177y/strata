@@ -6,8 +6,10 @@ import {
   Area,
   AreaChart,
   Bar,
-  BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -120,7 +122,13 @@ function ChartTooltipContent({
             />
           </div>
           <div className="flex items-center justify-between gap-4 border-t border-[var(--strata-border-subtle)] pt-1">
-            <span className="text-[var(--strata-text-muted)]">{saldoLabel}</span>
+            <span className="flex items-center gap-1.5 text-[var(--strata-text-secondary)]">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: "var(--strata-accent-brand)" }}
+              />
+              {saldoLabel}
+            </span>
             <AmountText
               minor={datum.netBalanceMinor}
               currency={baseCurrency}
@@ -267,6 +275,13 @@ export function CashflowTrendChart({
                 />
                 {t.dashboard.monthExpense}
               </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="h-0.5 w-3.5 rounded-full"
+                  style={{ backgroundColor: "var(--strata-accent-brand)" }}
+                />
+                {t.dashboard.monthSaldo}
+              </span>
             </div>
           ) : null}
 
@@ -274,7 +289,7 @@ export function CashflowTrendChart({
             {mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 {mode === "cashflow" ? (
-                  <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid
                       stroke="var(--strata-border-subtle)"
                       strokeDasharray="3 3"
@@ -289,7 +304,7 @@ export function CashflowTrendChart({
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      width={48}
+                      width={56}
                       tick={{ fill: "var(--strata-text-muted)", fontSize: 11 }}
                       tickFormatter={(v) => formatCompactMinor(Number(v), locale, privacyBlur)}
                     />
@@ -308,6 +323,7 @@ export function CashflowTrendChart({
                         />
                       )}
                     />
+                    <ReferenceLine y={0} stroke="var(--strata-border-strong)" strokeDasharray="3 3" />
                     <Bar
                       dataKey="incomeMinor"
                       fill="var(--strata-money-income)"
@@ -320,9 +336,17 @@ export function CashflowTrendChart({
                       radius={[6, 6, 0, 0]}
                       maxBarSize={20}
                     />
-                  </BarChart>
+                    <Line
+                      type="monotone"
+                      dataKey="netBalanceMinor"
+                      stroke="var(--strata-accent-brand)"
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: "var(--strata-accent-brand)", strokeWidth: 0 }}
+                      activeDot={{ r: 5, fill: "var(--strata-accent-brand)", strokeWidth: 0 }}
+                    />
+                  </ComposedChart>
                 ) : (
-                  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                  <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor="var(--strata-accent-brand)" stopOpacity={0.34} />
@@ -343,7 +367,7 @@ export function CashflowTrendChart({
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      width={48}
+                      width={56}
                       tick={{ fill: "var(--strata-text-muted)", fontSize: 11 }}
                       tickFormatter={(v) => formatCompactMinor(Number(v), locale, privacyBlur)}
                     />

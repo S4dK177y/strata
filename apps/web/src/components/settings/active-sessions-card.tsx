@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { useI18n } from "@/lib/i18n/client";
+import { cn } from "@/lib/utils";
 
 function renderDeviceIcon(deviceType: ActiveSession["device_type"]) {
   switch (deviceType) {
@@ -168,7 +169,7 @@ export function ActiveSessionsCard({ email }: { email: string | null }) {
   return (
     <>
       <Card className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start justify-between gap-3">
           <CardHeader className="min-w-0 flex-1">
             <CardTitle className="flex items-center gap-2 text-lg">
               <ShieldCheck
@@ -184,43 +185,52 @@ export function ActiveSessionsCard({ email }: { email: string | null }) {
             </CardDescription>
           </CardHeader>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={loading || busy}
+            aria-label={t.settings.sessions.refresh}
+            title={t.settings.sessions.refresh}
+            className="shrink-0"
+            onClick={() => {
+              void loadSessions();
+            }}
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            <span className="hidden sm:inline">{t.settings.sessions.refresh}</span>
+          </Button>
+        </div>
+
+        <div
+          className={cn(
+            "grid gap-2",
+            otherSessionsCount > 0 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1"
+          )}
+        >
+          {otherSessionsCount > 0 ? (
             <Button
               type="button"
               size="sm"
-              variant="secondary"
-              disabled={loading || busy}
-              onClick={() => {
-                void loadSessions();
-              }}
+              variant="outline"
+              disabled={busy}
+              onClick={() => setRevokeOthersOpen(true)}
+              className="w-full"
             >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-                strokeWidth={1.75}
-                aria-hidden="true"
-              />
-              {t.settings.sessions.refresh}
+              {t.settings.sessions.revokeOtherButton}
             </Button>
+          ) : null}
 
-            {otherSessionsCount > 0 ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => setRevokeOthersOpen(true)}
-              >
-                {t.settings.sessions.revokeOtherButton}
-              </Button>
-            ) : null}
-
-            <form action="/auth/signout" method="post">
-              <Button type="submit" size="sm" variant="outline">
-                <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                {t.settings.sessions.signOutCurrent}
-              </Button>
-            </form>
-          </div>
+          <form action="/auth/signout" method="post" className="w-full">
+            <Button type="submit" size="sm" variant="outline" className="w-full">
+              <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+              {t.settings.sessions.signOutCurrent}
+            </Button>
+          </form>
         </div>
 
         {loading && sessions.length === 0 ? (

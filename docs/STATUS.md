@@ -80,6 +80,7 @@
   - Redesigned `QuickAddDialog` to Variant B Receipt Card (ambient type glow, sliding type selector, equal-height `More` toggle, `.strata-collapsible` extended types & calculator strip, centered borderless numeric hero amount blocking letters + showing transfer arrows, grouped banking receipt list, horizontal category rail, rotating swap icon, and clean mobile/desktop footer) plus vertically centered `ModalDialog` headers.
   - Refreshed all 5 route `loading.tsx` skeletons (`/`, `/operations`, `/capital`, `/settings`, `/admin`) to match current layouts and added a permanent Skeleton Parity rule to `AGENTS.md` and `.agents/skills/strata-ui/SKILL.md`.
   - Enlarged desktop floating pill navbar slightly (`max-w-6xl`, comfortable vertical thickness) with expressive Neobank `+` FAB/badge styling and full-width Save button in Settings Preferences.
+  - Switched Capital credit card available-limit bar to accent color reflecting available headroom, made Active Sessions header/action buttons symmetrical across mobile and desktop, added the Net Balance (Saldo) line to Monthly Trend chart, and enlarged desktop Category Breakdown donut chart with right-aligned category list.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`

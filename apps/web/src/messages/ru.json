@@ -269,7 +269,7 @@
       "passiveShort": "Пассивный",
       "refundOffset": "Возвраты",
       "trendTitle": "Динамика по месяцам",
-      "trendCashflowSubtitle": "Доходы и чистые расходы за {year} год",
+      "trendCashflowSubtitle": "Доходы, чистые расходы и сальдо за {year} год",
       "trendNetWorthSubtitle": "Чистый капитал на конец месяца за {year} год",
       "modeCashflow": "Денежный поток",
       "modeNetWorth": "Капитал",
