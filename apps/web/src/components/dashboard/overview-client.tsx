@@ -613,30 +613,66 @@ export function OverviewClient({
         {metrics.hasCreditCards ? (
           <Link
             href="/capital"
-            className="mt-3.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/45 px-3.5 py-2.5 text-xs transition hover:border-[var(--strata-border-strong)] lg:mt-4"
+            className="mt-3.5 block overflow-hidden rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 transition hover:border-[var(--strata-border-strong)] lg:mt-4"
           >
-            <span className="inline-flex items-center gap-2 text-[var(--strata-text-secondary)]">
-              <CreditCard
-                className="h-3.5 w-3.5 shrink-0 text-[var(--strata-accent-brand)]"
-                strokeWidth={1.75}
-                aria-hidden="true"
-              />
-              <span>{t.dashboard.creditLimitAvailable}:</span>
-              <strong className="font-bold text-[var(--strata-text-primary)]">
-                <AmountText
-                  minor={metrics.creditAvailableMinor}
-                  currency={profile.base_currency}
+            <div className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs">
+              <span className="inline-flex min-w-0 items-center gap-1.5 text-[var(--strata-text-secondary)]">
+                <CreditCard
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--strata-accent-brand)]"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
                 />
-              </strong>
-            </span>
+                <span className="truncate sm:hidden">{t.dashboard.creditCardsShort}:</span>
+                <span className="hidden truncate sm:inline">{t.dashboard.creditLimitAvailable}:</span>
+                <strong className="shrink-0 whitespace-nowrap font-bold text-[var(--strata-text-primary)]">
+                  <AmountText
+                    minor={metrics.creditAvailableMinor}
+                    currency={profile.base_currency}
+                  />
+                </strong>
+              </span>
+
+              <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[var(--strata-text-secondary)]">
+                {metrics.creditDebtMinor > 0 ? (
+                  <>
+                    <span className="text-[var(--strata-text-muted)]">
+                      {t.dashboard.creditDebtShort}:
+                    </span>
+                    <strong className="font-bold text-[var(--strata-money-expense)]">
+                      <AmountText
+                        minor={metrics.creditDebtMinor}
+                        currency={profile.base_currency}
+                      />
+                    </strong>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[var(--strata-text-muted)]">
+                      {t.dashboard.creditLimitShort}:
+                    </span>
+                    <strong className="font-bold text-[var(--strata-text-primary)]">
+                      <AmountText
+                        minor={metrics.creditLimitMinor}
+                        currency={profile.base_currency}
+                      />
+                    </strong>
+                  </>
+                )}
+                <ChevronRight
+                  className="h-3.5 w-3.5 text-[var(--strata-text-muted)]"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+              </span>
+            </div>
 
             {metrics.creditLimitMinor > 0 ? (
-              <span
+              <div
                 aria-hidden="true"
-                className="hidden h-1.5 w-28 overflow-hidden rounded-full bg-[var(--strata-bg-surface)] sm:block"
+                className="h-1 w-full bg-[var(--strata-border-strong)]/60"
               >
-                <span
-                  className="block h-full rounded-full bg-[var(--strata-accent-brand)]"
+                <div
+                  className="h-full bg-[var(--strata-accent-brand)] transition-all duration-300"
                   style={{
                     width: `${Math.round(
                       Math.max(
@@ -646,25 +682,8 @@ export function OverviewClient({
                     )}%`,
                   }}
                 />
-              </span>
+              </div>
             ) : null}
-
-            <span className="inline-flex items-center gap-1.5 text-[var(--strata-text-secondary)]">
-              <span>{t.dashboard.creditDebtShort}:</span>
-              <strong
-                className={cn(
-                  "font-bold",
-                  metrics.creditDebtMinor > 0
-                    ? "text-[var(--strata-money-expense)]"
-                    : "text-[var(--strata-text-primary)]"
-                )}
-              >
-                <AmountText
-                  minor={metrics.creditDebtMinor}
-                  currency={profile.base_currency}
-                />
-              </strong>
-            </span>
           </Link>
         ) : null}
       </section>

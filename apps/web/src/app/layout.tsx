@@ -35,15 +35,15 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F2F4F7" },
-    { media: "(prefers-color-scheme: dark)", color: "#0B0C0E" },
+    { media: "(prefers-color-scheme: light)", color: "#EEF1F6" },
+    { media: "(prefers-color-scheme: dark)", color: "#07080B" },
   ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("strata-theme");var a=localStorage.getItem("strata-accent");var m=document.querySelector('meta[name="color-scheme"]');var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(m){m.content=(t==="light"||t==="dark")?t:"light dark";}var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);if(a==="emerald"||a==="ocean"||a==="amethyst"||a==="sunset"||a==="graphite"){r.dataset.accent=a;}if(t==="light"||t==="dark"){var tc=d?"#0B0C0E":"#F2F4F7";document.querySelectorAll('meta[name="theme-color"]').forEach(function(el){el.setAttribute("content",tc);});}}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem("strata-theme");var a=localStorage.getItem("strata-accent");var m=document.querySelector('meta[name="color-scheme"]');var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(m){m.content=(t==="light"||t==="dark")?t:"light dark";}var r=document.documentElement;r.classList.toggle("dark",d);r.classList.toggle("light",!d);if(a==="emerald"||a==="ocean"||a==="amethyst"||a==="sunset"||a==="graphite"){r.dataset.accent=a;}if(t==="light"||t==="dark"){var tc=d?"#07080B":"#EEF1F6";document.querySelectorAll('meta[name="theme-color"]').forEach(function(el){el.setAttribute("content",tc);});}}catch(e){}})();`;
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const initialLocale = await getServerLocale();
@@ -58,7 +58,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <meta name="color-scheme" content="light dark" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-screen antialiased">
+      <body className="strata-canvas-ambient min-h-screen antialiased">
         <AppProviders initialLocale={initialLocale}>{children}</AppProviders>
       </body>
     </html>

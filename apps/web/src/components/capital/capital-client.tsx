@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Archive,
   ArchiveRestore,
+  MoreHorizontal,
   Pencil,
   Plus,
   Trash2,
@@ -24,6 +25,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +54,54 @@ interface CapitalClientProps {
   initialTransactions: Transaction[];
   currentYear: number;
   currentMonth: number;
+}
+
+interface CategoryActionsMenuProps {
+  category: Category;
+  actionsLabel: string;
+  editLabel: string;
+  deleteLabel: string;
+  onEdit: (cat: Category) => void;
+  onDelete: (cat: Category) => void;
+}
+
+function CategoryActionsMenu({
+  category,
+  actionsLabel,
+  editLabel,
+  deleteLabel,
+  onEdit,
+  onDelete,
+}: CategoryActionsMenuProps) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={actionsLabel}
+          className="h-9 w-9 shrink-0 rounded-xl"
+        >
+          <MoreHorizontal className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onEdit(category)}>
+          <Pencil className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]" strokeWidth={1.75} aria-hidden="true" />
+          <span>{editLabel}</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onSelect={() => onDelete(category)}
+          className="text-[var(--strata-money-expense)] focus:text-[var(--strata-money-expense)]"
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+          <span>{deleteLabel}</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export function CapitalClient({
@@ -154,20 +210,42 @@ export function CapitalClient({
   const accountSummary = useMemo(() => {
     let liquidMinor = 0;
     let savingsMinor = 0;
+    let creditAvailableMinor = 0;
+    let hasCreditCards = false;
+
     for (const acc of coreAccounts) {
       if (!acc.isActive) continue;
       const bal = balances[acc.id] ?? acc.initialBalanceMinor;
-      if (acc.type === "debit" || acc.type === "cash") liquidMinor += bal;
-      else if (acc.type === "savings" || acc.type === "deposit") savingsMinor += bal;
+      if (acc.type === "debit" || acc.type === "cash") {
+        liquidMinor += bal;
+      } else if (acc.type === "savings" || acc.type === "deposit") {
+        savingsMinor += bal;
+      } else if (acc.type === "credit") {
+        hasCreditCards = true;
+        creditAvailableMinor += computeCreditCardAvailable(acc, bal);
+      }
     }
+
     const creditDebtMinor = computeCreditCardDebt(
       coreAccounts.filter((a) => a.isActive),
       balances
     );
+    const netAccountsMinor = liquidMinor + savingsMinor - creditDebtMinor;
+
+    const liquidPos = Math.max(0, liquidMinor);
+    const savingsPos = Math.max(0, savingsMinor);
+    const allocTotal = liquidPos + savingsPos + creditDebtMinor;
+
     return {
       liquidMinor,
       savingsMinor,
       creditDebtMinor,
+      creditAvailableMinor,
+      hasCreditCards,
+      netAccountsMinor,
+      liquidShare: allocTotal > 0 ? Math.round((liquidPos / allocTotal) * 100) : 0,
+      savingsShare: allocTotal > 0 ? Math.round((savingsPos / allocTotal) * 100) : 0,
+      debtShare: allocTotal > 0 ? Math.round((creditDebtMinor / allocTotal) * 100) : 0,
       activeCount: accounts.filter((a) => a.is_active).length,
     };
   }, [coreAccounts, balances, accounts]);
@@ -176,6 +254,28 @@ export function CapitalClient({
     () => (showArchived ? accounts : accounts.filter((a) => a.is_active)),
     [accounts, showArchived]
   );
+
+  const groupedAccounts = useMemo(() => {
+    const daily = visibleAccounts.filter((a) => a.type === "debit" || a.type === "cash");
+    const savings = visibleAccounts.filter((a) => a.type === "savings" || a.type === "deposit");
+    const credit = visibleAccounts.filter((a) => a.type === "credit");
+    const other = visibleAccounts.filter(
+      (a) =>
+        a.type !== "debit" &&
+        a.type !== "cash" &&
+        a.type !== "savings" &&
+        a.type !== "deposit" &&
+        a.type !== "credit"
+    );
+
+    const dailyGroup = [...daily, ...other];
+
+    return [
+      { key: "daily", title: t.capital.groupDaily, items: dailyGroup },
+      { key: "savings", title: t.capital.groupSavings, items: savings },
+      { key: "credit", title: t.capital.groupCredit, items: credit },
+    ].filter((g) => g.items.length > 0);
+  }, [visibleAccounts, t.capital.groupDaily, t.capital.groupSavings, t.capital.groupCredit]);
 
   const archivedCount = useMemo(
     () => accounts.filter((a) => !a.is_active).length,
@@ -200,6 +300,31 @@ export function CapitalClient({
     () => categories.filter((c) => c.kind === "income"),
     [categories]
   );
+
+  const budgetSummary = useMemo(() => {
+    let totalLimitMinor = 0;
+    let totalSpentMinor = 0;
+    for (const cat of expenseCategories) {
+      if (cat.monthly_limit_minor !== null && cat.monthly_limit_minor > 0) {
+        totalLimitMinor += cat.monthly_limit_minor;
+        const stats = categoryBreakdownMap.get(cat.id);
+        totalSpentMinor += stats?.netSpentMinor ?? 0;
+      }
+    }
+    const rawPct =
+      totalLimitMinor > 0 ? Math.round((totalSpentMinor / totalLimitMinor) * 100) : 0;
+    return {
+      totalLimitMinor,
+      totalSpentMinor,
+      rawPct,
+      barPct: Math.min(100, Math.max(0, rawPct)),
+      isOver: totalLimitMinor > 0 && totalSpentMinor > totalLimitMinor,
+      isWarn:
+        totalLimitMinor > 0 &&
+        totalSpentMinor <= totalLimitMinor &&
+        rawPct >= 80,
+    };
+  }, [expenseCategories, categoryBreakdownMap]);
 
   async function handleToggleArchive(acc: Account) {
     try {
@@ -264,83 +389,155 @@ export function CapitalClient({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+    <div className="space-y-5 sm:space-y-6">
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-[var(--strata-text-primary)]">
             {t.capital.title}
           </h1>
-          <p className="text-sm text-[var(--strata-text-muted)]">{t.capital.subtitle}</p>
-        </div>
 
-        {activeTab === "accounts" ? (
-          <Button type="button" onClick={() => openAccountForm(null)}>
-            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            {t.capital.addAccount}
-          </Button>
-        ) : (
-          <Button type="button" onClick={() => openCategoryForm(null, "expense")}>
-            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            {t.capital.addCategory}
-          </Button>
-        )}
+          {activeTab === "accounts" ? (
+            <Button type="button" onClick={() => openAccountForm(null)} className="shrink-0">
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              <span>{t.capital.addAccount}</span>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => openCategoryForm(null, "expense")}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              <span>{t.capital.addCategory}</span>
+            </Button>
+          )}
+        </div>
+        <p className="text-sm text-[var(--strata-text-muted)]">{t.capital.subtitle}</p>
       </div>
 
       <Tabs
         value={activeTab}
         onValueChange={(val) => setActiveTab(val === "categories" ? "categories" : "accounts")}
       >
-        <TabsList>
-          <TabsTrigger value="accounts">{t.capital.accountsTab}</TabsTrigger>
-          <TabsTrigger value="categories">{t.capital.categoriesTab}</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 sm:inline-grid sm:w-auto sm:min-w-[290px]">
+          <TabsTrigger value="accounts">
+            {t.capital.accountsTab} ({accountSummary.activeCount})
+          </TabsTrigger>
+          <TabsTrigger value="categories">
+            {t.capital.categoriesTab} ({categories.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="accounts" className="space-y-5">
-          {/* Accounts KPI strip */}
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
-            <Card className="min-w-0 p-3.5 sm:p-4">
-              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-                {t.capital.liquidSummary}
+          {/* Unified Portfolio Allocation Card (2A) */}
+          <Card className="space-y-3.5 p-4 sm:p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+                  {t.capital.portfolioTotal}
+                </div>
+                <div className="mt-0.5 text-2xl font-extrabold tracking-tight text-[var(--strata-text-primary)] sm:text-[26px]">
+                  <AmountText minor={accountSummary.netAccountsMinor} currency={baseCurrency} />
+                </div>
               </div>
-              <div className="mt-1.5 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
-                <AmountText minor={accountSummary.liquidMinor} currency={baseCurrency} />
-              </div>
-            </Card>
 
-            <Card className="min-w-0 p-3.5 sm:p-4">
-              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-                {t.capital.savingsSummary}
-              </div>
-              <div className="mt-1.5 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
-                <AmountText minor={accountSummary.savingsMinor} currency={baseCurrency} />
-              </div>
-            </Card>
+              {accountSummary.hasCreditCards ? (
+                <div className="text-xs text-[var(--strata-text-muted)]">
+                  {t.capital.availableCreditShort}:{" "}
+                  <strong className="font-bold text-[var(--strata-text-primary)]">
+                    <AmountText
+                      minor={accountSummary.creditAvailableMinor}
+                      currency={baseCurrency}
+                    />
+                  </strong>
+                </div>
+              ) : null}
+            </div>
 
-            <Card className="min-w-0 p-3.5 sm:p-4">
-              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-                {t.capital.creditDebtSummary}
-              </div>
-              <div
-                className={cn(
-                  "mt-1.5 overflow-visible text-base font-bold sm:text-lg",
-                  accountSummary.creditDebtMinor > 0
-                    ? "text-[var(--strata-money-expense)]"
-                    : "text-[var(--strata-text-primary)]"
-                )}
-              >
-                <AmountText minor={accountSummary.creditDebtMinor} currency={baseCurrency} />
-              </div>
-            </Card>
+            <div
+              aria-hidden="true"
+              className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full bg-[var(--strata-bg-elevated)]"
+            >
+              {accountSummary.liquidShare > 0 ? (
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${accountSummary.liquidShare}%`,
+                    backgroundColor: "var(--strata-money-compensation)",
+                  }}
+                />
+              ) : null}
+              {accountSummary.savingsShare > 0 ? (
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${accountSummary.savingsShare}%`,
+                    backgroundColor: "var(--strata-money-income)",
+                  }}
+                />
+              ) : null}
+              {accountSummary.debtShare > 0 ? (
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${accountSummary.debtShare}%`,
+                    backgroundColor: "var(--strata-money-expense)",
+                  }}
+                />
+              ) : null}
+            </div>
 
-            <Card className="min-w-0 p-3.5 sm:p-4">
-              <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
-                {t.capital.accountsCount}
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: "var(--strata-money-compensation)" }}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{t.capital.liquidShort}</span>
+                </div>
+                <div className="mt-0.5 truncate text-xs font-bold text-[var(--strata-text-primary)] sm:text-sm">
+                  <AmountText minor={accountSummary.liquidMinor} currency={baseCurrency} />
+                </div>
               </div>
-              <div className="strata-mono mt-1.5 text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
-                {accountSummary.activeCount}
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: "var(--strata-money-income)" }}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{t.capital.savingsShort}</span>
+                </div>
+                <div className="mt-0.5 truncate text-xs font-bold text-[var(--strata-money-income)] sm:text-sm">
+                  <AmountText minor={accountSummary.savingsMinor} currency={baseCurrency} />
+                </div>
               </div>
-            </Card>
-          </div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: "var(--strata-money-expense)" }}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">{t.capital.debtShort}</span>
+                </div>
+                <div
+                  className={cn(
+                    "mt-0.5 truncate text-xs font-bold sm:text-sm",
+                    accountSummary.creditDebtMinor > 0
+                      ? "text-[var(--strata-money-expense)]"
+                      : "text-[var(--strata-text-primary)]"
+                  )}
+                >
+                  <AmountText minor={accountSummary.creditDebtMinor} currency={baseCurrency} />
+                </div>
+              </div>
+            </div>
+          </Card>
 
           {archivedCount > 0 ? (
             <div className="flex items-center justify-end gap-2.5">
@@ -366,251 +563,336 @@ export function CapitalClient({
               </div>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {visibleAccounts.map((acc) => {
-                const Icon = ACCOUNT_TYPE_ICONS[acc.type] ?? Wallet;
-                const coreAcc = toCoreAccount(acc);
-                const balanceMinor = balances[acc.id] ?? acc.initial_balance_minor;
-                const creditAvailable =
-                  acc.type === "credit" && acc.credit_limit_minor > 0
-                    ? computeCreditCardAvailable(coreAcc, balanceMinor)
-                    : null;
-                const creditAvailableRatio =
-                  creditAvailable !== null && acc.credit_limit_minor > 0
-                    ? Math.max(0, Math.min(1, creditAvailable / acc.credit_limit_minor))
-                    : 0;
+            <div className="space-y-5">
+              {groupedAccounts.map((group) => (
+                <section key={group.key} className="space-y-2.5">
+                  <h2 className="px-1 text-xs font-semibold tracking-wider text-[var(--strata-text-muted)] uppercase">
+                    {group.title}
+                  </h2>
 
-                return (
-                  <Card
-                    key={acc.id}
-                    className={cn("space-y-3 p-4 sm:p-5", !acc.is_active && "opacity-65")}
+                  <div
+                    className={cn(
+                      "grid grid-cols-1 gap-3",
+                      group.items.length > 1 && "md:grid-cols-2"
+                    )}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 flex-1 items-center gap-3.5">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
-                          <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-                        </div>
+                    {group.items.map((acc) => {
+                      const Icon = ACCOUNT_TYPE_ICONS[acc.type] ?? Wallet;
+                      const coreAcc = toCoreAccount(acc);
+                      const balanceMinor = balances[acc.id] ?? acc.initial_balance_minor;
+                      const creditAvailable =
+                        acc.type === "credit" && acc.credit_limit_minor > 0
+                          ? computeCreditCardAvailable(coreAcc, balanceMinor)
+                          : null;
+                      const creditAvailableRatio =
+                        creditAvailable !== null && acc.credit_limit_minor > 0
+                          ? Math.max(0, Math.min(1, creditAvailable / acc.credit_limit_minor))
+                          : 0;
+                      const isCreditDebt = acc.type === "credit" && balanceMinor < 0;
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Link
-                              href={`/operations?account=${acc.id}`}
-                              className="truncate text-base font-bold text-[var(--strata-text-primary)] hover:underline"
-                            >
-                              {acc.name}
-                            </Link>
-                            {!acc.is_active ? (
-                              <Badge>{t.dashboard.archivedBadge}</Badge>
-                            ) : null}
+                      return (
+                        <Card
+                          key={acc.id}
+                          className={cn("space-y-3 p-4", !acc.is_active && "opacity-65")}
+                        >
+                          <div className="flex items-center justify-between gap-2.5">
+                            <div className="flex min-w-0 flex-1 items-center gap-3">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
+                                <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <Link
+                                    href={`/operations?account=${acc.id}`}
+                                    className="truncate text-sm font-bold text-[var(--strata-text-primary)] hover:underline sm:text-[15px]"
+                                  >
+                                    {acc.name}
+                                  </Link>
+                                  {!acc.is_active ? (
+                                    <Badge>{t.dashboard.archivedBadge}</Badge>
+                                  ) : null}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-1 text-xs text-[var(--strata-text-muted)]">
+                                  <span className="truncate">
+                                    {acc.bank_name || t.onboarding.accountTypes[acc.type]}
+                                  </span>
+                                  {acc.last4_digits ? (
+                                    <span className="strata-mono">· ··{acc.last4_digits}</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <div
+                                className={cn(
+                                  "whitespace-nowrap text-right text-sm font-extrabold sm:text-base",
+                                  isCreditDebt
+                                    ? "text-[var(--strata-money-expense)]"
+                                    : "text-[var(--strata-text-primary)]"
+                                )}
+                              >
+                                <AmountText minor={balanceMinor} currency={acc.currency} />
+                              </div>
+
+                              {acc.is_active ? (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="icon"
+                                  aria-label={t.capital.quickOperation}
+                                  title={t.capital.quickOperation}
+                                  onClick={() => openQuickAdd({ accountFromId: acc.id })}
+                                  className="hidden h-9 w-9 rounded-xl sm:inline-flex"
+                                >
+                                  <Plus className="h-4 w-4" strokeWidth={1.85} aria-hidden="true" />
+                                </Button>
+                              ) : null}
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={t.capital.actionsLabel}
+                                    className="h-9 w-9 rounded-xl"
+                                  >
+                                    <MoreHorizontal
+                                      className="h-4 w-4"
+                                      strokeWidth={1.75}
+                                      aria-hidden="true"
+                                    />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {acc.is_active ? (
+                                    <DropdownMenuItem
+                                      onSelect={() => openQuickAdd({ accountFromId: acc.id })}
+                                      className="sm:hidden"
+                                    >
+                                      <Plus
+                                        className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]"
+                                        strokeWidth={1.75}
+                                        aria-hidden="true"
+                                      />
+                                      <span>{t.capital.quickOperation}</span>
+                                    </DropdownMenuItem>
+                                  ) : null}
+                                  <DropdownMenuItem onSelect={() => openAccountForm(acc)}>
+                                    <Pencil
+                                      className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]"
+                                      strokeWidth={1.75}
+                                      aria-hidden="true"
+                                    />
+                                    <span>{t.common.edit}</span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => void handleToggleArchive(acc)}>
+                                    {acc.is_active ? (
+                                      <Archive
+                                        className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]"
+                                        strokeWidth={1.75}
+                                        aria-hidden="true"
+                                      />
+                                    ) : (
+                                      <ArchiveRestore
+                                        className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]"
+                                        strokeWidth={1.75}
+                                        aria-hidden="true"
+                                      />
+                                    )}
+                                    <span>
+                                      {acc.is_active ? t.common.archive : t.common.restore}
+                                    </span>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onSelect={() => setDeletingAccount(acc)}
+                                    className="text-[var(--strata-money-expense)] focus:text-[var(--strata-money-expense)]"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                                    <span>{t.common.delete}</span>
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-[var(--strata-text-muted)]">
-                            <span>{t.onboarding.accountTypes[acc.type]}</span>
-                            {acc.bank_name ? <span>· {acc.bank_name}</span> : null}
-                            {acc.last4_digits ? (
-                              <span className="strata-mono">··{acc.last4_digits}</span>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="shrink-0 whitespace-nowrap text-right text-base font-extrabold text-[var(--strata-text-primary)] sm:text-lg">
-                        <AmountText minor={balanceMinor} currency={acc.currency} />
-                      </div>
-                    </div>
-
-                    {creditAvailable !== null ? (
-                      <div className="space-y-1.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                          <span className="text-[var(--strata-text-muted)]">
-                            {t.capital.creditAvailableLabel}:{" "}
-                            <strong className="text-[var(--strata-text-primary)]">
-                              <AmountText minor={creditAvailable} currency={acc.currency} />
-                            </strong>
-                          </span>
-                          <span className="text-[var(--strata-text-muted)]">
-                            {t.capital.creditLimitLabel}:{" "}
-                            <AmountText minor={acc.credit_limit_minor} currency={acc.currency} />
-                          </span>
-                        </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--strata-bg-surface)]">
-                          <div
-                            className="h-full rounded-full transition-all duration-500 ease-out"
-                            style={{
-                              width: `${Math.round(creditAvailableRatio * 100)}%`,
-                              backgroundColor: "var(--strata-accent-brand)",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="flex items-center gap-1.5 border-t border-[var(--strata-border-subtle)] pt-3">
-                      {acc.is_active ? (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => openQuickAdd({ accountFromId: acc.id })}
-                          className="min-w-0 flex-1 justify-center sm:flex-none"
-                        >
-                          <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                          <span className="truncate">{t.capital.quickOperation}</span>
-                        </Button>
-                      ) : (
-                        <div className="flex-1 sm:hidden" />
-                      )}
-
-                      <div className="flex shrink-0 items-center gap-1 sm:ml-auto">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t.common.edit}
-                          title={t.common.edit}
-                          onClick={() => openAccountForm(acc)}
-                          className="h-9 w-9 p-0 sm:h-9 sm:w-auto sm:px-3"
-                        >
-                          <Pencil className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                          <span className="hidden sm:inline">{t.common.edit}</span>
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          aria-label={acc.is_active ? t.common.archive : t.common.restore}
-                          title={acc.is_active ? t.common.archive : t.common.restore}
-                          onClick={() => void handleToggleArchive(acc)}
-                          className="h-9 w-9 p-0 sm:h-9 sm:w-auto sm:px-3"
-                        >
-                          {acc.is_active ? (
-                            <Archive className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                          ) : (
-                            <ArchiveRestore
-                              className="h-4 w-4 sm:h-3.5 sm:w-3.5"
-                              strokeWidth={1.75}
-                              aria-hidden="true"
-                            />
-                          )}
-                          <span className="hidden sm:inline">
-                            {acc.is_active ? t.common.archive : t.common.restore}
-                          </span>
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          aria-label={t.common.delete}
-                          title={t.common.delete}
-                          onClick={() => setDeletingAccount(acc)}
-                          className="h-9 w-9 p-0 text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)] sm:h-9 sm:w-auto sm:px-3"
-                        >
-                          <Trash2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                          <span className="hidden sm:inline">{t.common.delete}</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
+                          {creditAvailable !== null ? (
+                            <div className="space-y-1.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                <span className="text-[var(--strata-text-muted)]">
+                                  {t.capital.creditAvailableLabel}:{" "}
+                                  <strong className="text-[var(--strata-text-primary)]">
+                                    <AmountText minor={creditAvailable} currency={acc.currency} />
+                                  </strong>
+                                </span>
+                                <span className="text-[var(--strata-text-muted)]">
+                                  {t.capital.creditLimitLabel}:{" "}
+                                  <AmountText
+                                    minor={acc.credit_limit_minor}
+                                    currency={acc.currency}
+                                  />
+                                </span>
+                              </div>
+                              <div className="h-1.5 overflow-hidden rounded-full bg-[var(--strata-bg-surface)]">
+                                <div
+                                  className="h-full rounded-full transition-all duration-500 ease-out"
+                                  style={{
+                                    width: `${Math.round(creditAvailableRatio * 100)}%`,
+                                    backgroundColor: "var(--strata-accent-brand)",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          ) : null}
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="categories" className="space-y-5">
-          {/* Expense Categories */}
-          <Card className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
-                {t.onboarding.expenseCategories}
-              </h2>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => openCategoryForm(null, "expense")}
-              >
-                <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                {t.common.add}
-              </Button>
-            </div>
-
-            {expenseCategories.length === 0 ? (
-              <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
-                {t.capital.noCategories}
+          {/* Monthly Budget Summary Card */}
+          {budgetSummary.totalLimitMinor > 0 ? (
+            <Card className="space-y-2.5 p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-medium text-[var(--strata-text-muted)]">
+                    {t.capital.monthlyBudgetTitle}
+                  </div>
+                  <div className="mt-0.5 text-lg font-extrabold text-[var(--strata-text-primary)] sm:text-xl">
+                    <AmountText minor={budgetSummary.totalSpentMinor} currency={baseCurrency} />{" "}
+                    <span className="text-xs font-medium text-[var(--strata-text-muted)]">
+                      {t.capital.ofLimit}{" "}
+                      <AmountText minor={budgetSummary.totalLimitMinor} currency={baseCurrency} />
+                    </span>
+                  </div>
+                </div>
+                <Badge tone={budgetSummary.isOver || budgetSummary.isWarn ? "warn" : "neon"}>
+                  {t.capital.ofLimitsBadge.replace("{pct}", String(budgetSummary.rawPct))}
+                </Badge>
               </div>
-            ) : (
-              <div className="divide-y divide-[var(--strata-border-subtle)]">
-                {expenseCategories.map((cat) => {
-                  const Icon = getCategoryIcon(cat.icon);
-                  const stats = categoryBreakdownMap.get(cat.id);
-                  const spentMinor = stats?.netSpentMinor ?? 0;
-                  const limitMinor = cat.monthly_limit_minor;
-                  const ratio =
-                    limitMinor && limitMinor > 0 ? Math.min(1, spentMinor / limitMinor) : 0;
-                  const isOver = Boolean(limitMinor && limitMinor > 0 && spentMinor > limitMinor);
-                  const isWarn = Boolean(
-                    limitMinor && limitMinor > 0 && !isOver && spentMinor / limitMinor >= 0.8
-                  );
+              <div className="h-2 overflow-hidden rounded-full bg-[var(--strata-bg-elevated)]">
+                <div
+                  className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${budgetSummary.barPct}%`,
+                    backgroundColor: budgetSummary.isOver
+                      ? "var(--strata-money-expense)"
+                      : budgetSummary.isWarn
+                        ? "var(--strata-radar-warn)"
+                        : "var(--strata-accent-brand)",
+                  }}
+                />
+              </div>
+            </Card>
+          ) : null}
 
-                  return (
-                    <div key={cat.id} className="space-y-2.5 py-3 first:pt-1 last:pb-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
-                            <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
-                              {cat.name}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr] lg:items-start">
+            {/* Expense Categories */}
+            <Card className="space-y-3.5 p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-bold tracking-tight text-[var(--strata-text-primary)] sm:text-lg">
+                  {t.onboarding.expenseCategories}
+                </h2>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openCategoryForm(null, "expense")}
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  {t.common.add}
+                </Button>
+              </div>
+
+              {expenseCategories.length === 0 ? (
+                <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
+                  {t.capital.noCategories}
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {expenseCategories.map((cat) => {
+                    const Icon = getCategoryIcon(cat.icon);
+                    const stats = categoryBreakdownMap.get(cat.id);
+                    const spentMinor = stats?.netSpentMinor ?? 0;
+                    const limitMinor = cat.monthly_limit_minor;
+                    const ratio =
+                      limitMinor && limitMinor > 0 ? Math.min(1, spentMinor / limitMinor) : 0;
+                    const isOver = Boolean(limitMinor && limitMinor > 0 && spentMinor > limitMinor);
+                    const isWarn = Boolean(
+                      limitMinor && limitMinor > 0 && !isOver && spentMinor / limitMinor >= 0.8
+                    );
+
+                    return (
+                      <div
+                        key={cat.id}
+                        className="space-y-2.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5"
+                      >
+                        <div className="flex items-center justify-between gap-2.5">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-surface)] text-[var(--strata-text-secondary)]">
+                              <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
                             </div>
-                            {cat.hint ? (
-                              <div className="truncate text-xs text-[var(--strata-text-muted)]">
-                                {cat.hint}
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
+                                  {cat.name}
+                                </span>
+                                {isOver ? (
+                                  <Badge tone="warn">{t.capital.overLimit}</Badge>
+                                ) : null}
                               </div>
-                            ) : null}
+                              {cat.hint ? (
+                                <div className="truncate text-xs text-[var(--strata-text-muted)]">
+                                  {cat.hint}
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={t.common.edit}
-                            onClick={() => openCategoryForm(cat)}
-                          >
-                            <Pencil className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={t.common.delete}
-                            onClick={() => setDeletingCategory(cat)}
-                            className="text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)]"
-                          >
-                            <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {limitMinor !== null && limitMinor > 0 ? (
-                        <div className="space-y-1.5 rounded-2xl bg-[var(--strata-bg-elevated)] px-3 py-2.5">
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <span className="text-[var(--strata-text-muted)]">
-                              {t.capital.spentThisMonth}:{" "}
-                              <strong className="text-[var(--strata-text-primary)]">
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <div className="text-right">
+                              <div
+                                className={cn(
+                                  "text-xs font-bold sm:text-sm",
+                                  isOver
+                                    ? "text-[var(--strata-money-expense)]"
+                                    : "text-[var(--strata-text-primary)]"
+                                )}
+                              >
                                 <AmountText minor={spentMinor} currency={baseCurrency} />
-                              </strong>{" "}
-                              {t.capital.ofLimit}{" "}
-                              <AmountText minor={limitMinor} currency={baseCurrency} />
-                            </span>
-                            {isOver ? (
-                              <Badge tone="warn">{t.capital.overLimit}</Badge>
-                            ) : null}
+                              </div>
+                              <div className="text-[11px] text-[var(--strata-text-muted)]">
+                                {limitMinor !== null && limitMinor > 0 ? (
+                                  <>
+                                    {t.capital.ofLimit}{" "}
+                                    <AmountText minor={limitMinor} currency={baseCurrency} />
+                                  </>
+                                ) : (
+                                  t.capital.noLimitLabel
+                                )}
+                              </div>
+                            </div>
+
+                            <CategoryActionsMenu
+                              category={cat}
+                              actionsLabel={t.capital.actionsLabel}
+                              editLabel={t.common.edit}
+                              deleteLabel={t.common.delete}
+                              onEdit={(c) => openCategoryForm(c)}
+                              onDelete={setDeletingCategory}
+                            />
                           </div>
+                        </div>
+
+                        {limitMinor !== null && limitMinor > 0 ? (
                           <div className="h-1.5 overflow-hidden rounded-full bg-[var(--strata-bg-surface)]">
                             <div
                               className="h-full rounded-full transition-all duration-500 ease-out"
@@ -624,98 +906,80 @@ export function CapitalClient({
                               }}
                             />
                           </div>
-                        </div>
-                      ) : spentMinor > 0 ? (
-                        <div className="text-xs text-[var(--strata-text-muted)]">
-                          {t.capital.spentThisMonth}:{" "}
-                          <AmountText minor={spentMinor} currency={baseCurrency} />
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
 
-          {/* Income Categories */}
-          <Card className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-lg font-bold tracking-tight text-[var(--strata-text-primary)]">
-                {t.onboarding.incomeCategories}
-              </h2>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => openCategoryForm(null, "income")}
-              >
-                <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                {t.common.add}
-              </Button>
-            </div>
-
-            {incomeCategories.length === 0 ? (
-              <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
-                {t.capital.noCategories}
+            {/* Income Categories */}
+            <Card className="space-y-3.5 p-4 sm:p-5">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-bold tracking-tight text-[var(--strata-text-primary)] sm:text-lg">
+                  {t.onboarding.incomeCategories}
+                </h2>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => openCategoryForm(null, "income")}
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                  {t.common.add}
+                </Button>
               </div>
-            ) : (
-              <div className="divide-y divide-[var(--strata-border-subtle)]">
-                {incomeCategories.map((cat) => {
-                  const Icon = getCategoryIcon(cat.icon);
-                  return (
-                    <div
-                      key={cat.id}
-                      className="flex items-center justify-between gap-3 py-3 first:pt-1 last:pb-1"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)]">
-                          <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
-                              {cat.name}
-                            </span>
-                            {cat.is_passive ? (
-                              <Badge tone="passive">{t.onboarding.passiveBadge}</Badge>
+
+              {incomeCategories.length === 0 ? (
+                <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
+                  {t.capital.noCategories}
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {incomeCategories.map((cat) => {
+                    const Icon = getCategoryIcon(cat.icon);
+                    return (
+                      <div
+                        key={cat.id}
+                        className="flex items-center justify-between gap-2.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5"
+                      >
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-surface)] text-[var(--strata-money-income)]">
+                            <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
+                                {cat.name}
+                              </span>
+                              {cat.is_passive ? (
+                                <Badge tone="passive">{t.onboarding.passiveBadge}</Badge>
+                              ) : null}
+                            </div>
+                            {cat.hint ? (
+                              <div className="truncate text-xs text-[var(--strata-text-muted)]">
+                                {cat.hint}
+                              </div>
                             ) : null}
                           </div>
-                          {cat.hint ? (
-                            <div className="truncate text-xs text-[var(--strata-text-muted)]">
-                              {cat.hint}
-                            </div>
-                          ) : null}
                         </div>
-                      </div>
 
-                      <div className="flex shrink-0 items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t.common.edit}
-                          onClick={() => openCategoryForm(cat)}
-                        >
-                          <Pencil className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={t.common.delete}
-                          onClick={() => setDeletingCategory(cat)}
-                          className="text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)]"
-                        >
-                          <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                        </Button>
+                        <CategoryActionsMenu
+                          category={cat}
+                          actionsLabel={t.capital.actionsLabel}
+                          editLabel={t.common.edit}
+                          deleteLabel={t.common.delete}
+                          onEdit={(c) => openCategoryForm(c)}
+                          onDelete={setDeletingCategory}
+                        />
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 

@@ -79,12 +79,12 @@ function applyThemeToDom(theme: Theme, systemTheme: ResolvedTheme, accent: Accen
     if (theme === "system") {
       const media = el.getAttribute("media") ?? "";
       if (media.includes("light")) {
-        el.setAttribute("content", "#F2F4F7");
+        el.setAttribute("content", "#EEF1F6");
       } else {
-        el.setAttribute("content", "#0B0C0E");
+        el.setAttribute("content", "#07080B");
       }
     } else {
-      el.setAttribute("content", resolved === "dark" ? "#0B0C0E" : "#F2F4F7");
+      el.setAttribute("content", resolved === "dark" ? "#07080B" : "#EEF1F6");
     }
   });
 
