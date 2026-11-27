@@ -51,6 +51,10 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+.strata-plain-input:focus-visible {
+  outline: none;
+}
+
 .strata-input:is(:user-invalid, .user-invalid-fallback) {
   border-color: var(--strata-money-expense);
 }

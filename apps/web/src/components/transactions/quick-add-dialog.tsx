@@ -402,7 +402,7 @@ function QuickAddFormBody({
             background: `radial-gradient(90% 65% at 50% 0%, color-mix(in srgb, ${typeMeta.colorVar} 12%, transparent) 0%, transparent 72%), color-mix(in srgb, var(--strata-bg-elevated) 55%, transparent)`,
           }}
         >
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-stretch gap-1.5">
             <div className="relative grid flex-1 grid-cols-3 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/85 p-1">
               <span
                 aria-hidden="true"
@@ -443,7 +443,7 @@ function QuickAddFormBody({
                 showExtendedTypes ? t.transactions.hideMoreTypes : t.transactions.moreTypes
               }
               className={cn(
-                "inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-xl border px-2.5 text-xs font-semibold transition-colors duration-200",
+                "inline-flex shrink-0 cursor-pointer items-center gap-1 self-stretch rounded-xl border px-2.5 text-xs font-semibold transition-colors duration-200",
                 typeMeta.group === "extended" || showExtendedTypes
                   ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
                   : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/85 text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
@@ -509,57 +509,72 @@ function QuickAddFormBody({
               {t.transactions.amountLabel} ({activeCurrency})
             </Label>
 
-            <div className="flex items-baseline justify-center gap-1.5 px-2">
-              <span
-                aria-hidden="true"
-                className="text-2xl font-bold transition-colors duration-200 sm:text-3xl"
-                style={{ color: typeMeta.colorVar }}
-              >
-                {typeMeta.sign}
-              </span>
-              <input
-                ref={amountRef}
-                id="qa-amount"
-                autoFocus
-                inputMode="decimal"
-                value={amountInput}
-                aria-invalid={amountHasError ? "true" : "false"}
-                aria-describedby={describedByIds || undefined}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setAmountInput(next);
-                  if (/[+*/()]/.test(next)) {
-                    setShowCalc(true);
-                  }
-                  if (amountTouched && evaluateAmountExpression(next) !== null) {
-                    setLiveErrorAnnouncement("");
-                  }
-                }}
-                onBlur={() => {
-                  setAmountTouched(true);
-                  if (evaluateAmountExpression(amountInput) === null) {
-                    setLiveErrorAnnouncement(t.transactions.amountInvalid);
-                  }
-                }}
-                placeholder="0"
-                style={{
-                  color: amountInput ? typeMeta.colorVar : "var(--strata-text-primary)",
-                }}
-                className="strata-mono w-full max-w-[230px] min-w-0 bg-transparent text-center text-3xl font-extrabold tracking-tight placeholder:text-[var(--strata-text-muted)]/55 focus:outline-none sm:text-4xl"
-              />
-              <span className="strata-mono shrink-0 text-sm font-bold text-[var(--strata-text-muted)]">
-                {activeCurrency}
-              </span>
-            </div>
+            <div className="group space-y-2">
+              <div className="flex items-center justify-center gap-2 px-2">
+                {txType === "transfer" ? (
+                  <ArrowLeftRight
+                    aria-hidden="true"
+                    className="h-6 w-6 shrink-0 transition-colors duration-200 sm:h-7 sm:w-7"
+                    style={{ color: typeMeta.colorVar }}
+                    strokeWidth={2.2}
+                  />
+                ) : typeMeta.sign ? (
+                  <span
+                    aria-hidden="true"
+                    className="text-2xl font-bold transition-colors duration-200 sm:text-3xl"
+                    style={{ color: typeMeta.colorVar }}
+                  >
+                    {typeMeta.sign}
+                  </span>
+                ) : null}
+                <input
+                  ref={amountRef}
+                  id="qa-amount"
+                  autoFocus
+                  inputMode="decimal"
+                  value={amountInput}
+                  aria-invalid={amountHasError ? "true" : "false"}
+                  aria-describedby={describedByIds || undefined}
+                  onChange={(e) => {
+                    const next = e.target.value
+                      .replace(/×/g, "*")
+                      .replace(/÷/g, "/")
+                      .replace(/[−–—]/g, "-")
+                      .replace(/[^0-9.,+\-*/()=\s]/g, "");
+                    setAmountInput(next);
+                    if (/[+*/()]/.test(next)) {
+                      setShowCalc(true);
+                    }
+                    if (amountTouched && evaluateAmountExpression(next) !== null) {
+                      setLiveErrorAnnouncement("");
+                    }
+                  }}
+                  onBlur={() => {
+                    setAmountTouched(true);
+                    if (evaluateAmountExpression(amountInput) === null) {
+                      setLiveErrorAnnouncement(t.transactions.amountInvalid);
+                    }
+                  }}
+                  placeholder="0"
+                  style={{
+                    color: amountInput ? typeMeta.colorVar : "var(--strata-text-primary)",
+                  }}
+                  className="strata-mono strata-plain-input w-full max-w-[230px] min-w-0 bg-transparent text-center text-3xl font-extrabold tracking-tight placeholder:text-[var(--strata-text-muted)]/55 focus:outline-none sm:text-4xl"
+                />
+                <span className="strata-mono shrink-0 text-sm font-bold text-[var(--strata-text-muted)]">
+                  {activeCurrency}
+                </span>
+              </div>
 
-            <div
-              className={cn(
-                "mx-auto h-px w-44 transition-colors duration-200",
-                amountHasError
-                  ? "bg-[var(--strata-money-expense)]"
-                  : "bg-[var(--strata-border-strong)]"
-              )}
-            />
+              <div
+                className={cn(
+                  "mx-auto h-px w-44 transition-[width,background-color] duration-200",
+                  amountHasError
+                    ? "bg-[var(--strata-money-expense)]"
+                    : "bg-[var(--strata-border-strong)] group-focus-within:w-52 group-focus-within:bg-[var(--strata-accent-brand)]"
+                )}
+              />
+            </div>
 
             <div id={amountHintId} className="flex flex-wrap items-center justify-center gap-1.5">
               <button
@@ -868,7 +883,7 @@ function QuickAddFormBody({
                   ? t.transactions.commentDebtPlaceholder
                   : t.transactions.commentPlaceholder
               }
-              className="h-9 w-full min-w-0 bg-transparent text-sm text-[var(--strata-text-primary)] placeholder:text-[var(--strata-text-muted)] focus:outline-none"
+              className="strata-plain-input h-9 w-full min-w-0 bg-transparent text-sm text-[var(--strata-text-primary)] placeholder:text-[var(--strata-text-muted)] focus:outline-none"
             />
           </div>
 

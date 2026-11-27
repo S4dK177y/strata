@@ -51,3 +51,5 @@ Before making changes in any new chat or session:
    - Use popular, well-maintained, `npm audit`-clean open-source libraries instead of building complex primitives from scratch.
    - For UI/design: prefer Radix UI / shadcn/ui primitives, `lucide-react` icons, `vaul` mobile drawers, `sonner` toasts, `recharts` charts, and `motion`/`framer-motion` animations — wrapped in `apps/web/src/components/ui/` and themed exclusively via `--strata-*` semantic design tokens.
    - For backend/API/validation: prefer `hono`, `@hono/zod-openapi`, `@scalar/hono-api-reference`, `@supabase/ssr`, and `zod`.
+9. **Keep Route Skeletons (`loading.tsx`) in Sync:**
+   - Whenever a page's structure, cards, headers, grids, or responsive stacking changes (e.g. `/`, `/operations`, `/capital`, `/settings`, `/admin`), ALWAYS inspect and update its corresponding `loading.tsx` skeleton in the same PR so loading states match the live layout across Mobile (`360px`), Tablet (`768px`), and Desktop (`1280px`) with zero horizontal overflow.

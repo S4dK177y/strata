@@ -75,9 +75,11 @@
   - Scoped `view-transition-name` rules to `html[data-vt-active="1"]` in `globals.css` + `TransitionLink` and moved `ProfileQuickMenu` dropdown into a `document.body` React Portal (`.strata-frosted-menu`) alongside upgraded `.strata-frosted` / `.strata-frosted-bar` smoked-glass surfaces so backdrop blur truly blurs page content behind the navbar, dock, and profile menu.
   - Added `LiquidNavIndicator` (SVG metaball goo filter + coupled head/tail spring physics + liquid volume bridge) to both the desktop floating top capsule and mobile bottom dock.
 - **PR 6.7 (Receipt-Style Quick Add & Fintech Motion Polish):**
-  - Tuned `LiquidNavIndicator` springs to critically-damped fintech motion (`420/43` & `220/32`, no overshoot/bounce) and removed icon scale jumps.
-  - Removed redundant header `+ Add operation` button on `/operations` (kept in navbar, mobile dock, and empty ledger state).
-  - Redesigned `QuickAddDialog` to Variant B Receipt Card (ambient type glow, sliding type selector, `.strata-collapsible` extended types & calculator strip, centered tabular hero amount, grouped banking receipt list, horizontal category rail, rotating swap icon, and clean mobile/desktop footer).
+  - Tuned `LiquidNavIndicator` springs to critically-damped fintech motion (`420/43` & `220/32`, smooth goo fade-out with no end-of-travel jerk) and removed icon scale jumps.
+  - Removed redundant header `+ Add operation` button on `/operations` (kept in navbar, mobile dock, and empty ledger state) and aligned the mobile period/All-Time bar cleanly.
+  - Redesigned `QuickAddDialog` to Variant B Receipt Card (ambient type glow, sliding type selector, equal-height `More` toggle, `.strata-collapsible` extended types & calculator strip, centered borderless numeric hero amount blocking letters + showing transfer arrows, grouped banking receipt list, horizontal category rail, rotating swap icon, and clean mobile/desktop footer) plus vertically centered `ModalDialog` headers.
+  - Refreshed all 5 route `loading.tsx` skeletons (`/`, `/operations`, `/capital`, `/settings`, `/admin`) to match current layouts and added a permanent Skeleton Parity rule to `AGENTS.md` and `.agents/skills/strata-ui/SKILL.md`.
+  - Enlarged desktop floating pill navbar slightly (`max-w-6xl`, comfortable vertical thickness) with expressive Neobank `+` FAB/badge styling and full-width Save button in Settings Preferences.
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`

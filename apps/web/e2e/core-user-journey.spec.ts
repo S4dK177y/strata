@@ -111,7 +111,8 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await expect(qaAmount).toBeVisible();
     await page.locator("[data-qa-calc-toggle]").click();
     await expect(page.locator("[data-qa-calc-drawer]")).toHaveAttribute("data-open", "true");
-    await qaAmount.fill("=150+50");
+    await qaAmount.fill("abc=150+50xyz");
+    await expect(qaAmount).toHaveValue("=150+50");
     await page.locator("#qa-comment").fill("E2E Coffee");
     await page
       .getByRole("button", { name: /Save operation|Сохранить операцию/i })
@@ -220,11 +221,13 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
         }
 
         if (route === "/settings" && vp.name === "mobile") {
-          const totpTitleBox = await page
+          const totpTitle = page
             .getByText(/Two-factor authentication|Двухфакторная аутентификация/i)
-            .first()
-            .boundingBox();
+            .first();
+          await expect(totpTitle).toBeVisible({ timeout: 10_000 });
+          const totpTitleBox = await totpTitle.boundingBox();
           expect(totpTitleBox?.width ?? 0).toBeGreaterThanOrEqual(240);
+          await assertNoHorizontalOverflow(page);
         }
       }
     }

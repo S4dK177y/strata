@@ -16,7 +16,7 @@ Always read `docs/DESIGN_SYSTEM.md` and `packages/design-tokens/tokens.json` bef
 3. **Money Display:**
    - Always use `AmountText` / `.strata-money` (`font-variant-numeric: tabular-nums`) so numbers align cleanly, render split-decimal muted fractions (e.g. `,67 ₽` at 55% opacity), and automatically obey the global `.privacy-blur` toggle.
 4. **Mobile-first PWA:**
-   - Minimum `44px` touch targets, comfortable bottom navigation on mobile (`Overview`, `Operations`, `+`, `Capital`, `Plans`), collapsible sidebar on desktop (`>= lg`).
+   - Minimum `44px` touch targets, floating glass bottom dock on mobile (`Overview`, `Operations`, `+`, `Capital`, `Settings`) and floating glass top pill navbar on desktop (`>= lg`).
 5. **i18n:**
    - Every visible label, aria-label, and toast must exist in both `src/messages/ru.json` and `src/messages/en.json`.
 6. **Proven UI Libraries & Anti-AI-Cliché Iconography:**
@@ -24,3 +24,5 @@ Always read `docs/DESIGN_SYSTEM.md` and `packages/design-tokens/tokens.json` bef
    - Never use raw Unicode emojis in UI controls, navigation, badges, or headings — always use crisp `lucide-react` vector icons (`strokeWidth={1.75}`).
    - Never use `Sparkles` icons or decorative glowing icon boxes above card/section headings. Keep service icons strictly monochrome (`text-[var(--strata-text-muted)]` / `text-[var(--strata-text-secondary)]`), reserving color exclusively for the primary CTA and semantic financial indicators (income/expense/promo radar).
    - Keep UI copy concise, human, and product-oriented (never expose technical jargon like "integer precision" or internal milestone terms in user-facing copy).
+7. **Skeleton Parity (`loading.tsx`):**
+   - Whenever modifying a route's layout, cards, headers, grids, or responsive stacking, ALWAYS update its corresponding `loading.tsx` skeleton in the same commit so loading skeletons match the live UI across Mobile, Tablet, and Desktop.

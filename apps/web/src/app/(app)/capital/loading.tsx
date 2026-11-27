@@ -2,12 +2,12 @@ export default function CapitalLoading() {
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 space-y-2">
           <div className="strata-skeleton h-7 w-32 rounded-xl bg-[var(--strata-bg-surface)]" />
-          <div className="strata-skeleton h-4 w-72 rounded-lg bg-[var(--strata-bg-surface)]" />
+          <div className="strata-skeleton h-4 w-60 max-w-full rounded-lg bg-[var(--strata-bg-surface)]" />
         </div>
-        <div className="strata-skeleton h-11 w-36 rounded-2xl bg-[var(--strata-bg-surface)]" />
+        <div className="strata-skeleton h-11 w-full rounded-2xl bg-[var(--strata-bg-surface)] sm:w-36" />
       </div>
 
       {/* Tabs Switcher */}

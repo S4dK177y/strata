@@ -295,7 +295,12 @@ export function ModalDialog({
             </button>
           </div>
 
-          <div className="flex items-start justify-between gap-4 border-b border-[var(--strata-border-subtle)] px-5 py-3.5 sm:px-6 sm:py-4">
+          <div
+            className={cn(
+              "flex justify-between gap-4 border-b border-[var(--strata-border-subtle)] px-5 py-3.5 sm:px-6 sm:py-4",
+              description ? "items-start" : "items-center"
+            )}
+          >
             <div className="min-w-0 space-y-1">
               <h1
                 id={titleId}
