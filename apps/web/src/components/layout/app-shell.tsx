@@ -48,10 +48,12 @@ function ProfileQuickMenu({
   profile,
   email,
   showAdminLink = true,
+  showSettingsLink = false,
 }: {
   profile: Profile;
   email: string | null;
   showAdminLink?: boolean;
+  showSettingsLink?: boolean;
 }) {
   const { locale, setLocale, t } = useI18n();
   const { resolvedTheme, toggleCompactTheme } = useTheme();
@@ -201,6 +203,18 @@ function ProfileQuickMenu({
                 </span>
               </button>
 
+              {showSettingsLink ? (
+                <TransitionLink
+                  href="/settings"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-2xl px-2.5 py-2 text-xs font-semibold text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
+                >
+                  <Settings className="h-4 w-4 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                  {t.nav.settings}
+                </TransitionLink>
+              ) : null}
+
               {showAdminLink && profile.role === "admin" ? (
                 <TransitionLink
                   href="/admin"
@@ -341,7 +355,13 @@ function AppShellInner({
       active: effectivePath.startsWith("/capital"),
       live: true,
     },
-    { href: "#plans", label: t.nav.plans, icon: Compass, active: false, live: false },
+    {
+      href: "/plans",
+      label: t.nav.plans,
+      icon: Compass,
+      active: effectivePath.startsWith("/plans"),
+      live: true,
+    },
     {
       href: "/settings",
       label: t.nav.settings,
@@ -370,8 +390,8 @@ function AppShellInner({
         ? "/operations"
         : effectivePath.startsWith("/capital")
           ? "/capital"
-          : effectivePath === "/settings"
-            ? "/settings"
+          : effectivePath.startsWith("/plans")
+            ? "/plans"
             : null;
 
   return (
@@ -486,7 +506,24 @@ function AppShellInner({
 
           <div className="flex items-center gap-2">
             <PrivacyIconButton />
-            <ProfileQuickMenu profile={profile} email={email} showAdminLink />
+            <TransitionLink
+              href="/settings"
+              data-tour="settings-link"
+              aria-label={t.nav.settings}
+              title={t.nav.settings}
+              onClick={() => {
+                if (pathname !== "/settings") setPendingHref("/settings");
+              }}
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition",
+                pathname === "/settings"
+                  ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-accent-brand)]"
+                  : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-secondary)] hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+              )}
+            >
+              <Settings className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+            </TransitionLink>
+            <ProfileQuickMenu profile={profile} email={email} showAdminLink showSettingsLink />
           </div>
         </div>
       </header>
@@ -599,26 +636,25 @@ function AppShellInner({
         </TransitionLink>
 
         <TransitionLink
-          href="/settings"
-          data-nav-key="/settings"
-          data-active={activeMobileKey === "/settings" ? "true" : "false"}
-          data-tour="settings-link"
+          href="/plans"
+          data-nav-key="/plans"
+          data-active={activeMobileKey === "/plans" ? "true" : "false"}
           onClick={() => {
-            if (pathname !== "/settings") setPendingHref("/settings");
+            if (!pathname.startsWith("/plans")) setPendingHref("/plans");
           }}
           className={cn(
             "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200",
-            activeMobileKey === "/settings"
+            activeMobileKey === "/plans"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
-          <Settings
+          <Compass
             className="h-4 w-4 shrink-0"
             strokeWidth={1.75}
             aria-hidden="true"
           />
-          <span className="max-w-full truncate">{t.nav.settings}</span>
+          <span className="max-w-full truncate">{t.nav.plans}</span>
         </TransitionLink>
       </nav>
     </div>

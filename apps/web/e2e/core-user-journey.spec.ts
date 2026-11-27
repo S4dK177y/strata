@@ -44,6 +44,7 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
   test("auto-launches Spotlight Tour, records Quick Add math, exports CSV/JSON, enforces non-admin 404/403, and fits all viewports", async ({
     page,
   }) => {
+    test.setTimeout(60_000);
     if (!user) return;
 
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -193,6 +194,40 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     const desktopNav = page.locator('nav[aria-label="Main navigation"]');
     await expect(desktopNav).toHaveAttribute("data-liquid-ready", "true");
     await expect(desktopNav.locator(".strata-liquid-svg")).toBeVisible();
+    await desktopNav.locator('[data-nav-key="/plans"]').click();
+    await page.waitForURL("**/plans");
+    await expect(desktopNav.locator('[data-nav-key="/plans"]')).toHaveAttribute(
+      "data-active",
+      "true"
+    );
+
+    // 6.5 Plans: create a savings rule & recurring bill, verify Promo Radar and Safe-to-Spend deduction
+    await page.getByRole("button", { name: /New rule|Новое правило/i }).first().click();
+    await page.locator("#sr-base-rate").fill("10");
+    await page.locator("#sr-promo-rate").fill("18");
+    const soonDate = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
+    await page.locator("#sr-promo-end").fill(soonDate);
+    await page.getByRole("button", { name: /Create rule|Создать правило/i }).click();
+    await expect(page.getByText(/18%|Ends in|Истекает/i).first()).toBeVisible();
+
+    await page.getByRole("tab", { name: /Recurring bills|Регулярные платежи/i }).click();
+    await page.getByRole("button", { name: /New bill|Новый платёж/i }).first().click();
+    await page.locator("#rp-name").fill("E2E Fiber Internet");
+    await page.locator("#rp-amount").fill("1000");
+    await page.getByRole("button", { name: /Create bill|Создать платёж/i }).click();
+    await expect(page.getByText("E2E Fiber Internet")).toBeVisible();
+
+    await page.goto("/");
+    await expect(page.getByText(/Incl\. bills|Учтены платежи/i)).toBeVisible();
+    await expect(page.getByText(/Promo Radar|Промо-радар/i)).toBeVisible();
+
+    await page.goto("/plans?tab=recurring");
+    await page.getByRole("button", { name: /Mark paid|Отметить/i }).first().click();
+    await expect(page.getByRole("button", { name: /Unmark|Снять отметку/i }).first()).toBeVisible();
+
+    await page.goto("/");
+    await expect(page.getByText(/Incl\. bills|Учтены платежи/i)).toHaveCount(0);
+
     await desktopNav.locator('[data-nav-key="/operations"]').click();
     await page.waitForURL("**/operations");
     await expect(desktopNav.locator('[data-nav-key="/operations"]')).toHaveAttribute(
@@ -200,7 +235,7 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
       "true"
     );
 
-    for (const route of ["/", "/operations", "/capital", "/settings"]) {
+    for (const route of ["/", "/operations", "/capital", "/plans", "/settings"]) {
       await page.goto(route);
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });
@@ -211,6 +246,8 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
           const mobileNav = page.locator('nav[aria-label="Mobile navigation"]');
           await expect(mobileNav).toHaveAttribute("data-liquid-ready", "true");
           await expect(mobileNav.locator(".strata-liquid-svg")).toBeVisible();
+          await expect(mobileNav.locator('[data-nav-key="/plans"]')).toBeVisible();
+          await expect(page.locator('[data-tour="settings-link"]:visible').first()).toBeVisible();
 
           // Open Receipt Card Quick Add on Mobile 360px and verify zero overflow
           await mobileNav.locator('[data-tour="quick-add"]').click();

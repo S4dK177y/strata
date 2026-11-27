@@ -17,8 +17,9 @@ import {
   computeCategoryBreakdown,
   computeCreditCardAvailable,
   computeCreditCardDebt,
+  getPromoRadarStatus,
 } from "@strata/finance-core";
-import type { Account, Category, Transaction } from "@strata/api-contract";
+import type { Account, Category, SavingsRule, Transaction } from "@strata/api-contract";
 import { useQuickAdd } from "@/components/transactions/quick-add-provider";
 import { AmountText } from "@/components/ui/amount-text";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ import { ACCOUNT_TYPE_ICONS, getCategoryIcon } from "@/lib/category-icons";
 import {
   toCoreAccount,
   toCoreCategory,
+  toCoreSavingsRule,
   toCoreTransaction,
 } from "@/lib/finance-mappers";
 import { useI18n } from "@/lib/i18n/client";
@@ -52,6 +54,9 @@ interface CapitalClientProps {
   initialAccounts: Account[];
   initialCategories: Category[];
   initialTransactions: Transaction[];
+  initialSavingsRules?: SavingsRule[];
+  promoWarningDays?: number;
+  asOfDate?: string;
   currentYear: number;
   currentMonth: number;
 }
@@ -110,16 +115,20 @@ export function CapitalClient({
   initialAccounts,
   initialCategories,
   initialTransactions,
+  initialSavingsRules = [],
+  promoWarningDays = 14,
+  asOfDate,
   currentYear,
   currentMonth,
 }: CapitalClientProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const { openQuickAdd, registerOnMutated, setReferenceData } = useQuickAdd();
 
   const [activeTab, setActiveTab] = useState<"accounts" | "categories">(initialTab);
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [savingsRules, setSavingsRules] = useState<SavingsRule[]>(initialSavingsRules);
   const [showArchived, setShowArchived] = useState(false);
 
   // Dialog states
@@ -157,10 +166,11 @@ export function CapitalClient({
   const refreshData = useCallback(async () => {
     try {
       const monthFrom = new Date(currentYear, currentMonth - 1, 1, 0, 0, 0, 0).toISOString();
-      const [accRes, catRes, txRes] = await Promise.all([
+      const [accRes, catRes, txRes, rulesRes] = await Promise.all([
         fetch("/api/v1/accounts"),
         fetch("/api/v1/categories"),
         fetch(`/api/v1/transactions?from=${encodeURIComponent(monthFrom)}&limit=200`),
+        fetch("/api/v1/savings-rules"),
       ]);
 
       let nextAccounts: Account[] | undefined;
@@ -179,6 +189,10 @@ export function CapitalClient({
       if (txRes.ok) {
         const json = (await txRes.json()) as { transactions: Transaction[] };
         setTransactions(json.transactions);
+      }
+      if (rulesRes.ok) {
+        const json = (await rulesRes.json()) as { savings_rules: SavingsRule[] };
+        setSavingsRules(json.savings_rules);
       }
 
       if (nextAccounts || nextCategories) {
@@ -206,6 +220,39 @@ export function CapitalClient({
     () => computeAllAccountBalances(coreAccounts, coreTransactions),
     [coreAccounts, coreTransactions]
   );
+
+  const effectiveAsOfDate =
+    asOfDate ??
+    `${currentYear}-${String(currentMonth).padStart(2, "0")}-15`;
+
+  const rateBadgeByAccountId = useMemo(() => {
+    const map = new Map<
+      string,
+      { label: string; tone: "default" | "ok" | "warn" | "danger" }
+    >();
+    for (const rule of savingsRules) {
+      if (rule.deleted_at) continue;
+      const radar = getPromoRadarStatus(
+        toCoreSavingsRule(rule),
+        effectiveAsOfDate,
+        promoWarningDays
+      );
+      const pct = Math.round(radar.effectiveRate * 1000) / 10;
+      const label = `${new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US", {
+        maximumFractionDigits: 2,
+      }).format(pct)}%`;
+      const tone =
+        radar.status === "active"
+          ? "ok"
+          : radar.status === "expiring_soon"
+            ? "warn"
+            : radar.status === "expired"
+              ? "danger"
+              : "default";
+      map.set(rule.account_id, { label, tone });
+    }
+    return map;
+  }, [savingsRules, effectiveAsOfDate, promoWarningDays, locale]);
 
   const accountSummary = useMemo(() => {
     let liquidMinor = 0;
@@ -611,6 +658,20 @@ export function CapitalClient({
                                   </Link>
                                   {!acc.is_active ? (
                                     <Badge>{t.dashboard.archivedBadge}</Badge>
+                                  ) : null}
+                                  {rateBadgeByAccountId.has(acc.id) ? (
+                                    <Link
+                                      href="/plans?tab=savings"
+                                      title={t.capital.savingsRateBadgeHint}
+                                      className="inline-flex"
+                                    >
+                                      <Badge
+                                        tone={rateBadgeByAccountId.get(acc.id)!.tone}
+                                        className="strata-mono"
+                                      >
+                                        {rateBadgeByAccountId.get(acc.id)!.label}
+                                      </Badge>
+                                    </Link>
                                   ) : null}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-1 text-xs text-[var(--strata-text-muted)]">

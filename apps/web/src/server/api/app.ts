@@ -10,6 +10,8 @@ import { createHealthRouter } from "./routes/health";
 import { createInvitesRouter } from "./routes/invites";
 import { createMeRouter } from "./routes/me";
 import { createOnboardingRouter } from "./routes/onboarding";
+import { createRecurringPaymentsRouter } from "./routes/recurring-payments";
+import { createSavingsRulesRouter } from "./routes/savings-rules";
 import { createSecurityRouter } from "./routes/security";
 import { createSyncRouter } from "./routes/sync";
 import { createTransactionsRouter } from "./routes/transactions";
@@ -82,6 +84,8 @@ export function createApiApp(deps: ApiDependencies = defaultDeps) {
   app.route("/", createAccountsRouter(deps));
   app.route("/", createCategoriesRouter(deps));
   app.route("/", createTransactionsRouter(deps));
+  app.route("/", createSavingsRulesRouter(deps));
+  app.route("/", createRecurringPaymentsRouter(deps));
   app.route("/", createSyncRouter(deps));
   app.route("/", createExportRouter(deps));
   app.route("/", createAdminRouter(deps));

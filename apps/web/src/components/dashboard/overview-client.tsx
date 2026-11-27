@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  AlertTriangle,
   ArrowDown,
   ArrowRight,
   ArrowUp,
@@ -16,6 +17,7 @@ import {
   EyeOff,
   GripVertical,
   Plus,
+  Repeat,
   RotateCcw,
   Wallet,
 } from "lucide-react";
@@ -28,6 +30,9 @@ import {
   type DashboardSectionId,
   type Debt,
   type Profile,
+  type RecurringPayment,
+  type RecurringPaymentMark,
+  type SavingsRule,
   type Transaction,
 } from "@strata/api-contract";
 import {
@@ -39,6 +44,8 @@ import {
   computeNetWorth,
   computePeriodSummary,
   computeSafeToSpend,
+  computeSavingsPortfolioSummary,
+  evaluateRecurringPayments,
 } from "@strata/finance-core";
 import { CashflowTrendChart } from "@/components/dashboard/cashflow-trend-chart";
 import { CategoryBreakdownCard } from "@/components/dashboard/category-breakdown-card";
@@ -57,6 +64,9 @@ import {
   toCoreAccount,
   toCoreCategory,
   toCoreDebt,
+  toCoreRecurringPayment,
+  toCoreRecurringPaymentMark,
+  toCoreSavingsRule,
   toCoreTransaction,
 } from "@/lib/finance-mappers";
 import { useI18n } from "@/lib/i18n/client";
@@ -68,8 +78,12 @@ interface OverviewClientProps {
   categories: Category[];
   transactions: Transaction[];
   debts: Debt[];
+  savingsRules: SavingsRule[];
+  recurringPayments: RecurringPayment[];
+  recurringMarks: RecurringPaymentMark[];
   currentYear: number;
   currentMonth: number;
+  asOfDate: string;
 }
 
 function normalizeDashboardLayout(raw: string[] | null | undefined): DashboardSectionId[] {
@@ -102,8 +116,12 @@ export function OverviewClient({
   categories,
   transactions,
   debts,
+  savingsRules,
+  recurringPayments,
+  recurringMarks,
   currentYear,
   currentMonth,
+  asOfDate,
 }: OverviewClientProps) {
   const router = useRouter();
   const { locale, t } = useI18n();
@@ -135,11 +153,19 @@ export function OverviewClient({
   const accountMap = useMemo(() => new Map(accounts.map((a) => [a.id, a])), [accounts]);
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
 
+  const promoWarningDays =
+    typeof profile.wrapped_settings?.promoWarningDays === "number"
+      ? profile.wrapped_settings.promoWarningDays
+      : 14;
+
   const metrics = useMemo(() => {
     const coreAccounts = accounts.map(toCoreAccount);
     const coreCats = categories.map(toCoreCategory);
     const coreTxs = transactions.map(toCoreTransaction);
     const coreDebts = debts.map(toCoreDebt);
+    const coreRules = savingsRules.map(toCoreSavingsRule);
+    const corePayments = recurringPayments.map(toCoreRecurringPayment);
+    const coreMarks = recurringMarks.map(toCoreRecurringPaymentMark);
 
     const balances = computeAllAccountBalances(coreAccounts, coreTxs);
     const debtLedger = computeDebtsLedger(coreDebts, coreTxs);
@@ -148,7 +174,26 @@ export function OverviewClient({
       balances,
       debtLedger.totalBorrowedRemainingMinor
     );
-    const safeToSpend = computeSafeToSpend(coreAccounts, balances, 0);
+    const recurringSummary = evaluateRecurringPayments({
+      payments: corePayments,
+      marks: coreMarks,
+      transactions: coreTxs,
+      year: currentYear,
+      month: currentMonth,
+      asOfDate,
+    });
+    const savingsSummary = computeSavingsPortfolioSummary(
+      coreAccounts,
+      coreRules,
+      balances,
+      asOfDate,
+      promoWarningDays
+    );
+    const safeToSpend = computeSafeToSpend(
+      coreAccounts,
+      balances,
+      recurringSummary.unpaidActiveRecurringMinor
+    );
     const monthFilter = periodMode === "month" ? selectedMonth : null;
     const periodSummary = computePeriodSummary(coreTxs, selectedYear, monthFilter);
     const categoryBreakdown = computeCategoryBreakdown(
@@ -181,6 +226,11 @@ export function OverviewClient({
       balances,
       netWorth,
       safeToSpend,
+      unpaidRecurringMinor: recurringSummary.unpaidActiveRecurringMinor,
+      recurringAlertCount: recurringSummary.overdueCount + recurringSummary.dueSoonCount,
+      recurringOverdueCount: recurringSummary.overdueCount,
+      promoAlertCount: savingsSummary.alertCount,
+      promoExpiredCount: savingsSummary.expiredCount,
       periodSummary,
       categoryBreakdown,
       monthlySeries,
@@ -189,7 +239,22 @@ export function OverviewClient({
       creditAvailableMinor,
       creditDebtMinor,
     };
-  }, [accounts, categories, transactions, debts, periodMode, selectedYear, selectedMonth]);
+  }, [
+    accounts,
+    categories,
+    transactions,
+    debts,
+    savingsRules,
+    recurringPayments,
+    recurringMarks,
+    promoWarningDays,
+    currentYear,
+    currentMonth,
+    asOfDate,
+    periodMode,
+    selectedYear,
+    selectedMonth,
+  ]);
 
   const recentTransactions = useMemo(() => transactions.slice(0, 6), [transactions]);
 
@@ -582,6 +647,18 @@ export function OverviewClient({
               <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] lg:mt-1.5 lg:text-xl">
                 <AmountText minor={metrics.safeToSpend} currency={profile.base_currency} />
               </div>
+              {metrics.unpaidRecurringMinor > 0 ? (
+                <Link
+                  href="/plans?tab=recurring"
+                  className="mt-1 block truncate text-[11px] font-medium text-[var(--strata-text-muted)] transition hover:text-[var(--strata-text-primary)]"
+                >
+                  {t.dashboard.safeToSpendBillsNote}: −
+                  <AmountText
+                    minor={metrics.unpaidRecurringMinor}
+                    currency={profile.base_currency}
+                  />
+                </Link>
+              ) : null}
             </div>
 
             <div className="rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 px-3.5 py-3 lg:px-5 lg:py-4">
@@ -685,6 +762,74 @@ export function OverviewClient({
               </div>
             ) : null}
           </Link>
+        ) : null}
+
+        {metrics.promoAlertCount > 0 || metrics.recurringAlertCount > 0 ? (
+          <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+            {metrics.promoAlertCount > 0 ? (
+              <Link
+                href="/plans?tab=savings"
+                className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 px-3.5 py-2.5 text-xs transition hover:border-[var(--strata-border-strong)]"
+              >
+                <span className="inline-flex min-w-0 items-center gap-2 text-[var(--strata-text-secondary)]">
+                  <AlertTriangle
+                    className="h-3.5 w-3.5 shrink-0"
+                    style={{
+                      color:
+                        metrics.promoExpiredCount > 0
+                          ? "var(--strata-radar-expired)"
+                          : "var(--strata-radar-warn)",
+                    }}
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate font-medium">
+                    {t.dashboard.promoAlertStrip.replace(
+                      "{count}",
+                      String(metrics.promoAlertCount)
+                    )}
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+              </Link>
+            ) : null}
+
+            {metrics.recurringAlertCount > 0 ? (
+              <Link
+                href="/plans?tab=recurring"
+                className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 px-3.5 py-2.5 text-xs transition hover:border-[var(--strata-border-strong)]"
+              >
+                <span className="inline-flex min-w-0 items-center gap-2 text-[var(--strata-text-secondary)]">
+                  <Repeat
+                    className="h-3.5 w-3.5 shrink-0"
+                    style={{
+                      color:
+                        metrics.recurringOverdueCount > 0
+                          ? "var(--strata-radar-expired)"
+                          : "var(--strata-radar-warn)",
+                    }}
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate font-medium">
+                    {t.dashboard.recurringAlertStrip.replace(
+                      "{count}",
+                      String(metrics.recurringAlertCount)
+                    )}
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+              </Link>
+            ) : null}
+          </div>
         ) : null}
       </section>
 

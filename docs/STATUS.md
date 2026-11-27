@@ -18,8 +18,8 @@
   - **PR 6.8 — Deep Obsidian Background (`BG-B`), Hero Credit Strip (`1A`) & Capital Portfolio Redesign (`2A`)** *(Deepened light/dark canvas tokens `#07080B`/`#EEF1F6` with wider soft static `.strata-canvas-ambient` glow on `<body>`; replaced the Hero credit bar with full-width non-wrapping `1A` status + progress rail; redesigned `/capital` to `2A` Unified Portfolio Allocation Card, grouped accounts with compact quick-add + Radix `DropdownMenu` actions, Monthly Budget Summary + 2-column categories without duplicate card add buttons, symmetric full-width mobile tabs; synced `capital/loading.tsx` + Spotlight Tour RU/EN copy, and added Rule 10 for Spotlight Tour parity)* ✅ **Completed & Verified**.
   - **PR 6.9 — Operations Redesign (`Variant A` + Zero-Truncation Mobile Cashflow)** *(Redesigned `/operations` to a compact Period + Cashflow Ratio card with full-width Mobile Period Saldo and spacious 2-column Income/Expense tiles so 5–6+ digit amounts never truncate on `360px`, unified search row + smooth collapsible advanced filter drawer + wrapping quick filter chips + clickable header drafts badge, and synced `operations/loading.tsx`)* ✅ **Completed & Verified**.
 - **Stage 2 (Smart Planning & Wealth Engine):**
-  - **PR 7 — Savings Rules, Promo Radar & Recurring Payments** *(Next Up)*.
-  - **PR 8 — Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts**.
+  - **PR 7 — Savings Rules, Promo Radar & Recurring Payments** ✅ **Completed & Verified**.
+  - **PR 8 — Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts** *(Next Up)*.
 
 ## Completed
 - Architecture, DB schema, UX navigation, Expressive Neobank visual style, and brand **Strata** approved.
@@ -84,6 +84,11 @@
   - Enlarged desktop floating pill navbar slightly (`max-w-6xl`, comfortable vertical thickness) with expressive Neobank `+` FAB/badge styling and full-width Save button in Settings Preferences.
   - Switched Capital credit card available-limit bar to accent color reflecting available headroom, made Active Sessions header/action buttons symmetrical across mobile and desktop, added the Net Balance (Saldo) line to Monthly Trend chart, and enlarged desktop Category Breakdown donut chart with right-aligned category list.
   - Widened/raised desktop `QuickAddDialog` (`sm:max-w-[560px]`, `sm:max-h-[92dvh]`) with multi-row vertically scrollable category pills and added a compact conditional Credit Card Available Limit & Debt bar inside the Overview Hero card.
+- **PR 7 (Savings Rules, Promo Radar & Recurring Payments):**
+  - Extended `@strata/finance-core` (`recurring.ts`, `computeSavingsPortfolioSummary` in `savings.ts`, updated `types.ts` + Golden Test Vectors covering 12 passing tests) for recurring payment status/matching (`mark` → `transaction` → `keyword`), short-month day clamping, cadence monthly equivalents (`weekly`/`monthly`/`quarterly`/`yearly`), and portfolio Promo Radar aggregation.
+  - Added `@strata/api-contract` OpenAPI 3.1 schemas (`savings-rules.ts`, `recurring-payments.ts`) and Hono REST routes `/api/v1/savings-rules` (with `409 SAVINGS_RULE_EXISTS` and soft-delete resurrection on `UNIQUE(account_id)`) and `/api/v1/recurring-payments` (including `POST`/`DELETE` period marks), plus passing Vitest contract (10 tests) and API (21 web tests) suites.
+  - Built `/plans` (`PlansClient`, `SavingsRadarSection`, `SavingsRuleFormDialog`, `RecurringPaymentsSection`, `RecurringPaymentFormDialog`, `plans/loading.tsx`) with live forecast previews, configurable Promo Radar warning window (`7/14/30d` in `wrapped_settings.promoWarningDays`), 1-click Pay (`QuickAddDialog` `recurring_payment_id` prefill), and manual period marks.
+  - Activated `/plans` across Desktop pill nav and Mobile bottom dock (`Overview | Operations | + | Capital | Plans`, moving `/settings` link to the mobile top bar and `ProfileQuickMenu` while preserving `[data-tour="settings-link"]`), wired live `unpaidActiveRecurringMinor` into Hero `Safe-to-Spend` + conditional Hero Promo Radar & Recurring alert strips on `/`, added effective rate badges on `/capital`, synced RU/EN i18n + Spotlight Tour copy, and verified end-to-end across Mobile (`360px`), Tablet (`768px`), and Desktop (`1280px`) via Playwright E2E (7/7 passing).
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
@@ -91,4 +96,4 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 7:** Savings Rules, Promo Radar & Recurring Payments (`/plans` launch + Safe-to-Spend recurring deduction).
+- **PR 8:** Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts (`/plans` expansion + `/api/v1/goals`, `/api/v1/goal-transfers`, `/api/v1/debts`).

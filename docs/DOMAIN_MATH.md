@@ -30,6 +30,16 @@ All calculations live in `packages/finance-core` and operate on **integer minor 
 - **Effective Annual Rate:** `promoEndDate >= asOfDate && promoRate > 0 ? promoRate : baseRate`.
 - **Monthly Forecast:** `(accrualType === 'min_balance' && minBalanceOverrideMinor != null ? minBalanceOverrideMinor : max(0, balanceMinor)) * effectiveRate / 12`.
 - **Annual Forecast:** Splits year into `promoMonths = min(12, daysLeft / 30.4375)` and `baseMonths = 12 - promoMonths`, applying monthly compounding if `capitalization === true` or simple interest otherwise.
+- **Portfolio Summary:** `computeSavingsPortfolioSummary` aggregates tracked balances, weighted effective APY, monthly/annual interest totals, and sorts rules by Promo Radar urgency (`expired` → `expiring_soon` → `active` → `base`).
+
+## 3.1 Recurring Payments (`recurring.ts`)
+- **Monthly Equivalent Reserve (`cadence`):** `monthly = amountMinor`, `weekly = round(amountMinor * 52 / 12)`, `quarterly = round(amountMinor / 3)`, `yearly = round(amountMinor / 12)`.
+- **Period Match Priority (`YYYY-MM`):**
+  1. Active manual mark in `recurring_payment_marks` (`paidVia = 'mark'`).
+  2. Confirmed active transaction in the same month with `tx.recurringPaymentId === payment.id` (`paidVia = 'transaction'`).
+  3. Confirmed active `expense` in the same month whose `tx.comment` contains `payment.matchKeyword` case-insensitively (`paidVia = 'keyword'`).
+- **Safe-to-Spend Reserve (`unpaidActiveRecurringMinor`):** Sum of `monthlyEquivalentMinor` across all active (`isActive = true`) unpaid payments in the current month.
+- **Feb / Short-Month Clamping:** `dueDate` clamps `dayOfMonth` to `getDaysInMonth(year, month)`.
 
 ## 4. Virtual Goal Envelopes (`NPER`)
 - **Transaction flow into goal (`goalId`):**

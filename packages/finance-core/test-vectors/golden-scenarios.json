@@ -109,6 +109,60 @@
     }
   ],
   "goalTransfers": [],
+  "recurringPayments": [
+    {
+      "id": "rec-internet",
+      "name": "Домашний интернет",
+      "categoryId": "cat-cafe",
+      "accountId": "acc-sber",
+      "amountMinor": 75000,
+      "dayOfMonth": 28,
+      "cadence": "monthly",
+      "matchKeyword": "Ростелеком",
+      "isActive": true
+    },
+    {
+      "id": "rec-dinner-auto",
+      "name": "Пятничный ужин",
+      "categoryId": "cat-cafe",
+      "accountId": "acc-alfa-cred",
+      "amountMinor": 300000,
+      "dayOfMonth": 10,
+      "cadence": "monthly",
+      "matchKeyword": "ужин",
+      "isActive": true
+    },
+    {
+      "id": "rec-cloud-mark",
+      "name": "Облако",
+      "categoryId": null,
+      "accountId": "acc-sber",
+      "amountMinor": 19900,
+      "dayOfMonth": 5,
+      "cadence": "monthly",
+      "matchKeyword": null,
+      "isActive": true
+    },
+    {
+      "id": "rec-paused",
+      "name": "Архивная подписка",
+      "categoryId": null,
+      "accountId": null,
+      "amountMinor": 99900,
+      "dayOfMonth": 15,
+      "cadence": "monthly",
+      "matchKeyword": null,
+      "isActive": false
+    }
+  ],
+  "recurringPaymentMarks": [
+    {
+      "id": "rpm-1",
+      "recurringPaymentId": "rec-cloud-mark",
+      "periodKey": "2026-11",
+      "markedAt": "2026-11-05T10:00:00Z"
+    }
+  ],
   "debts": [
     {
       "id": "debt-1",

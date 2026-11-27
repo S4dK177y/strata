@@ -242,6 +242,9 @@
     "netWorth": "Чистый капитал",
     "safeToSpend": "Свободно к трате",
     "safeToSpendNote": "С учётом активных ликвидных счетов и обязательств",
+    "safeToSpendBillsNote": "Учтены платежи",
+    "promoAlertStrip": "Промо-радар: {count} ставок требуют внимания",
+    "recurringAlertStrip": "Платежи: {count} скоро или просрочены",
     "periodNetMonth": "Итог за месяц",
     "periodNetYear": "Итог за год",
     "creditLimitAvailable": "Доступно по кредиткам",
@@ -464,7 +467,151 @@
     "deleteCategoryBody": "Прошлые операции сохранятся в истории без этой категории.",
     "categoryCreatedToast": "Категория создана.",
     "categoryUpdatedToast": "Категория обновлена.",
-    "categoryDeletedToast": "Категория удалена."
+    "categoryDeletedToast": "Категория удалена.",
+    "savingsRateBadgeHint": "Открыть правила доходности и Промо-радар"
+  },
+  "plans": {
+    "title": "Планы",
+    "subtitle": "Доходность накопительных счетов, Промо-радар и регулярные платежи.",
+    "tabs": {
+      "savings": "Накопления и радар",
+      "recurring": "Регулярные платежи"
+    },
+    "actions": {
+      "addRule": "Новое правило",
+      "addPayment": "Новый платёж"
+    },
+    "savings": {
+      "monthlyForecast": "Прогноз на месяц",
+      "annualForecast": "Прогноз за год",
+      "weightedRate": "Средняя ставка",
+      "trackedBalance": "Под процентом",
+      "warningWindow": "Порог радара",
+      "warningDays": "{days} дн.",
+      "radarAlertSummary": "Промо-радар ({count}):",
+      "radarAlertExpiring": "истекает {count}",
+      "radarAlertExpired": "истекло {count}",
+      "effectiveRateLabel": "эффективная",
+      "baseRateLabel": "Базовая",
+      "promoUntil": "Промо {rate} до {date}",
+      "accrualDaily": "На ежедневный остаток",
+      "accrualMinBalance": "На мин. остаток",
+      "capitalizationOn": "С капитализацией",
+      "capitalizationOff": "Без капитализации",
+      "recordInterest": "Начислить проценты",
+      "editRule": "Редактировать правило",
+      "deleteRule": "Удалить правило",
+      "deleteRuleTitle": "Удалить правило доходности?",
+      "deleteRuleBody": "Счёт и его баланс сохранятся, но прогноз доходности и Промо-радар для него отключатся.",
+      "untrackedTitle": "Счета без настройки ставки",
+      "untrackedSubtitle": "Укажите ставку для накопительных счетов и вкладов, чтобы отслеживать доходность и промо-периоды.",
+      "setRate": "Настроить ставку",
+      "emptyTitle": "Правила доходности не настроены",
+      "emptyBody": "Добавьте ставку для накопительного счёта или вклада, чтобы видеть прогноз процентов и предупреждения Промо-радара.",
+      "noEligibleAccounts": "Сначала создайте накопительный счёт, вклад или дебетовую карту в разделе «Капитал».",
+      "createdToast": "Правило доходности сохранено.",
+      "updatedToast": "Правило доходности обновлено.",
+      "deletedToast": "Правило доходности удалено.",
+      "windowSavedToast": "Порог Промо-радара обновлён.",
+      "duplicateRuleError": "Для этого счёта уже настроено правило.",
+      "radar": {
+        "base": "Базовая ставка",
+        "active": "Промо · {days} дн.",
+        "expiring_soon": "Истекает · {days} дн.",
+        "expired": "Промо истекло"
+      },
+      "form": {
+        "createTitle": "Новое правило доходности",
+        "editTitle": "Редактировать правило",
+        "accountLabel": "Счёт",
+        "accountPlaceholder": "Выберите счёт",
+        "accrualTypeLabel": "Способ начисления",
+        "baseRateLabel": "Базовая ставка (%)",
+        "promoRateLabel": "Промо-ставка (%)",
+        "promoEndDateLabel": "Промо действует до",
+        "capitalizationLabel": "Ежемесячная капитализация",
+        "capitalizationHint": "Проценты прибавляются к остатку и участвуют в сложном проценте.",
+        "minBalanceOverrideLabel": "Минимальный остаток месяца (необязательно)",
+        "minBalanceOverridePlaceholder": "Если пусто — по текущему балансу",
+        "previewTitle": "Предварительный прогноз",
+        "saveRule": "Сохранить правило",
+        "createRule": "Создать правило",
+        "promoDateRequired": "Укажите дату окончания промо-ставки.",
+        "invalidRate": "Ставка должна быть от 0 до 100%."
+      }
+    },
+    "recurring": {
+      "unpaidLabel": "К оплате",
+      "paidLabel": "Оплачено",
+      "paidProgressLabel": "{paid} из {total}",
+      "monthlyLoadLabel": "Нагрузка / мес",
+      "safeToSpendNote": "Резерв вычитается из «Свободно к трате»",
+      "prevMonth": "Предыдущий месяц",
+      "nextMonth": "Следующий месяц",
+      "currentMonth": "Текущий",
+      "dayOfMonth": "{day}-го числа",
+      "keywordTag": "Авто: «{kw}»",
+      "payButton": "Оплатить",
+      "markPaid": "Отметить",
+      "unmarkPaid": "Снять отметку",
+      "viewTx": "Открыть операцию",
+      "pause": "Поставить на паузу",
+      "resume": "Возобновить",
+      "editPayment": "Редактировать платёж",
+      "deletePayment": "Удалить платёж",
+      "deletePaymentTitle": "Удалить регулярный платёж?",
+      "deletePaymentBody": "Прошлые операции останутся в истории, но напоминание и резерв из «Свободно к трате» отключатся.",
+      "dueToday": "Сегодня",
+      "dueInDays": "Через {days} дн.",
+      "overdueDays": "Просрочен {days} дн.",
+      "emptyTitle": "Регулярных платежей пока нет",
+      "emptyBody": "Добавьте аренду, интернет, подписки или кредиты — неоплаченные счета будут автоматически резервироваться в «Свободно к трате».",
+      "createdToast": "Регулярный платёж создан.",
+      "updatedToast": "Регулярный платёж обновлён.",
+      "deletedToast": "Регулярный платёж удалён.",
+      "markedToast": "Платёж отмечен оплаченным за этот месяц.",
+      "unmarkedToast": "Отметка оплаты снята.",
+      "pausedToast": "Платёж поставлен на паузу.",
+      "resumedToast": "Платёж возобновлён.",
+      "status": {
+        "overdue": "Просрочен",
+        "due_soon": "Скоро",
+        "upcoming": "Ожидается",
+        "paid": "Оплачен",
+        "paused": "На паузе"
+      },
+      "paidVia": {
+        "mark": "вручную",
+        "transaction": "операция",
+        "keyword": "автомат"
+      },
+      "cadence": {
+        "weekly": "Еженедельно",
+        "monthly": "Ежемесячно",
+        "quarterly": "Раз в квартал",
+        "yearly": "Ежегодно"
+      },
+      "form": {
+        "createTitle": "Новый регулярный платёж",
+        "editTitle": "Редактировать платёж",
+        "nameLabel": "Название",
+        "namePlaceholder": "Напр. Аренда, Интернет, iCloud",
+        "amountLabel": "Сумма",
+        "cadenceLabel": "Периодичность",
+        "dayOfMonthLabel": "День списания (1–31)",
+        "accountLabel": "Счёт списания",
+        "categoryLabel": "Категория расходов",
+        "noAccount": "Не выбран",
+        "noCategory": "Без категории",
+        "keywordLabel": "Ключевое слово автозачёта",
+        "keywordPlaceholder": "Напр. Ростелеком",
+        "keywordHint": "Если в комментарии к расходу за этот месяц встретится это слово, платёж засчитается автоматически.",
+        "isActiveLabel": "Активный платёж",
+        "isActiveHint": "Учитывается в «Свободно к трате» до оплаты в текущем месяце.",
+        "savePayment": "Сохранить платёж",
+        "createPayment": "Создать платёж"
+      }
+    }
   },
   "tour": {
     "stepCounter": "Шаг {current} из {total}",
@@ -476,7 +623,7 @@
     "steps": {
       "hero-balance": {
         "title": "Чистый капитал и баланс",
-        "description": "Здесь собраны ваш чистый капитал, свободный остаток к трате, итог периода, а при наличии кредиток — доступный лимит и долг."
+        "description": "Здесь собраны ваш чистый капитал, свободный остаток к трате (с учётом неоплаченных регулярных платежей), итог периода и уведомления Промо-радара."
       },
       "privacy-toggle": {
         "title": "Режим приватности",
@@ -492,7 +639,7 @@
       },
       "nav-sections": {
         "title": "Разделы приложения",
-        "description": "История и фильтры в «Операциях», портфель счетов, кредитные лимиты и бюджеты категорий в «Капитале», а также гибкие «Настройки»."
+        "description": "История в «Операциях», счета и лимиты в «Капитале», ставки по вкладам, Промо-радар и регулярные платежи в «Планах», а настройки — в шапке или меню."
       },
       "settings-link": {
         "title": "Темы, 2FA и экспорт данных",

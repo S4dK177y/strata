@@ -1423,4 +1423,295 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
       ((await patchFlagRes.json()) as { flag: { admin_preview: boolean } }).flag.admin_preview
     ).toBe(false);
   });
+
+  it("supports PR 7 Savings Rules CRUD, soft-delete resurrection, and type guards", async () => {
+    const { app } = createTestHarness();
+
+    // Create a savings account and a credit account
+    const savAccRes = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Sber Savings",
+        type: "savings",
+        currency: "RUB",
+        initial_balance_minor: 5000000,
+      }),
+    });
+    expect(savAccRes.status).toBe(201);
+    const savAccId = ((await savAccRes.json()) as { account: { id: string } }).account.id;
+
+    const credAccRes = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Credit Card",
+        type: "credit",
+        currency: "RUB",
+        credit_limit_minor: 10000000,
+      }),
+    });
+    const credAccId = ((await credAccRes.json()) as { account: { id: string } }).account.id;
+
+    // Reject ineligible credit account
+    const badTypeRes = await app.request("http://localhost/api/v1/savings-rules", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: credAccId,
+        accrual_type: "daily_balance",
+        base_rate: 0.1,
+      }),
+    });
+    expect(badTypeRes.status).toBe(400);
+    expect(((await badTypeRes.json()) as { error: string }).error).toBe("INVALID_ACCOUNT_TYPE");
+
+    // Reject unknown account_id
+    const missingRefRes = await app.request("http://localhost/api/v1/savings-rules", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: "99999999-9999-4999-8999-999999999999",
+        accrual_type: "daily_balance",
+        base_rate: 0.1,
+      }),
+    });
+    expect(missingRefRes.status).toBe(400);
+    expect(((await missingRefRes.json()) as { error: string }).error).toBe("INVALID_REFERENCE");
+
+    // Create rule
+    const createRes = await app.request("http://localhost/api/v1/savings-rules", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: savAccId,
+        accrual_type: "min_balance",
+        base_rate: 0.1,
+        promo_rate: 0.18,
+        promo_end_date: "2026-12-31",
+        capitalization: true,
+        min_balance_override_minor: 4000000,
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const createdRule = ((await createRes.json()) as {
+      savings_rule: { id: string; base_rate: number; promo_rate: number };
+    }).savings_rule;
+    expect(createdRule.base_rate).toBe(0.1);
+    expect(createdRule.promo_rate).toBe(0.18);
+
+    // Duplicate active rule returns 409
+    const dupRes = await app.request("http://localhost/api/v1/savings-rules", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: savAccId,
+        accrual_type: "daily_balance",
+        base_rate: 0.12,
+      }),
+    });
+    expect(dupRes.status).toBe(409);
+    expect(((await dupRes.json()) as { error: string }).error).toBe("SAVINGS_RULE_EXISTS");
+
+    // Patch rule to daily_balance clears min_balance_override_minor
+    const patchRes = await app.request(
+      `http://localhost/api/v1/savings-rules/${createdRule.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          accrual_type: "daily_balance",
+          base_rate: 0.11,
+        }),
+      }
+    );
+    expect(patchRes.status).toBe(200);
+    const patchedRule = ((await patchRes.json()) as {
+      savings_rule: { accrual_type: string; min_balance_override_minor: number | null };
+    }).savings_rule;
+    expect(patchedRule.accrual_type).toBe("daily_balance");
+    expect(patchedRule.min_balance_override_minor).toBeNull();
+
+    // Soft-delete then recreate on same account_id revives row instead of hitting UNIQUE violation
+    const delRes = await app.request(
+      `http://localhost/api/v1/savings-rules/${createdRule.id}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: "Bearer token-invited" },
+      }
+    );
+    expect(delRes.status).toBe(200);
+
+    const reviveRes = await app.request("http://localhost/api/v1/savings-rules", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: savAccId,
+        accrual_type: "daily_balance",
+        base_rate: 0.14,
+      }),
+    });
+    expect(reviveRes.status).toBe(201);
+    const revived = ((await reviveRes.json()) as {
+      savings_rule: { id: string; base_rate: number; deleted_at: string | null };
+    }).savings_rule;
+    expect(revived.id).toBe(createdRule.id);
+    expect(revived.base_rate).toBe(0.14);
+    expect(revived.deleted_at).toBeNull();
+
+    const listRes = await app.request("http://localhost/api/v1/savings-rules", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(listRes.status).toBe(200);
+    expect(
+      ((await listRes.json()) as { savings_rules: unknown[] }).savings_rules
+    ).toHaveLength(1);
+  });
+
+  it("supports PR 7 Recurring Payments CRUD, period marks, and OpenAPI registration", async () => {
+    const { app } = createTestHarness();
+
+    const accRes = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Main Debit",
+        type: "debit",
+        currency: "RUB",
+      }),
+    });
+    const accId = ((await accRes.json()) as { account: { id: string } }).account.id;
+
+    // Create recurring payment
+    const createRes = await app.request("http://localhost/api/v1/recurring-payments", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Home Internet",
+        account_id: accId,
+        amount_minor: 75000,
+        day_of_month: 25,
+        cadence: "monthly",
+        match_keyword: "Rostelecom",
+      }),
+    });
+    expect(createRes.status).toBe(201);
+    const paymentId = ((await createRes.json()) as {
+      recurring_payment: { id: string };
+    }).recurring_payment.id;
+
+    // Mark paid for 2026-11 (201 then idempotent 200)
+    const markRes = await app.request(
+      `http://localhost/api/v1/recurring-payments/${paymentId}/marks`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ period_key: "2026-11" }),
+      }
+    );
+    expect(markRes.status).toBe(201);
+
+    const markAgainRes = await app.request(
+      `http://localhost/api/v1/recurring-payments/${paymentId}/marks`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ period_key: "2026-11" }),
+      }
+    );
+    expect(markAgainRes.status).toBe(200);
+
+    // List with period filter
+    const listRes = await app.request(
+      "http://localhost/api/v1/recurring-payments?period=2026-11",
+      {
+        headers: { Authorization: "Bearer token-invited" },
+      }
+    );
+    expect(listRes.status).toBe(200);
+    const listJson = (await listRes.json()) as {
+      recurring_payments: unknown[];
+      marks: Array<{ period_key: string }>;
+    };
+    expect(listJson.recurring_payments).toHaveLength(1);
+    expect(listJson.marks).toHaveLength(1);
+    expect(listJson.marks[0]?.period_key).toBe("2026-11");
+
+    // Unmark period
+    const unmarkRes = await app.request(
+      `http://localhost/api/v1/recurring-payments/${paymentId}/marks/2026-11`,
+      {
+        method: "DELETE",
+        headers: { Authorization: "Bearer token-invited" },
+      }
+    );
+    expect(unmarkRes.status).toBe(200);
+
+    // Patch & Delete recurring payment
+    const patchRes = await app.request(
+      `http://localhost/api/v1/recurring-payments/${paymentId}`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer token-invited",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_active: false }),
+      }
+    );
+    expect(patchRes.status).toBe(200);
+
+    const deleteRes = await app.request(
+      `http://localhost/api/v1/recurring-payments/${paymentId}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: "Bearer token-invited" },
+      }
+    );
+    expect(deleteRes.status).toBe(200);
+
+    // Verify OpenAPI 3.1 exposes PR 7 routes
+    const specRes = await app.request("http://localhost/api/v1/openapi.json");
+    expect(specRes.status).toBe(200);
+    const spec = (await specRes.json()) as { paths: Record<string, unknown> };
+    expect(spec.paths["/api/v1/savings-rules"]).toBeDefined();
+    expect(spec.paths["/api/v1/recurring-payments"]).toBeDefined();
+    expect(spec.paths["/api/v1/recurring-payments/{id}/marks"]).toBeDefined();
+  });
 });

@@ -3,6 +3,8 @@ export * from "./entities";
 export * from "./accounts";
 export * from "./categories";
 export * from "./transactions";
+export * from "./savings-rules";
+export * from "./recurring-payments";
 export * from "./profile";
 export * from "./security";
 export * from "./sync";

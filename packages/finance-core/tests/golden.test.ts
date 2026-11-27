@@ -12,11 +12,17 @@ import {
   computePeriodSummary,
   computeSafeToSpend,
   computeSavingsForecast,
+  computeSavingsPortfolioSummary,
   computeYearlyWrapped,
+  evaluateRecurringPayments,
+  getDaysInMonth,
+  getMonthlyEquivalentMinor,
   type Account,
   type Category,
   type Debt,
   type Goal,
+  type RecurringPayment,
+  type RecurringPaymentMark,
   type SavingsRule,
   type Transaction,
 } from "../src/index";
@@ -28,6 +34,8 @@ describe("Strata Golden Test Vectors", () => {
   const savingsRules = golden.savingsRules as SavingsRule[];
   const goals = golden.goals as Goal[];
   const debts = golden.debts as Debt[];
+  const recurringPayments = golden.recurringPayments as RecurringPayment[];
+  const recurringMarks = golden.recurringPaymentMarks as RecurringPaymentMark[];
 
   it("computes exact account balances across all 11 tx types and ignores drafts", () => {
     const balances = computeAllAccountBalances(accounts, transactions);
@@ -96,6 +104,77 @@ describe("Strata Golden Test Vectors", () => {
     expect(forecast.effectiveRate).toBe(golden.expected.promoRadar.effectiveRate);
     expect(forecast.monthlyInterestMinor).toBeGreaterThan(0);
     expect(forecast.annualInterestMinor).toBeGreaterThan(forecast.monthlyInterestMinor);
+
+    const portfolio = computeSavingsPortfolioSummary(
+      accounts,
+      savingsRules,
+      balances,
+      golden.asOfDate,
+      14,
+    );
+    expect(portfolio.items).toHaveLength(1);
+    expect(portfolio.totalTrackedBalanceMinor).toBe(balances["acc-sav-1"]);
+    expect(portfolio.weightedEffectiveRate).toBe(0.16);
+    expect(portfolio.expiringSoonCount).toBe(1);
+    expect(portfolio.alertCount).toBe(1);
+  });
+
+  it("evaluates recurring payments with manual marks, keyword match, pauses, and Safe-to-Spend reserve", () => {
+    const summary = evaluateRecurringPayments({
+      payments: recurringPayments,
+      marks: recurringMarks,
+      transactions,
+      year: golden.year,
+      month: golden.month,
+      asOfDate: golden.asOfDate,
+    });
+
+    expect(summary.periodKey).toBe("2026-11");
+    expect(summary.activeCount).toBe(3);
+    expect(summary.paidCount).toBe(2);
+    expect(summary.unpaidCount).toBe(1);
+    expect(summary.unpaidActiveRecurringMinor).toBe(golden.unpaidActiveRecurringMinor);
+
+    const byId = new Map(summary.items.map((item) => [item.payment.id, item]));
+    expect(byId.get("rec-internet")?.status).toBe("due_soon");
+    expect(byId.get("rec-internet")?.paidVia).toBeNull();
+    expect(byId.get("rec-dinner-auto")?.status).toBe("paid");
+    expect(byId.get("rec-dinner-auto")?.paidVia).toBe("keyword");
+    expect(byId.get("rec-dinner-auto")?.matchedTransactionId).toBe("tx-3");
+    expect(byId.get("rec-cloud-mark")?.status).toBe("paid");
+    expect(byId.get("rec-cloud-mark")?.paidVia).toBe("mark");
+    expect(byId.get("rec-paused")?.status).toBe("paused");
+    expect(byId.get("rec-paused")?.periodReserveMinor).toBe(0);
+
+    // Day-of-month clamping for February and cadence monthly equivalents
+    expect(getDaysInMonth(2026, 2)).toBe(28);
+    expect(getDaysInMonth(2024, 2)).toBe(29);
+    const feb = evaluateRecurringPayments({
+      payments: [
+        {
+          id: "rec-feb",
+          name: "End of month",
+          categoryId: null,
+          accountId: null,
+          amountMinor: 120000,
+          dayOfMonth: 31,
+          cadence: "yearly",
+          matchKeyword: null,
+          isActive: true,
+        },
+      ],
+      marks: [],
+      transactions: [],
+      year: 2026,
+      month: 2,
+      asOfDate: "2026-02-27",
+    });
+    expect(feb.items[0]?.dueDate).toBe("2026-02-28");
+    expect(feb.items[0]?.daysUntilDue).toBe(1);
+    expect(feb.items[0]?.status).toBe("due_soon");
+    expect(getMonthlyEquivalentMinor(120000, "yearly")).toBe(10000);
+    expect(getMonthlyEquivalentMinor(300000, "quarterly")).toBe(100000);
+    expect(getMonthlyEquivalentMinor(10000, "weekly")).toBe(43333);
   });
 
   it("computes virtual goal envelopes with NPER and preserves balance on savings-to-savings transfer", () => {

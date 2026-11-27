@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  tone?: "default" | "brand" | "neon" | "warn" | "passive";
+  tone?: "default" | "brand" | "neon" | "ok" | "warn" | "danger" | "passive";
 }
 
 const TONE_CLASSES: Record<NonNullable<BadgeProps["tone"]>, string> = {
@@ -12,8 +12,12 @@ const TONE_CLASSES: Record<NonNullable<BadgeProps["tone"]>, string> = {
     "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)] border-[var(--strata-border-strong)]",
   neon:
     "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)] border-[var(--strata-border-subtle)]",
+  ok:
+    "bg-[var(--strata-bg-elevated)] text-[var(--strata-radar-ok)] border-[var(--strata-border-subtle)]",
   warn:
     "bg-[var(--strata-bg-elevated)] text-[var(--strata-radar-warn)] border-[var(--strata-border-subtle)]",
+  danger:
+    "bg-[var(--strata-bg-elevated)] text-[var(--strata-radar-expired)] border-[var(--strata-border-subtle)]",
   passive:
     "bg-[var(--strata-bg-elevated)] text-[var(--strata-text-secondary)] border-[var(--strata-border-subtle)]",
 };

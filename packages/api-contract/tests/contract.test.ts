@@ -14,7 +14,11 @@ import {
   MeResponseSchema,
   OnboardingCompleteRequestSchema,
   ProfileUpdateRequestSchema,
+  RecurringPaymentCreateRequestSchema,
+  RecurringPaymentMarkRequestSchema,
   RedeemInviteRequestSchema,
+  SavingsRuleCreateRequestSchema,
+  SavingsRuleUpdateRequestSchema,
   SessionListResponseSchema,
   SyncPullResponseSchema,
   SyncPushRequestSchema,
@@ -499,5 +503,57 @@ describe("@strata/api-contract", () => {
       transactions: [],
     });
     expect(exportJson.schema_version).toBe("1.0");
+  });
+
+  it("validates PR 7 savings rules & recurring payments schemas", () => {
+    expect(
+      SavingsRuleCreateRequestSchema.safeParse({
+        account_id: UUID_1,
+        accrual_type: "daily_balance",
+        base_rate: 0.1,
+        promo_rate: 0.16,
+        promo_end_date: null,
+      }).success
+    ).toBe(false);
+
+    expect(
+      SavingsRuleCreateRequestSchema.safeParse({
+        account_id: UUID_1,
+        accrual_type: "min_balance",
+        base_rate: 0.1,
+        promo_rate: 0.16,
+        promo_end_date: "2026-12-31",
+        capitalization: true,
+        min_balance_override_minor: 500000,
+      }).success
+    ).toBe(true);
+
+    expect(SavingsRuleUpdateRequestSchema.safeParse({}).success).toBe(false);
+    expect(SavingsRuleUpdateRequestSchema.safeParse({ base_rate: 0.12 }).success).toBe(true);
+
+    expect(
+      RecurringPaymentCreateRequestSchema.safeParse({
+        name: "Internet",
+        amount_minor: 75000,
+        day_of_month: 28,
+        cadence: "monthly",
+        match_keyword: "Rostelecom",
+      }).success
+    ).toBe(true);
+
+    expect(
+      RecurringPaymentCreateRequestSchema.safeParse({
+        name: "Invalid Day",
+        amount_minor: 75000,
+        day_of_month: 32,
+      }).success
+    ).toBe(false);
+
+    expect(
+      RecurringPaymentMarkRequestSchema.safeParse({ period_key: "2026-11" }).success
+    ).toBe(true);
+    expect(
+      RecurringPaymentMarkRequestSchema.safeParse({ period_key: "2026-13-01" }).success
+    ).toBe(false);
   });
 });

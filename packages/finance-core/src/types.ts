@@ -16,6 +16,7 @@ export type TransactionType =
 export type DebtDirection = "lent" | "borrowed";
 export type SavingsAccrualType = "daily_balance" | "min_balance";
 export type GoalPriority = "high" | "medium" | "low";
+export type RecurringCadence = "weekly" | "monthly" | "quarterly" | "yearly";
 export type TransactionStatus = "confirmed" | "draft";
 
 export interface Account {
@@ -47,6 +48,7 @@ export interface Transaction {
   accountToId: string | null;
   goalId: string | null;
   debtId?: string | null;
+  recurringPaymentId?: string | null;
   comment: string;
   status: TransactionStatus;
   deletedAt?: string | null;
@@ -92,6 +94,27 @@ export interface Debt {
   amountMinor: number;
   manualRepaidMinor: number;
   openedAt: string; // YYYY-MM-DD
+  deletedAt?: string | null;
+}
+
+export interface RecurringPayment {
+  id: string;
+  name: string;
+  categoryId: string | null;
+  accountId: string | null;
+  amountMinor: number;
+  dayOfMonth: number;
+  cadence: RecurringCadence;
+  matchKeyword: string | null;
+  isActive: boolean;
+  deletedAt?: string | null;
+}
+
+export interface RecurringPaymentMark {
+  id: string;
+  recurringPaymentId: string;
+  periodKey: string; // YYYY-MM
+  markedAt: string;
   deletedAt?: string | null;
 }
 

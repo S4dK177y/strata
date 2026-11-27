@@ -242,6 +242,9 @@
     "netWorth": "Net Worth",
     "safeToSpend": "Safe to Spend",
     "safeToSpendNote": "Based on liquid accounts & credit obligations",
+    "safeToSpendBillsNote": "Incl. bills",
+    "promoAlertStrip": "Promo Radar: {count} rates need attention",
+    "recurringAlertStrip": "Bills: {count} due soon or overdue",
     "periodNetMonth": "Month net",
     "periodNetYear": "Year net",
     "creditLimitAvailable": "Credit available",
@@ -464,7 +467,151 @@
     "deleteCategoryBody": "Existing operations will remain in your history without this category.",
     "categoryCreatedToast": "Category created.",
     "categoryUpdatedToast": "Category updated.",
-    "categoryDeletedToast": "Category deleted."
+    "categoryDeletedToast": "Category deleted.",
+    "savingsRateBadgeHint": "Open savings rules & Promo Radar"
+  },
+  "plans": {
+    "title": "Plans",
+    "subtitle": "Savings interest yields, Promo Radar alerts, and recurring payments.",
+    "tabs": {
+      "savings": "Savings & Radar",
+      "recurring": "Recurring bills"
+    },
+    "actions": {
+      "addRule": "New rule",
+      "addPayment": "New bill"
+    },
+    "savings": {
+      "monthlyForecast": "Monthly forecast",
+      "annualForecast": "Annual forecast",
+      "weightedRate": "Weighted APY",
+      "trackedBalance": "Tracked balance",
+      "warningWindow": "Radar window",
+      "warningDays": "{days}d",
+      "radarAlertSummary": "Promo Radar ({count}):",
+      "radarAlertExpiring": "{count} expiring soon",
+      "radarAlertExpired": "{count} expired",
+      "effectiveRateLabel": "effective",
+      "baseRateLabel": "Base",
+      "promoUntil": "Promo {rate} until {date}",
+      "accrualDaily": "Daily balance",
+      "accrualMinBalance": "Min monthly balance",
+      "capitalizationOn": "Compounded monthly",
+      "capitalizationOff": "Simple interest",
+      "recordInterest": "Record interest",
+      "editRule": "Edit rule",
+      "deleteRule": "Delete rule",
+      "deleteRuleTitle": "Delete savings rule?",
+      "deleteRuleBody": "Your account and balance remain untouched, but interest forecasts and Promo Radar tracking will stop.",
+      "untrackedTitle": "Savings accounts without a rate rule",
+      "untrackedSubtitle": "Add an interest rule for your savings or deposit accounts to track yield and promo expirations.",
+      "setRate": "Set rate",
+      "emptyTitle": "No savings rules yet",
+      "emptyBody": "Configure base and promo APY on your savings or deposit accounts to forecast interest and watch promo end dates.",
+      "noEligibleAccounts": "Create a savings, deposit, or debit account in Capital first.",
+      "createdToast": "Savings rule saved.",
+      "updatedToast": "Savings rule updated.",
+      "deletedToast": "Savings rule deleted.",
+      "windowSavedToast": "Promo Radar warning window updated.",
+      "duplicateRuleError": "A savings rule already exists for this account.",
+      "radar": {
+        "base": "Base rate",
+        "active": "Promo · {days}d left",
+        "expiring_soon": "Ends in {days}d",
+        "expired": "Promo ended"
+      },
+      "form": {
+        "createTitle": "New savings rule",
+        "editTitle": "Edit savings rule",
+        "accountLabel": "Account",
+        "accountPlaceholder": "Choose an account",
+        "accrualTypeLabel": "Accrual method",
+        "baseRateLabel": "Base rate (%)",
+        "promoRateLabel": "Promo rate (%)",
+        "promoEndDateLabel": "Promo ends on",
+        "capitalizationLabel": "Monthly compounding",
+        "capitalizationHint": "Interest is added to the account balance for compounding.",
+        "minBalanceOverrideLabel": "Minimum monthly balance (optional)",
+        "minBalanceOverridePlaceholder": "Leave blank to use current balance",
+        "previewTitle": "Yield preview",
+        "saveRule": "Save rule",
+        "createRule": "Create rule",
+        "promoDateRequired": "Specify a promo end date when promo rate is above 0%.",
+        "invalidRate": "Enter an interest rate between 0 and 100%."
+      }
+    },
+    "recurring": {
+      "unpaidLabel": "Due this month",
+      "paidLabel": "Paid",
+      "paidProgressLabel": "{paid} of {total}",
+      "monthlyLoadLabel": "Monthly load",
+      "safeToSpendNote": "Reserved automatically from Safe to Spend",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "currentMonth": "Current",
+      "dayOfMonth": "Day {day}",
+      "keywordTag": "Auto: \"{kw}\"",
+      "payButton": "Pay",
+      "markPaid": "Mark paid",
+      "unmarkPaid": "Unmark",
+      "viewTx": "View operation",
+      "pause": "Pause",
+      "resume": "Resume",
+      "editPayment": "Edit bill",
+      "deletePayment": "Delete bill",
+      "deletePaymentTitle": "Delete recurring bill?",
+      "deletePaymentBody": "Past operations stay in your ledger, while future reminders and Safe-to-Spend reserves stop.",
+      "dueToday": "Due today",
+      "dueInDays": "In {days}d",
+      "overdueDays": "{days}d overdue",
+      "emptyTitle": "No recurring bills yet",
+      "emptyBody": "Add rent, internet, or subscriptions so unpaid bills reserve automatically in Safe to Spend.",
+      "createdToast": "Recurring bill created.",
+      "updatedToast": "Recurring bill updated.",
+      "deletedToast": "Recurring bill deleted.",
+      "markedToast": "Marked as paid for this month.",
+      "unmarkedToast": "Paid mark removed.",
+      "pausedToast": "Recurring bill paused.",
+      "resumedToast": "Recurring bill resumed.",
+      "status": {
+        "overdue": "Overdue",
+        "due_soon": "Due soon",
+        "upcoming": "Upcoming",
+        "paid": "Paid",
+        "paused": "Paused"
+      },
+      "paidVia": {
+        "mark": "manual",
+        "transaction": "linked",
+        "keyword": "auto"
+      },
+      "cadence": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "yearly": "Yearly"
+      },
+      "form": {
+        "createTitle": "New recurring bill",
+        "editTitle": "Edit recurring bill",
+        "nameLabel": "Name",
+        "namePlaceholder": "e.g. Rent, Fiber Internet, iCloud",
+        "amountLabel": "Amount",
+        "cadenceLabel": "Cadence",
+        "dayOfMonthLabel": "Billing day (1–31)",
+        "accountLabel": "Account",
+        "categoryLabel": "Expense category",
+        "noAccount": "None",
+        "noCategory": "Uncategorized",
+        "keywordLabel": "Auto-match keyword",
+        "keywordPlaceholder": "e.g. Rostelecom",
+        "keywordHint": "Expenses this month whose note contains this keyword mark the bill as paid automatically.",
+        "isActiveLabel": "Active bill",
+        "isActiveHint": "Reserves in Safe to Spend until paid in the current month.",
+        "savePayment": "Save bill",
+        "createPayment": "Create bill"
+      }
+    }
   },
   "tour": {
     "stepCounter": "Step {current} of {total}",
@@ -476,7 +623,7 @@
     "steps": {
       "hero-balance": {
         "title": "Net Worth & balances",
-        "description": "See your net worth, safe-to-spend balance, period net, and—when you have credit cards—available limit and debt."
+        "description": "See your net worth, safe-to-spend balance (after unpaid recurring bills), period net, credit limits, and Promo Radar alerts."
       },
       "privacy-toggle": {
         "title": "Privacy Blur mode",
@@ -492,7 +639,7 @@
       },
       "nav-sections": {
         "title": "Workspace navigation",
-        "description": "Search and filter history in Operations, manage accounts, credit limits, and category budgets in Capital, or customize Strata in Settings."
+        "description": "Review history in Operations, accounts and budgets in Capital, savings APY, Promo Radar & recurring bills in Plans, and customize in Settings."
       },
       "settings-link": {
         "title": "Themes, 2FA & backups",

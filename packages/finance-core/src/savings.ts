@@ -1,4 +1,4 @@
-import type { SavingsRule } from "./types";
+import type { Account, SavingsRule } from "./types";
 
 export type PromoRadarStatus = "base" | "active" | "expiring_soon" | "expired";
 
@@ -106,5 +106,108 @@ export function computeSavingsForecast(
     radar,
     monthlyInterestMinor,
     annualInterestMinor,
+  };
+}
+
+export interface SavingsPortfolioItem {
+  account: Account;
+  rule: SavingsRule;
+  balanceMinor: number;
+  forecast: SavingsForecast;
+}
+
+export interface SavingsPortfolioSummary {
+  items: SavingsPortfolioItem[];
+  totalTrackedBalanceMinor: number;
+  weightedEffectiveRate: number;
+  totalMonthlyInterestMinor: number;
+  totalAnnualInterestMinor: number;
+  activePromoCount: number;
+  expiringSoonCount: number;
+  expiredCount: number;
+  alertCount: number;
+}
+
+const RADAR_URGENCY: Record<PromoRadarStatus, number> = {
+  expired: 0,
+  expiring_soon: 1,
+  active: 2,
+  base: 3,
+};
+
+export function computeSavingsPortfolioSummary(
+  accounts: Account[],
+  rules: SavingsRule[],
+  balances: Record<string, number>,
+  asOfDate: string,
+  warningThresholdDays = 14,
+): SavingsPortfolioSummary {
+  const accountMap = new Map<string, Account>();
+  for (const acc of accounts) {
+    if (!acc.deletedAt && acc.isActive) {
+      accountMap.set(acc.id, acc);
+    }
+  }
+
+  const items: SavingsPortfolioItem[] = [];
+  let totalTrackedBalanceMinor = 0;
+  let weightedRateNumerator = 0;
+  let totalMonthlyInterestMinor = 0;
+  let totalAnnualInterestMinor = 0;
+  let activePromoCount = 0;
+  let expiringSoonCount = 0;
+  let expiredCount = 0;
+
+  for (const rule of rules) {
+    if (rule.deletedAt) continue;
+    const account = accountMap.get(rule.accountId);
+    if (!account) continue;
+
+    const balanceMinor = balances[account.id] ?? account.initialBalanceMinor;
+    const forecast = computeSavingsForecast(rule, balanceMinor, asOfDate, warningThresholdDays);
+
+    const positiveBalance = Math.max(0, balanceMinor);
+    totalTrackedBalanceMinor += positiveBalance;
+    weightedRateNumerator += positiveBalance * forecast.effectiveRate;
+    totalMonthlyInterestMinor += forecast.monthlyInterestMinor;
+    totalAnnualInterestMinor += forecast.annualInterestMinor;
+
+    if (forecast.radar.status === "active") activePromoCount += 1;
+    else if (forecast.radar.status === "expiring_soon") expiringSoonCount += 1;
+    else if (forecast.radar.status === "expired") expiredCount += 1;
+
+    items.push({
+      account,
+      rule,
+      balanceMinor,
+      forecast,
+    });
+  }
+
+  items.sort((a, b) => {
+    const urgencyDiff =
+      RADAR_URGENCY[a.forecast.radar.status] - RADAR_URGENCY[b.forecast.radar.status];
+    if (urgencyDiff !== 0) return urgencyDiff;
+
+    const daysA = a.forecast.radar.daysLeft ?? 99999;
+    const daysB = b.forecast.radar.daysLeft ?? 99999;
+    if (daysA !== daysB) return daysA - daysB;
+
+    return b.balanceMinor - a.balanceMinor;
+  });
+
+  const weightedEffectiveRate =
+    totalTrackedBalanceMinor > 0 ? weightedRateNumerator / totalTrackedBalanceMinor : 0;
+
+  return {
+    items,
+    totalTrackedBalanceMinor,
+    weightedEffectiveRate,
+    totalMonthlyInterestMinor,
+    totalAnnualInterestMinor,
+    activePromoCount,
+    expiringSoonCount,
+    expiredCount,
+    alertCount: expiringSoonCount + expiredCount,
   };
 }

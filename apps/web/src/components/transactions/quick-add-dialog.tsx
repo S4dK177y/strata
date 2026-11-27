@@ -10,6 +10,7 @@ import {
   Equal,
   Handshake,
   Pencil,
+  Repeat,
   Tag,
   Target,
   Trash2,
@@ -58,6 +59,10 @@ export interface QuickAddPreset {
   type?: TransactionType;
   accountFromId?: string;
   categoryId?: string;
+  amountMinor?: number;
+  comment?: string;
+  recurringPaymentId?: string;
+  recurringPaymentName?: string;
   transaction?: Transaction;
 }
 
@@ -168,7 +173,11 @@ function QuickAddFormBody({
   const [showCalc, setShowCalc] = useState(false);
   const [swapRotation, setSwapRotation] = useState(0);
   const [amountInput, setAmountInput] = useState(
-    editingTx ? minorToEditableInput(editingTx.amount_minor) : ""
+    editingTx
+      ? minorToEditableInput(editingTx.amount_minor)
+      : preset?.amountMinor
+        ? minorToEditableInput(preset.amountMinor)
+        : ""
   );
   const [amountTouched, setAmountTouched] = useState(false);
   const [accountFromId, setAccountFromId] = useState<string>(initialFrom);
@@ -178,12 +187,13 @@ function QuickAddFormBody({
   );
   const [goalId, setGoalId] = useState<string>(editingTx?.goal_id ?? "");
   const [debtId, setDebtId] = useState<string>(editingTx?.debt_id ?? "");
+  const recurringPaymentId = editingTx?.recurring_payment_id ?? preset?.recurringPaymentId ?? null;
   const [occurredAtInput, setOccurredAtInput] = useState(() =>
     editingTx
       ? toLocalDateTimeInputValue(editingTx.occurred_at)
       : toLocalDateTimeInputValue(new Date())
   );
-  const [comment, setComment] = useState(editingTx?.comment ?? "");
+  const [comment, setComment] = useState(editingTx?.comment ?? preset?.comment ?? "");
   const [isDraft, setIsDraft] = useState(
     editingTx ? editingTx.status === "draft" : activeAccounts.length === 0
   );
@@ -338,6 +348,7 @@ function QuickAddFormBody({
         account_to_id: resolvedTo,
         goal_id: goalId || null,
         debt_id: debtId || null,
+        recurring_payment_id: recurringPaymentId,
         comment: comment.trim(),
         status: nextStatus,
         ...(isEditing ? {} : { source: "web" as const }),
@@ -500,6 +511,15 @@ function QuickAddFormBody({
               {typeMeta.group === "extended" ? (
                 <Badge tone="brand">{t.transactions.types[txType]}</Badge>
               ) : null}
+            </div>
+          ) : null}
+
+          {preset?.recurringPaymentName ? (
+            <div className="flex items-center justify-center">
+              <Badge tone="brand">
+                <Repeat className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+                <span className="truncate">{preset.recurringPaymentName}</span>
+              </Badge>
             </div>
           ) : null}
 

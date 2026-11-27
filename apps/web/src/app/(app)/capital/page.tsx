@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import type { Account, Category, Transaction } from "@strata/api-contract";
+import type { Account, Category, SavingsRule, Transaction } from "@strata/api-contract";
 import { CapitalClient } from "@/components/capital/capital-client";
 import { getServerSessionGate } from "@/lib/auth/session-gate";
 
@@ -23,8 +23,15 @@ export default async function CapitalPage({
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
+  const asOfDate = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(
+    now.getDate()
+  ).padStart(2, "0")}`;
+  const promoWarningDays =
+    typeof gate.profile.wrapped_settings?.promoWarningDays === "number"
+      ? gate.profile.wrapped_settings.promoWarningDays
+      : 14;
 
-  const [accountsRes, categoriesRes, txRes] = await Promise.all([
+  const [accountsRes, categoriesRes, txRes, rulesRes] = await Promise.all([
     gate.supabase
       .from("accounts")
       .select("*")
@@ -45,11 +52,21 @@ export default async function CapitalPage({
       .eq("user_id", gate.profile.id)
       .eq("status", "confirmed")
       .is("deleted_at", null),
+    gate.supabase
+      .from("savings_rules")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null),
   ]);
 
   const accounts = (accountsRes.data ?? []) as Account[];
   const categories = (categoriesRes.data ?? []) as Category[];
   const transactions = (txRes.data ?? []) as Transaction[];
+  const savingsRules = ((rulesRes.data ?? []) as SavingsRule[]).map((r) => ({
+    ...r,
+    base_rate: Number(r.base_rate),
+    promo_rate: Number(r.promo_rate),
+  }));
 
   return (
     <div className="strata-page-enter">
@@ -59,6 +76,9 @@ export default async function CapitalPage({
         initialAccounts={accounts}
         initialCategories={categories}
         initialTransactions={transactions}
+        initialSavingsRules={savingsRules}
+        promoWarningDays={promoWarningDays}
+        asOfDate={asOfDate}
         currentYear={currentYear}
         currentMonth={currentMonth}
       />
