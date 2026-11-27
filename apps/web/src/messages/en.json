@@ -467,8 +467,8 @@
     "replayButton": "Replay tour",
     "steps": {
       "hero-balance": {
-        "title": "Net Worth & Safe-to-Spend",
-        "description": "See your total net worth across accounts minus debts alongside how much liquid cash is safe to spend."
+        "title": "Net Worth & balances",
+        "description": "See your net worth, safe-to-spend balance, period net, and—when you have credit cards—available limit and debt."
       },
       "privacy-toggle": {
         "title": "Privacy Blur mode",
@@ -476,19 +476,19 @@
       },
       "quick-add": {
         "title": "Quick Add & inline math",
-        "description": "Record any of the 11 operation types, type formulas like =320+185, or press N from anywhere."
+        "description": "Record any of the 11 operation types in the receipt-style card, calculate inline (320+185), or press N from anywhere."
       },
       "analytics-charts": {
         "title": "Period analytics & budgets",
-        "description": "Switch between Month and Year views, track your savings rate, net worth trend, and category limits."
+        "description": "Switch between Month and Year views, track income, expenses, and net balance trends, inspect category shares, or reorder blocks via Order."
       },
       "nav-sections": {
         "title": "Workspace navigation",
-        "description": "Filter your ledger and export CSV in Operations, manage accounts in Capital, or customize Strata in Settings."
+        "description": "Search and filter history in Operations, manage accounts, credit limits, and category budgets in Capital, or customize Strata in Settings."
       },
       "settings-link": {
         "title": "Themes, 2FA & backups",
-        "description": "Customize accent palettes, enable 2FA, manage active sessions, export JSON/CSV, or replay this tour."
+        "description": "Choose a theme and 5 accent palettes, manage 2FA and active sessions, export JSON/CSV backups, or replay this tour anytime."
       }
     }
   },

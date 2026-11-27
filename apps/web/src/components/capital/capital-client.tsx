@@ -797,20 +797,9 @@ export function CapitalClient({
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr] lg:items-start">
             {/* Expense Categories */}
             <Card className="space-y-3.5 p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-bold tracking-tight text-[var(--strata-text-primary)] sm:text-lg">
-                  {t.onboarding.expenseCategories}
-                </h2>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openCategoryForm(null, "expense")}
-                >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                  {t.common.add}
-                </Button>
-              </div>
+              <h2 className="text-base font-bold tracking-tight text-[var(--strata-text-primary)] sm:text-lg">
+                {t.onboarding.expenseCategories}
+              </h2>
 
               {expenseCategories.length === 0 ? (
                 <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">
@@ -916,20 +905,9 @@ export function CapitalClient({
 
             {/* Income Categories */}
             <Card className="space-y-3.5 p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-base font-bold tracking-tight text-[var(--strata-text-primary)] sm:text-lg">
-                  {t.onboarding.incomeCategories}
-                </h2>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => openCategoryForm(null, "income")}
-                >
-                  <Plus className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-                  {t.common.add}
-                </Button>
-              </div>
+              <h2 className="text-base font-bold tracking-tight text-[var(--strata-text-primary)] sm:text-lg">
+                {t.onboarding.incomeCategories}
+              </h2>
 
               {incomeCategories.length === 0 ? (
                 <div className="rounded-2xl bg-[var(--strata-bg-elevated)] p-4 text-sm text-[var(--strata-text-muted)]">

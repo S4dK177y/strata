@@ -53,3 +53,5 @@ Before making changes in any new chat or session:
    - For backend/API/validation: prefer `hono`, `@hono/zod-openapi`, `@scalar/hono-api-reference`, `@supabase/ssr`, and `zod`.
 9. **Keep Route Skeletons (`loading.tsx`) in Sync:**
    - Whenever a page's structure, cards, headers, grids, or responsive stacking changes (e.g. `/`, `/operations`, `/capital`, `/settings`, `/admin`), ALWAYS inspect and update its corresponding `loading.tsx` skeleton in the same PR so loading states match the live layout across Mobile (`360px`), Tablet (`768px`), and Desktop (`1280px`) with zero horizontal overflow.
+10. **Keep Interactive Spotlight Tour in Sync:**
+   - Whenever navigation items, Hero blocks, Quick Add behavior, analytics cards, or feature locations change, ALWAYS verify every `[data-tour="..."]` target in `AppShell` / Overview across Mobile & Desktop AND update `tour.steps.*` copy in both `apps/web/src/messages/ru.json` and `en.json` in the same PR so onboarding never shows stale UI instructions.

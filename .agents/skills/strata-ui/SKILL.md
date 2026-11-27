@@ -26,3 +26,5 @@ Always read `docs/DESIGN_SYSTEM.md` and `packages/design-tokens/tokens.json` bef
    - Keep UI copy concise, human, and product-oriented (never expose technical jargon like "integer precision" or internal milestone terms in user-facing copy).
 7. **Skeleton Parity (`loading.tsx`):**
    - Whenever modifying a route's layout, cards, headers, grids, or responsive stacking, ALWAYS update its corresponding `loading.tsx` skeleton in the same commit so loading skeletons match the live UI across Mobile, Tablet, and Desktop.
+8. **Spotlight Tour Parity:**
+   - Whenever navigation, Hero cards, Quick Add, analytics blocks, or feature locations change, ALWAYS verify all `[data-tour="..."]` targets across Mobile & Desktop and update `tour.steps.*` copy in `ru.json` & `en.json` in the same PR.
