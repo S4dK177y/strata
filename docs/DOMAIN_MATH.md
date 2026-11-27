@@ -47,10 +47,12 @@ All calculations live in `packages/finance-core` and operate on **integer minor 
   - `transfer` → `+amount` if entering savings/deposit from non-savings; `-amount` if leaving savings/deposit to non-savings; `0` when moving between two savings/deposit accounts (preserves envelopes during promo-rate hopping!).
 - **Total in envelope:** `max(0, initialAmount + txFlow + netGoalTransfers)`.
 - **NPER (months to goal):** if `monthlyRate = effectiveRate / 12 > 0`, `ceil(ln((pmt + fv * r) / (pmt + pv * r)) / ln(1 + r))`; else `ceil((fv - pv) / pmt)`.
+- **Portfolio Summary (`computeGoalsPortfolioSummary`):** aggregates active vs archived goals, sorts active envelopes by priority (`high → medium → low`), and computes per-storage-account allocation (`accountBalanceMinor`, `allocatedMinor`, `freeMinor`).
 
 ## 5. 2-Way Debt Ledger (FIFO)
 - Strictly separates `lent` (repaid by `debt_received_back`) and `borrowed` (repaid by `debt_paid_back`).
-- Matches directly by `tx.debtId`, with FIFO fallback by `counterparty` substring match in `tx.comment` for Android push / manual transactions without `debtId`.
+- Matches directly by `tx.debtId`, with deterministic FIFO fallback (sorted by `occurredAt ASC`) by `counterparty` substring match in `tx.comment` for Android push / manual transactions without `debtId`.
+- Tracks `dueDate`, `daysUntilDue`, `isOverdue`, `repaymentTransactionIds`, and portfolio `overdueCount` / `dueSoonCount` when `asOfDate` is supplied.
 
 ## 6. Yearly Wrapped
 - Financial titles (6 tiers by `totalIncome` & `savingsRate`), top 5 categories, calendar extremes, max purchase in work hours, passive income equivalents (coffee, shawarma, subscriptions), discipline rank, favorite card, cost of 1 day of life, Anti-fuckup filtered volume (`transfer + transit_in + transit_out + all 4 debt types + 2 * compensation`), autonomy months, and 2-way Debt Hall of Fame.

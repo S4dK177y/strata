@@ -58,9 +58,14 @@ import {
 export interface QuickAddPreset {
   type?: TransactionType;
   accountFromId?: string;
+  accountToId?: string;
   categoryId?: string;
   amountMinor?: number;
   comment?: string;
+  goalId?: string;
+  goalName?: string;
+  debtId?: string;
+  debtCounterparty?: string;
   recurringPaymentId?: string;
   recurringPaymentName?: string;
   transaction?: Transaction;
@@ -162,9 +167,11 @@ function QuickAddFormBody({
   const initialTo =
     editingTx !== null
       ? editingTx.account_to_id ?? ""
-      : initialType === "transfer"
-        ? activeAccounts.find((a) => a.id !== initialFrom)?.id ?? activeAccounts[1]?.id ?? ""
-        : "";
+      : preset?.accountToId
+        ? preset.accountToId
+        : initialType === "transfer"
+          ? activeAccounts.find((a) => a.id !== initialFrom)?.id ?? activeAccounts[1]?.id ?? ""
+          : "";
 
   const [txType, setTxType] = useState<TransactionType>(initialType);
   const [showExtendedTypes, setShowExtendedTypes] = useState(
@@ -185,8 +192,12 @@ function QuickAddFormBody({
   const [categoryId, setCategoryId] = useState<string>(
     editingTx ? editingTx.category_id ?? "" : preset?.categoryId ?? ""
   );
-  const [goalId, setGoalId] = useState<string>(editingTx?.goal_id ?? "");
-  const [debtId, setDebtId] = useState<string>(editingTx?.debt_id ?? "");
+  const [goalId, setGoalId] = useState<string>(
+    editingTx ? editingTx.goal_id ?? "" : preset?.goalId ?? ""
+  );
+  const [debtId, setDebtId] = useState<string>(
+    editingTx ? editingTx.debt_id ?? "" : preset?.debtId ?? ""
+  );
   const recurringPaymentId = editingTx?.recurring_payment_id ?? preset?.recurringPaymentId ?? null;
   const [occurredAtInput, setOccurredAtInput] = useState(() =>
     editingTx
@@ -245,12 +256,35 @@ function QuickAddFormBody({
   const isDebtType = txType.startsWith("debt_");
   const primaryIndex = (PRIMARY_TRANSACTION_TYPES as readonly TransactionType[]).indexOf(txType);
 
+  const filteredDebts = useMemo(() => {
+    if (!isDebtType) return [];
+    const expectedDirection =
+      txType === "debt_given" || txType === "debt_received_back" ? "lent" : "borrowed";
+    return activeDebts.filter(
+      (d) =>
+        d.direction === expectedDirection ||
+        d.id === editingTx?.debt_id ||
+        d.id === preset?.debtId
+    );
+  }, [activeDebts, editingTx?.debt_id, isDebtType, preset?.debtId, txType]);
+
   function handleTypeChange(nextType: TransactionType) {
     setTxType(nextType);
     const nextMeta = TRANSACTION_TYPE_META[nextType];
 
     if (nextMeta.group === "extended") {
       setShowExtendedTypes(true);
+    }
+
+    if (!nextType.startsWith("debt_")) {
+      setDebtId("");
+    } else if (debtId) {
+      const currentDebt = activeDebts.find((d) => d.id === debtId);
+      const nextDir =
+        nextType === "debt_given" || nextType === "debt_received_back" ? "lent" : "borrowed";
+      if (currentDebt && currentDebt.direction !== nextDir) {
+        setDebtId("");
+      }
     }
 
     if (nextMeta.accountDirection === "transfer") {
@@ -935,7 +969,7 @@ function QuickAddFormBody({
             </div>
           ) : null}
 
-          {activeDebts.length > 0 && isDebtType ? (
+          {filteredDebts.length > 0 && isDebtType ? (
             <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
               <Label className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
                 <Handshake className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
@@ -951,7 +985,7 @@ function QuickAddFormBody({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">{t.transactions.noneOption}</SelectItem>
-                    {activeDebts.map((d) => (
+                    {filteredDebts.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         {d.counterparty}
                       </SelectItem>
@@ -1057,7 +1091,7 @@ export function QuickAddDialog({
     }
   }
 
-  const formKey = `${preset?.transaction?.id ?? preset?.type ?? "expense"}-${preset?.accountFromId ?? ""}-${openSeq}`;
+  const formKey = `${preset?.transaction?.id ?? preset?.type ?? "expense"}-${preset?.accountFromId ?? ""}-${preset?.accountToId ?? ""}-${preset?.goalId ?? ""}-${preset?.debtId ?? ""}-${openSeq}`;
 
   return (
     <>

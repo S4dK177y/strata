@@ -2,6 +2,8 @@ import type {
   Account as ApiAccount,
   Category as ApiCategory,
   Debt as ApiDebt,
+  Goal as ApiGoal,
+  GoalTransfer as ApiGoalTransfer,
   RecurringPayment as ApiRecurringPayment,
   RecurringPaymentMark as ApiRecurringPaymentMark,
   SavingsRule as ApiSavingsRule,
@@ -11,6 +13,8 @@ import type {
   Account as CoreAccount,
   Category as CoreCategory,
   Debt as CoreDebt,
+  Goal as CoreGoal,
+  GoalTransfer as CoreGoalTransfer,
   RecurringPayment as CoreRecurringPayment,
   RecurringPaymentMark as CoreRecurringPaymentMark,
   SavingsRule as CoreSavingsRule,
@@ -66,6 +70,34 @@ export function toCoreDebt(row: ApiDebt): CoreDebt {
     amountMinor: row.amount_minor,
     manualRepaidMinor: row.manual_repaid_minor,
     openedAt: row.opened_at,
+    dueDate: row.due_date,
+    comment: row.comment,
+    deletedAt: row.deleted_at,
+  };
+}
+
+export function toCoreGoal(row: ApiGoal): CoreGoal {
+  return {
+    id: row.id,
+    name: row.name,
+    priority: row.priority,
+    targetAmountMinor: row.target_amount_minor,
+    initialAmountMinor: row.initial_amount_minor,
+    monthlyPlanMinor: row.monthly_plan_minor,
+    storageAccountId: row.storage_account_id,
+    isArchived: row.is_archived,
+    sortOrder: row.sort_order,
+    deletedAt: row.deleted_at,
+  };
+}
+
+export function toCoreGoalTransfer(row: ApiGoalTransfer): CoreGoalTransfer {
+  return {
+    id: row.id,
+    fromGoalId: row.from_goal_id,
+    toGoalId: row.to_goal_id,
+    amountMinor: row.amount_minor,
+    occurredAt: row.occurred_at,
     deletedAt: row.deleted_at,
   };
 }

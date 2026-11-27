@@ -19,7 +19,12 @@ interface QuickAddContextValue {
   openQuickAdd: (preset?: QuickAddPreset) => void;
   closeQuickAdd: () => void;
   registerOnMutated: (listener: () => void) => () => void;
-  setReferenceData: (data: { accounts?: Account[]; categories?: Category[] }) => void;
+  setReferenceData: (data: {
+    accounts?: Account[];
+    categories?: Category[];
+    goals?: Goal[];
+    debts?: Debt[];
+  }) => void;
 }
 
 const QuickAddContext = createContext<QuickAddContextValue | null>(null);
@@ -55,10 +60,14 @@ export function QuickAddProvider({
   const [preset, setPreset] = useState<QuickAddPreset | null>(null);
   const [overrideAccounts, setOverrideAccounts] = useState<Account[] | null>(null);
   const [overrideCategories, setOverrideCategories] = useState<Category[] | null>(null);
+  const [overrideGoals, setOverrideGoals] = useState<Goal[] | null>(null);
+  const [overrideDebts, setOverrideDebts] = useState<Debt[] | null>(null);
   const listenersRef = useRef(new Set<() => void>());
 
   const accounts = overrideAccounts ?? initialAccounts ?? [];
   const categories = overrideCategories ?? initialCategories ?? [];
+  const goals = overrideGoals ?? initialGoals;
+  const debts = overrideDebts ?? initialDebts;
   const isHydrated =
     overrideAccounts !== null ||
     initialAccounts !== undefined ||
@@ -67,9 +76,11 @@ export function QuickAddProvider({
 
   const fetchReferenceData = useCallback(async () => {
     try {
-      const [accRes, catRes] = await Promise.all([
+      const [accRes, catRes, goalsRes, debtsRes] = await Promise.all([
         fetch("/api/v1/accounts"),
         fetch("/api/v1/categories"),
+        fetch("/api/v1/goals"),
+        fetch("/api/v1/debts"),
       ]);
       if (accRes.ok) {
         const accJson = (await accRes.json()) as { accounts: Account[] };
@@ -78,6 +89,14 @@ export function QuickAddProvider({
       if (catRes.ok) {
         const catJson = (await catRes.json()) as { categories: Category[] };
         setOverrideCategories(catJson.categories);
+      }
+      if (goalsRes.ok) {
+        const goalsJson = (await goalsRes.json()) as { goals: Goal[] };
+        setOverrideGoals(goalsJson.goals);
+      }
+      if (debtsRes.ok) {
+        const debtsJson = (await debtsRes.json()) as { debts: Debt[] };
+        setOverrideDebts(debtsJson.debts);
       }
     } catch {
       // Non-fatal; user still sees current reference state
@@ -108,9 +127,16 @@ export function QuickAddProvider({
   }, []);
 
   const setReferenceData = useCallback(
-    (data: { accounts?: Account[]; categories?: Category[] }) => {
+    (data: {
+      accounts?: Account[];
+      categories?: Category[];
+      goals?: Goal[];
+      debts?: Debt[];
+    }) => {
       if (data.accounts !== undefined) setOverrideAccounts(data.accounts);
       if (data.categories !== undefined) setOverrideCategories(data.categories);
+      if (data.goals !== undefined) setOverrideGoals(data.goals);
+      if (data.debts !== undefined) setOverrideDebts(data.debts);
     },
     []
   );
@@ -171,8 +197,8 @@ export function QuickAddProvider({
         baseCurrency={baseCurrency}
         accounts={accounts}
         categories={categories}
-        goals={initialGoals}
-        debts={initialDebts}
+        goals={goals}
+        debts={debts}
         preset={preset}
         onSuccess={handleSuccess}
       />

@@ -112,6 +112,12 @@ export const TransactionsListQuerySchema = z.object({
   category_id: z.uuid().optional().openapi({
     param: { name: "category_id", in: "query", required: false },
   }),
+  goal_id: z.uuid().optional().openapi({
+    param: { name: "goal_id", in: "query", required: false },
+  }),
+  debt_id: z.uuid().optional().openapi({
+    param: { name: "debt_id", in: "query", required: false },
+  }),
   status: TransactionStatusSchema.optional().openapi({
     param: { name: "status", in: "query", required: false },
   }),

@@ -1,4 +1,5 @@
 import { isConfirmedActiveTx } from "./balances";
+import { diffCalendarDays } from "./savings";
 import type { Debt, Transaction } from "./types";
 
 export interface DebtLedgerRow {
@@ -8,9 +9,16 @@ export interface DebtLedgerRow {
   amountMinor: number;
   manualRepaidMinor: number;
   repaidFromTransactionsMinor: number;
+  repaidTotalMinor: number;
   remainingMinor: number;
+  progress: number;
   status: "open" | "closed";
   openedAt: string;
+  dueDate: string | null;
+  comment: string;
+  daysUntilDue: number | null;
+  isOverdue: boolean;
+  repaymentTransactionIds: string[];
 }
 
 export interface DebtsLedgerSummary {
@@ -20,11 +28,14 @@ export interface DebtsLedgerSummary {
   netDebtBalanceMinor: number;
   openCount: number;
   closedCount: number;
+  overdueCount: number;
+  dueSoonCount: number;
 }
 
 export function computeDebtsLedger(
   debts: Debt[],
   transactions: Transaction[],
+  asOfDate?: string,
 ): DebtsLedgerSummary {
   const activeDebts = debts
     .filter((d) => !d.deletedAt)
@@ -35,8 +46,10 @@ export function computeDebtsLedger(
     });
 
   const repaidMap = new Map<string, number>();
+  const matchedTxIdsMap = new Map<string, string[]>();
   for (const item of activeDebts) {
     repaidMap.set(item.debt.id, 0);
+    matchedTxIdsMap.set(item.debt.id, []);
   }
 
   const activeTxs = transactions.filter(isConfirmedActiveTx);
@@ -52,6 +65,7 @@ export function computeDebtsLedger(
     if (tx.type !== expectedType) continue;
 
     repaidMap.set(target.id, (repaidMap.get(target.id) ?? 0) + tx.amountMinor);
+    matchedTxIdsMap.get(target.id)?.push(tx.id);
   }
 
   // Pass 2: FIFO keyword fallback for Android push / manual transactions without debtId
@@ -68,7 +82,9 @@ export function computeDebtsLedger(
   }
 
   for (const direction of ["lent", "borrowed"] as const) {
-    const poolTxs = unlinkedByDirection[direction];
+    const poolTxs = [...unlinkedByDirection[direction]].sort((a, b) =>
+      a.occurredAt.localeCompare(b.occurredAt),
+    );
     for (const tx of poolTxs) {
       let remainingTxAmount = tx.amountMinor;
       const commentLower = tx.comment.toLowerCase();
@@ -86,6 +102,10 @@ export function computeDebtsLedger(
 
         const applied = Math.min(capacity, remainingTxAmount);
         repaidMap.set(debt.id, (repaidMap.get(debt.id) ?? 0) + applied);
+        const ids = matchedTxIdsMap.get(debt.id);
+        if (ids && !ids.includes(tx.id)) {
+          ids.push(tx.id);
+        }
         remainingTxAmount -= applied;
       }
 
@@ -97,20 +117,38 @@ export function computeDebtsLedger(
   let totalBorrowedRemainingMinor = 0;
   let openCount = 0;
   let closedCount = 0;
+  let overdueCount = 0;
+  let dueSoonCount = 0;
 
   const rows: DebtLedgerRow[] = activeDebts.map(({ debt }) => {
+    const cappedManual = Math.min(debt.amountMinor, Math.max(0, debt.manualRepaidMinor));
     const repaidFromTransactionsMinor = Math.min(
-      Math.max(0, debt.amountMinor - debt.manualRepaidMinor),
+      Math.max(0, debt.amountMinor - cappedManual),
       repaidMap.get(debt.id) ?? 0,
     );
-    const remainingMinor = Math.max(
-      0,
-      debt.amountMinor - debt.manualRepaidMinor - repaidFromTransactionsMinor,
+    const repaidTotalMinor = Math.min(
+      debt.amountMinor,
+      cappedManual + repaidFromTransactionsMinor,
     );
+    const remainingMinor = Math.max(0, debt.amountMinor - repaidTotalMinor);
+    const progress =
+      debt.amountMinor <= 0 ? 0 : Math.min(1, repaidTotalMinor / debt.amountMinor);
     const status: "open" | "closed" = remainingMinor <= 0 ? "closed" : "open";
+    const dueDate = debt.dueDate ?? null;
+    const daysUntilDue =
+      status === "open" && dueDate && asOfDate ? diffCalendarDays(dueDate, asOfDate) : null;
+    const isOverdue = status === "open" && daysUntilDue !== null && daysUntilDue < 0;
 
-    if (status === "closed") closedCount += 1;
-    else openCount += 1;
+    if (status === "closed") {
+      closedCount += 1;
+    } else {
+      openCount += 1;
+      if (isOverdue) {
+        overdueCount += 1;
+      } else if (daysUntilDue !== null && daysUntilDue <= 7) {
+        dueSoonCount += 1;
+      }
+    }
 
     if (debt.direction === "lent") totalLentRemainingMinor += remainingMinor;
     else totalBorrowedRemainingMinor += remainingMinor;
@@ -120,11 +158,18 @@ export function computeDebtsLedger(
       direction: debt.direction,
       counterparty: debt.counterparty,
       amountMinor: debt.amountMinor,
-      manualRepaidMinor: debt.manualRepaidMinor,
+      manualRepaidMinor: cappedManual,
       repaidFromTransactionsMinor,
+      repaidTotalMinor,
       remainingMinor,
+      progress,
       status,
       openedAt: debt.openedAt,
+      dueDate,
+      comment: debt.comment ?? "",
+      daysUntilDue,
+      isOverdue,
+      repaymentTransactionIds: matchedTxIdsMap.get(debt.id) ?? [],
     };
   });
 
@@ -135,5 +180,7 @@ export function computeDebtsLedger(
     netDebtBalanceMinor: totalLentRemainingMinor - totalBorrowedRemainingMinor,
     openCount,
     closedCount,
+    overdueCount,
+    dueSoonCount,
   };
 }

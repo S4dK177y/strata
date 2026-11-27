@@ -4,12 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import {
   computeAllAccountBalances,
+  computeDebtsLedger,
+  computeGoalsPortfolioSummary,
   computeSavingsPortfolioSummary,
   evaluateRecurringPayments,
 } from "@strata/finance-core";
 import type {
   Account,
   Category,
+  Debt,
+  Goal,
+  GoalTransfer,
   RecurringPayment,
   RecurringPaymentMark,
   SavingsRule,
@@ -20,30 +25,66 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   toCoreAccount,
+  toCoreDebt,
+  toCoreGoal,
+  toCoreGoalTransfer,
   toCoreRecurringPayment,
   toCoreRecurringPaymentMark,
   toCoreSavingsRule,
   toCoreTransaction,
 } from "@/lib/finance-mappers";
 import { useI18n } from "@/lib/i18n/client";
+import { DebtFormDialog } from "./debt-form-dialog";
+import { DebtsSection } from "./debts-section";
+import { GoalFormDialog } from "./goal-form-dialog";
+import { GoalTransferDialog } from "./goal-transfer-dialog";
+import { GoalsSection } from "./goals-section";
 import { RecurringPaymentFormDialog } from "./recurring-payment-form-dialog";
 import { RecurringPaymentsSection } from "./recurring-payments-section";
 import { SavingsRadarSection } from "./savings-radar-section";
 import { SavingsRuleFormDialog } from "./savings-rule-form-dialog";
 
+export type PlansTab = "savings" | "recurring" | "goals" | "debts";
+
 interface PlansClientProps {
   baseCurrency: string;
-  initialTab: "savings" | "recurring";
+  initialTab: PlansTab;
   initialAccounts: Account[];
   initialCategories: Category[];
   initialSavingsRules: SavingsRule[];
   initialRecurringPayments: RecurringPayment[];
   initialMarks: RecurringPaymentMark[];
+  initialGoals: Goal[];
+  initialGoalTransfers: GoalTransfer[];
+  initialDebts: Debt[];
   initialTransactions: Transaction[];
   initialPromoWarningDays: number;
   currentYear: number;
   currentMonth: number;
   asOfDate: string;
+}
+
+async function fetchAllConfirmedTransactions(): Promise<Transaction[] | null> {
+  const all: Transaction[] = [];
+  const limit = 200;
+
+  for (let page = 0; page < 10; page += 1) {
+    const offset = page * limit;
+    const res = await fetch(
+      `/api/v1/transactions?status=confirmed&limit=${limit}&offset=${offset}`
+    );
+    if (!res.ok) {
+      return page === 0 ? null : all;
+    }
+    const json = (await res.json()) as {
+      transactions: Transaction[];
+      has_more: boolean;
+    };
+    all.push(...json.transactions);
+    if (!json.has_more) break;
+  }
+
+  return all;
 }
 
 export function PlansClient({
@@ -54,6 +95,9 @@ export function PlansClient({
   initialSavingsRules,
   initialRecurringPayments,
   initialMarks,
+  initialGoals,
+  initialGoalTransfers,
+  initialDebts,
   initialTransactions,
   initialPromoWarningDays,
   currentYear,
@@ -63,7 +107,7 @@ export function PlansClient({
   const { t } = useI18n();
   const { registerOnMutated, setReferenceData } = useQuickAdd();
 
-  const [activeTab, setActiveTab] = useState<"savings" | "recurring">(initialTab);
+  const [activeTab, setActiveTab] = useState<PlansTab>(initialTab);
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [savingsRules, setSavingsRules] = useState<SavingsRule[]>(initialSavingsRules);
@@ -71,6 +115,9 @@ export function PlansClient({
     initialRecurringPayments
   );
   const [marks, setMarks] = useState<RecurringPaymentMark[]>(initialMarks);
+  const [goals, setGoals] = useState<Goal[]>(initialGoals);
+  const [goalTransfers, setGoalTransfers] = useState<GoalTransfer[]>(initialGoalTransfers);
+  const [debts, setDebts] = useState<Debt[]>(initialDebts);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [promoWarningDays, setPromoWarningDays] = useState<number>(initialPromoWarningDays);
 
@@ -83,6 +130,18 @@ export function PlansClient({
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentFormSeq, setPaymentFormSeq] = useState(0);
   const [editingPayment, setEditingPayment] = useState<RecurringPayment | null>(null);
+
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [goalFormSeq, setGoalFormSeq] = useState(0);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+
+  const [goalTransferOpen, setGoalTransferOpen] = useState(false);
+  const [goalTransferSeq, setGoalTransferSeq] = useState(0);
+  const [presetTransferFromId, setPresetTransferFromId] = useState<string | null>(null);
+
+  const [debtDialogOpen, setDebtDialogOpen] = useState(false);
+  const [debtFormSeq, setDebtFormSeq] = useState(0);
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
 
   const openRuleForm = (rule: SavingsRule | null, presetAccountId: string | null = null) => {
     setEditingRule(rule);
@@ -97,18 +156,103 @@ export function PlansClient({
     setPaymentDialogOpen(true);
   };
 
-  const refreshData = useCallback(async () => {
+  const openGoalForm = (goal: Goal | null) => {
+    setEditingGoal(goal);
+    setGoalFormSeq((n) => n + 1);
+    setGoalDialogOpen(true);
+  };
+
+  const openGoalTransferDialog = (fromGoalId: string | null = null) => {
+    setPresetTransferFromId(fromGoalId);
+    setGoalTransferSeq((n) => n + 1);
+    setGoalTransferOpen(true);
+  };
+
+  const openDebtForm = (debt: Debt | null) => {
+    setEditingDebt(debt);
+    setDebtFormSeq((n) => n + 1);
+    setDebtDialogOpen(true);
+  };
+
+  const refreshSavingsRules = useCallback(async () => {
     try {
-      const [accRes, catRes, rulesRes, recRes, txRes] = await Promise.all([
+      const res = await fetch("/api/v1/savings-rules");
+      if (res.ok) {
+        const json = (await res.json()) as { savings_rules: SavingsRule[] };
+        setSavingsRules(json.savings_rules);
+      }
+    } catch {
+      // ignore transient refresh failure
+    }
+  }, []);
+
+  const refreshRecurring = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/recurring-payments");
+      if (res.ok) {
+        const json = (await res.json()) as {
+          recurring_payments: RecurringPayment[];
+          marks: RecurringPaymentMark[];
+        };
+        setRecurringPayments(json.recurring_payments);
+        setMarks(json.marks);
+      }
+    } catch {
+      // ignore transient refresh failure
+    }
+  }, []);
+
+  const refreshGoals = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/goals");
+      if (res.ok) {
+        const json = (await res.json()) as {
+          goals: Goal[];
+          goal_transfers: GoalTransfer[];
+        };
+        setGoals(json.goals);
+        setGoalTransfers(json.goal_transfers);
+        setReferenceData({ goals: json.goals });
+      }
+    } catch {
+      // ignore transient refresh failure
+    }
+  }, [setReferenceData]);
+
+  const refreshDebts = useCallback(async () => {
+    try {
+      const [debtsRes, allTxs] = await Promise.all([
+        fetch("/api/v1/debts"),
+        fetchAllConfirmedTransactions(),
+      ]);
+      if (debtsRes.ok) {
+        const json = (await debtsRes.json()) as { debts: Debt[] };
+        setDebts(json.debts);
+        setReferenceData({ debts: json.debts });
+      }
+      if (allTxs !== null) {
+        setTransactions(allTxs);
+      }
+    } catch {
+      // ignore transient refresh failure
+    }
+  }, [setReferenceData]);
+
+  const refreshAfterTx = useCallback(async () => {
+    try {
+      const [accRes, catRes, recRes, goalsRes, debtsRes, allTxs] = await Promise.all([
         fetch("/api/v1/accounts"),
         fetch("/api/v1/categories"),
-        fetch("/api/v1/savings-rules"),
         fetch("/api/v1/recurring-payments"),
-        fetch("/api/v1/transactions?status=confirmed&limit=200"),
+        fetch("/api/v1/goals"),
+        fetch("/api/v1/debts"),
+        fetchAllConfirmedTransactions(),
       ]);
 
       let nextAccounts: Account[] | undefined;
       let nextCategories: Category[] | undefined;
+      let nextGoals: Goal[] | undefined;
+      let nextDebts: Debt[] | undefined;
 
       if (accRes.ok) {
         const json = (await accRes.json()) as { accounts: Account[] };
@@ -120,10 +264,6 @@ export function PlansClient({
         nextCategories = json.categories;
         setCategories(json.categories);
       }
-      if (rulesRes.ok) {
-        const json = (await rulesRes.json()) as { savings_rules: SavingsRule[] };
-        setSavingsRules(json.savings_rules);
-      }
       if (recRes.ok) {
         const json = (await recRes.json()) as {
           recurring_payments: RecurringPayment[];
@@ -132,15 +272,30 @@ export function PlansClient({
         setRecurringPayments(json.recurring_payments);
         setMarks(json.marks);
       }
-      if (txRes.ok) {
-        const json = (await txRes.json()) as { transactions: Transaction[] };
-        setTransactions(json.transactions);
+      if (goalsRes.ok) {
+        const json = (await goalsRes.json()) as {
+          goals: Goal[];
+          goal_transfers: GoalTransfer[];
+        };
+        nextGoals = json.goals;
+        setGoals(json.goals);
+        setGoalTransfers(json.goal_transfers);
+      }
+      if (debtsRes.ok) {
+        const json = (await debtsRes.json()) as { debts: Debt[] };
+        nextDebts = json.debts;
+        setDebts(json.debts);
+      }
+      if (allTxs !== null) {
+        setTransactions(allTxs);
       }
 
-      if (nextAccounts || nextCategories) {
+      if (nextAccounts || nextCategories || nextGoals || nextDebts) {
         setReferenceData({
           ...(nextAccounts ? { accounts: nextAccounts } : {}),
           ...(nextCategories ? { categories: nextCategories } : {}),
+          ...(nextGoals ? { goals: nextGoals } : {}),
+          ...(nextDebts ? { debts: nextDebts } : {}),
         });
       }
     } catch {
@@ -150,9 +305,9 @@ export function PlansClient({
 
   useEffect(() => {
     return registerOnMutated(() => {
-      void refreshData();
+      void refreshAfterTx();
     });
-  }, [registerOnMutated, refreshData]);
+  }, [registerOnMutated, refreshAfterTx]);
 
   const coreAccounts = useMemo(() => accounts.map(toCoreAccount), [accounts]);
   const coreTransactions = useMemo(() => transactions.map(toCoreTransaction), [transactions]);
@@ -162,6 +317,12 @@ export function PlansClient({
     [recurringPayments]
   );
   const coreMarks = useMemo(() => marks.map(toCoreRecurringPaymentMark), [marks]);
+  const coreGoals = useMemo(() => goals.map(toCoreGoal), [goals]);
+  const coreGoalTransfers = useMemo(
+    () => goalTransfers.map(toCoreGoalTransfer),
+    [goalTransfers]
+  );
+  const coreDebts = useMemo(() => debts.map(toCoreDebt), [debts]);
 
   const balances = useMemo(
     () => computeAllAccountBalances(coreAccounts, coreTransactions),
@@ -193,6 +354,25 @@ export function PlansClient({
     [corePayments, coreMarks, coreTransactions, currentYear, currentMonth, asOfDate]
   );
 
+  const goalsSummary = useMemo(
+    () =>
+      computeGoalsPortfolioSummary(
+        coreGoals,
+        coreAccounts,
+        coreRules,
+        balances,
+        coreTransactions,
+        coreGoalTransfers,
+        asOfDate
+      ),
+    [coreGoals, coreAccounts, coreRules, balances, coreTransactions, coreGoalTransfers, asOfDate]
+  );
+
+  const debtsSummary = useMemo(
+    () => computeDebtsLedger(coreDebts, coreTransactions, asOfDate),
+    [coreDebts, coreTransactions, asOfDate]
+  );
+
   const existingRuleAccountIds = useMemo(
     () => new Set(savingsRules.map((r) => r.account_id)),
     [savingsRules]
@@ -213,6 +393,7 @@ export function PlansClient({
   const hasSavingsAlerts = savingsSummary.alertCount > 0;
   const hasRecurringAlerts =
     currentRecurringSummary.overdueCount > 0 || currentRecurringSummary.dueSoonCount > 0;
+  const hasDebtAlerts = debtsSummary.overdueCount > 0;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -232,7 +413,7 @@ export function PlansClient({
               <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
               <span>{t.plans.actions.addRule}</span>
             </Button>
-          ) : (
+          ) : activeTab === "recurring" ? (
             <Button
               type="button"
               onClick={() => openPaymentForm(null)}
@@ -241,6 +422,24 @@ export function PlansClient({
               <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
               <span>{t.plans.actions.addPayment}</span>
             </Button>
+          ) : activeTab === "goals" ? (
+            <Button
+              type="button"
+              onClick={() => openGoalForm(null)}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              <span>{t.plans.actions.addGoal}</span>
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={() => openDebtForm(null)}
+              className="shrink-0"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              <span>{t.plans.actions.addDebt}</span>
+            </Button>
           )}
         </div>
         <p className="text-sm text-[var(--strata-text-muted)]">{t.plans.subtitle}</p>
@@ -248,9 +447,15 @@ export function PlansClient({
 
       <Tabs
         value={activeTab}
-        onValueChange={(val) => setActiveTab(val === "recurring" ? "recurring" : "savings")}
+        onValueChange={(val) => {
+          if (val === "recurring" || val === "goals" || val === "debts") {
+            setActiveTab(val);
+          } else {
+            setActiveTab("savings");
+          }
+        }}
       >
-        <TabsList className="grid w-full grid-cols-2 sm:inline-grid sm:w-auto sm:min-w-[340px]">
+        <TabsList className="grid w-full grid-cols-2 sm:inline-grid sm:w-auto sm:grid-cols-4">
           <TabsTrigger value="savings" className="gap-1.5">
             <span className="truncate">{t.plans.tabs.savings}</span>
             <span className="strata-mono text-[11px] opacity-75">
@@ -275,6 +480,24 @@ export function PlansClient({
               />
             ) : null}
           </TabsTrigger>
+          <TabsTrigger value="goals" className="gap-1.5">
+            <span className="truncate">{t.plans.tabs.goals}</span>
+            <span className="strata-mono text-[11px] opacity-75">
+              ({goalsSummary.activeCount})
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="debts" className="gap-1.5">
+            <span className="truncate">{t.plans.tabs.debts}</span>
+            <span className="strata-mono text-[11px] opacity-75">
+              ({debtsSummary.openCount})
+            </span>
+            {hasDebtAlerts ? (
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--strata-radar-expired)]"
+              />
+            ) : null}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="savings" className="space-y-5">
@@ -288,7 +511,7 @@ export function PlansClient({
             promoWarningDays={promoWarningDays}
             onWarningDaysChange={setPromoWarningDays}
             onOpenRuleForm={openRuleForm}
-            onRefresh={refreshData}
+            onRefresh={refreshSavingsRules}
           />
         </TabsContent>
 
@@ -304,7 +527,31 @@ export function PlansClient({
             currentMonth={currentMonth}
             asOfDate={asOfDate}
             onOpenPaymentForm={openPaymentForm}
-            onRefresh={refreshData}
+            onRefresh={refreshRecurring}
+          />
+        </TabsContent>
+
+        <TabsContent value="goals" className="space-y-5">
+          <GoalsSection
+            baseCurrency={baseCurrency}
+            accounts={accounts}
+            goals={goals}
+            goalTransfers={goalTransfers}
+            summary={goalsSummary}
+            onOpenGoalForm={openGoalForm}
+            onOpenTransferDialog={openGoalTransferDialog}
+            onRefresh={refreshGoals}
+          />
+        </TabsContent>
+
+        <TabsContent value="debts" className="space-y-5">
+          <DebtsSection
+            baseCurrency={baseCurrency}
+            debts={debts}
+            transactions={transactions}
+            summary={debtsSummary}
+            onOpenDebtForm={openDebtForm}
+            onRefresh={refreshDebts}
           />
         </TabsContent>
       </Tabs>
@@ -321,7 +568,7 @@ export function PlansClient({
         presetAccountId={presetRuleAccountId}
         promoWarningDays={promoWarningDays}
         asOfDate={asOfDate}
-        onSuccess={refreshData}
+        onSuccess={() => void refreshSavingsRules()}
       />
 
       <RecurringPaymentFormDialog
@@ -332,7 +579,43 @@ export function PlansClient({
         accounts={accounts}
         categories={categories}
         payment={editingPayment}
-        onSuccess={refreshData}
+        onSuccess={() => void refreshRecurring()}
+      />
+
+      <GoalFormDialog
+        open={goalDialogOpen}
+        formSeq={goalFormSeq}
+        onOpenChange={setGoalDialogOpen}
+        baseCurrency={baseCurrency}
+        accounts={accounts}
+        savingsRules={savingsRules}
+        transactions={transactions}
+        goalTransfers={goalTransfers}
+        goal={editingGoal}
+        asOfDate={asOfDate}
+        onSuccess={() => void refreshGoals()}
+      />
+
+      <GoalTransferDialog
+        open={goalTransferOpen}
+        formSeq={goalTransferSeq}
+        onOpenChange={setGoalTransferOpen}
+        baseCurrency={baseCurrency}
+        accounts={accounts}
+        activeItems={goalsSummary.activeItems}
+        presetFromGoalId={presetTransferFromId}
+        onSuccess={() => void refreshGoals()}
+      />
+
+      <DebtFormDialog
+        open={debtDialogOpen}
+        formSeq={debtFormSeq}
+        onOpenChange={setDebtDialogOpen}
+        baseCurrency={baseCurrency}
+        accounts={accounts}
+        debt={editingDebt}
+        asOfDate={asOfDate}
+        onSuccess={() => void refreshDebts()}
       />
     </div>
   );

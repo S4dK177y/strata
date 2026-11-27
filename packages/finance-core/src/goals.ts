@@ -1,6 +1,6 @@
 import { isConfirmedActiveTx } from "./balances";
 import { getEffectiveRate } from "./savings";
-import type { Account, Goal, GoalTransfer, SavingsRule, Transaction } from "./types";
+import type { Account, Goal, GoalPriority, GoalTransfer, SavingsRule, Transaction } from "./types";
 
 export interface GoalEnvelopeResult {
   goalId: string;
@@ -11,8 +11,37 @@ export interface GoalEnvelopeResult {
   remainingMinor: number;
   progress: number;
   isAchieved: boolean;
+  effectiveRate: number;
   monthsToGoal: number | null;
   estimatedYearMonth: string | null;
+}
+
+export interface GoalPortfolioItem {
+  goal: Goal;
+  envelope: GoalEnvelopeResult;
+  storageAccount: Account | null;
+}
+
+export interface StorageAccountAllocation {
+  accountId: string;
+  accountName: string;
+  accountBalanceMinor: number;
+  allocatedMinor: number;
+  freeMinor: number;
+}
+
+export interface GoalsPortfolioSummary {
+  activeItems: GoalPortfolioItem[];
+  archivedItems: GoalPortfolioItem[];
+  totalSavedMinor: number;
+  totalTargetMinor: number;
+  totalRemainingMinor: number;
+  totalMonthlyPlanMinor: number;
+  overallProgress: number;
+  activeCount: number;
+  achievedCount: number;
+  archivedCount: number;
+  storageAllocation: Record<string, StorageAccountAllocation>;
 }
 
 function isSavingsAccount(account: Account | undefined): boolean {
@@ -136,7 +165,114 @@ export function computeGoalEnvelope(
     remainingMinor,
     progress,
     isAchieved,
+    effectiveRate,
     monthsToGoal,
     estimatedYearMonth,
+  };
+}
+
+const GOAL_PRIORITY_RANK: Record<GoalPriority, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+};
+
+export function computeGoalsPortfolioSummary(
+  goals: Goal[],
+  accounts: Account[],
+  savingsRules: SavingsRule[],
+  balances: Record<string, number>,
+  transactions: Transaction[],
+  goalTransfers: GoalTransfer[],
+  asOfDate: string,
+): GoalsPortfolioSummary {
+  const accountMap = new Map(accounts.filter((a) => !a.deletedAt).map((a) => [a.id, a]));
+  const activeItems: GoalPortfolioItem[] = [];
+  const archivedItems: GoalPortfolioItem[] = [];
+
+  for (const goal of goals) {
+    if (goal.deletedAt) continue;
+    const envelope = computeGoalEnvelope(
+      goal,
+      accounts,
+      savingsRules,
+      transactions,
+      goalTransfers,
+      asOfDate,
+    );
+    const storageAccount = goal.storageAccountId
+      ? (accountMap.get(goal.storageAccountId) ?? null)
+      : null;
+
+    if (goal.isArchived) {
+      archivedItems.push({ goal, envelope, storageAccount });
+    } else {
+      activeItems.push({ goal, envelope, storageAccount });
+    }
+  }
+
+  activeItems.sort((a, b) => {
+    const prioDiff = GOAL_PRIORITY_RANK[a.goal.priority] - GOAL_PRIORITY_RANK[b.goal.priority];
+    if (prioDiff !== 0) return prioDiff;
+
+    const orderDiff = (a.goal.sortOrder ?? 0) - (b.goal.sortOrder ?? 0);
+    if (orderDiff !== 0) return orderDiff;
+
+    return a.goal.name.localeCompare(b.goal.name);
+  });
+
+  let totalSavedMinor = 0;
+  let totalTargetMinor = 0;
+  let totalRemainingMinor = 0;
+  let totalMonthlyPlanMinor = 0;
+  let achievedCount = 0;
+
+  const storageAllocation: Record<string, StorageAccountAllocation> = {};
+
+  for (const item of activeItems) {
+    const { goal, envelope, storageAccount } = item;
+    totalSavedMinor += envelope.currentMinor;
+    totalTargetMinor += goal.targetAmountMinor;
+    totalRemainingMinor += envelope.remainingMinor;
+    if (envelope.isAchieved) {
+      achievedCount += 1;
+    } else {
+      totalMonthlyPlanMinor += goal.monthlyPlanMinor;
+    }
+
+    if (storageAccount) {
+      const existing = storageAllocation[storageAccount.id];
+      const accountBalanceMinor =
+        balances[storageAccount.id] ?? storageAccount.initialBalanceMinor;
+      if (existing) {
+        existing.allocatedMinor += envelope.currentMinor;
+        existing.freeMinor = existing.accountBalanceMinor - existing.allocatedMinor;
+      } else {
+        storageAllocation[storageAccount.id] = {
+          accountId: storageAccount.id,
+          accountName: storageAccount.name,
+          accountBalanceMinor,
+          allocatedMinor: envelope.currentMinor,
+          freeMinor: accountBalanceMinor - envelope.currentMinor,
+        };
+      }
+    }
+  }
+
+  const overallProgress =
+    totalTargetMinor <= 0 ? 0 : Math.min(1, totalSavedMinor / totalTargetMinor);
+
+  return {
+    activeItems,
+    archivedItems,
+    totalSavedMinor,
+    totalTargetMinor,
+    totalRemainingMinor,
+    totalMonthlyPlanMinor,
+    overallProgress,
+    activeCount: activeItems.length,
+    achievedCount,
+    archivedCount: archivedItems.length,
+    storageAllocation,
   };
 }

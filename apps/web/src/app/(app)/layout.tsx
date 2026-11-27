@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import type { Account, Category, Debt } from "@strata/api-contract";
+import type { Account, Category, Debt, Goal } from "@strata/api-contract";
 import { AppShell } from "@/components/layout/app-shell";
 import { getServerSessionGate } from "@/lib/auth/session-gate";
 
@@ -19,7 +19,7 @@ export default async function AuthenticatedLayout({
   if (gate.status === "needs_invite") redirect("/invite");
   if (gate.status === "needs_onboarding") redirect("/onboarding");
 
-  const [accountsRes, categoriesRes, debtsRes] = await Promise.all([
+  const [accountsRes, categoriesRes, goalsRes, debtsRes] = await Promise.all([
     gate.supabase
       .from("accounts")
       .select("*")
@@ -35,14 +35,23 @@ export default async function AuthenticatedLayout({
       .order("kind", { ascending: true })
       .order("sort_order", { ascending: true }),
     gate.supabase
+      .from("goals")
+      .select("*")
+      .eq("user_id", gate.userId)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    gate.supabase
       .from("debts")
       .select("*")
       .eq("user_id", gate.userId)
-      .is("deleted_at", null),
+      .is("deleted_at", null)
+      .order("opened_at", { ascending: true }),
   ]);
 
   const accounts = (accountsRes.data ?? []) as Account[];
   const categories = (categoriesRes.data ?? []) as Category[];
+  const goals = (goalsRes.data ?? []) as Goal[];
   const debts = (debtsRes.data ?? []) as Debt[];
 
   return (
@@ -51,6 +60,7 @@ export default async function AuthenticatedLayout({
       email={gate.email}
       initialAccounts={accounts}
       initialCategories={categories}
+      initialGoals={goals}
       initialDebts={debts}
     >
       {children}

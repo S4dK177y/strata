@@ -7,6 +7,7 @@ import {
   computeCreditCardDebt,
   computeDebtsLedger,
   computeGoalEnvelope,
+  computeGoalsPortfolioSummary,
   computeMonthlySeries,
   computeNetWorth,
   computePeriodSummary,
@@ -21,6 +22,7 @@ import {
   type Category,
   type Debt,
   type Goal,
+  type GoalTransfer,
   type RecurringPayment,
   type RecurringPaymentMark,
   type SavingsRule,
@@ -263,7 +265,142 @@ describe("Strata Golden Test Vectors", () => {
       expect(env.currentMinor).toBe(expected.currentMinor);
       expect(env.remainingMinor).toBe(expected.remainingMinor);
       expect(env.monthsToGoal).toBe(expected.monthsToGoal);
+      expect(env.effectiveRate).toBe(0.16);
     }
+
+    const goalTransfers: GoalTransfer[] = [
+      {
+        id: "gt-1",
+        fromGoalId: "goal-pixel",
+        toGoalId: "goal-tax",
+        amountMinor: 3200,
+        occurredAt: "2026-11-26T12:00:00Z",
+      },
+    ];
+    const archivedGoal: Goal = {
+      id: "goal-archived",
+      name: "Архивная цель",
+      priority: "low",
+      targetAmountMinor: 500000,
+      initialAmountMinor: 100000,
+      monthlyPlanMinor: 50000,
+      storageAccountId: "acc-sav-1",
+      isArchived: true,
+    };
+
+    const balances = computeAllAccountBalances(accounts, transactions);
+    const portfolio = computeGoalsPortfolioSummary(
+      [...goals, archivedGoal],
+      accounts,
+      savingsRules,
+      balances,
+      transactions,
+      goalTransfers,
+      golden.asOfDate,
+    );
+
+    expect(portfolio.activeCount).toBe(2);
+    expect(portfolio.archivedCount).toBe(1);
+    expect(portfolio.achievedCount).toBe(1);
+    expect(portfolio.totalSavedMinor).toBe(2446800);
+    expect(portfolio.totalTargetMinor).toBe(11450000);
+    expect(portfolio.totalRemainingMinor).toBe(9003200);
+    expect(portfolio.totalMonthlyPlanMinor).toBe(1500000);
+    expect(portfolio.storageAllocation["acc-sav-1"]?.allocatedMinor).toBe(2446800);
+    expect(portfolio.storageAllocation["acc-sav-1"]?.freeMinor).toBe(
+      (balances["acc-sav-1"] ?? 0) - 2446800,
+    );
+  });
+
+  it("computes deterministic 2-way FIFO debts with due dates, overdue counts, and repayment IDs", () => {
+    const extraDebts: Debt[] = [
+      {
+        id: "debt-overdue",
+        direction: "lent",
+        counterparty: "Макс",
+        amountMinor: 300000,
+        manualRepaidMinor: 0,
+        openedAt: "2026-11-10",
+        dueDate: "2026-11-20",
+        comment: "Билеты",
+      },
+      {
+        id: "debt-soon",
+        direction: "lent",
+        counterparty: "Макс",
+        amountMinor: 200000,
+        manualRepaidMinor: 0,
+        openedAt: "2026-11-15",
+        dueDate: "2026-11-30",
+        comment: "Такси",
+      },
+      {
+        id: "debt-borrowed",
+        direction: "borrowed",
+        counterparty: "Мама",
+        amountMinor: 1000000,
+        manualRepaidMinor: 1500000,
+        openedAt: "2026-11-20",
+        dueDate: "2026-11-25",
+      },
+    ];
+
+    const txsAsc: Transaction[] = [
+      {
+        id: "tx-repay-1",
+        occurredAt: "2026-11-18T10:00:00Z",
+        type: "debt_received_back",
+        amountMinor: 100000,
+        categoryId: null,
+        accountFromId: "acc-sber",
+        accountToId: null,
+        goalId: null,
+        comment: "Макс часть 1",
+        status: "confirmed",
+      },
+      {
+        id: "tx-repay-2",
+        occurredAt: "2026-11-22T10:00:00Z",
+        type: "debt_received_back",
+        amountMinor: 250000,
+        categoryId: null,
+        accountFromId: "acc-sber",
+        accountToId: null,
+        goalId: null,
+        comment: "Макс часть 2",
+        status: "confirmed",
+      },
+    ];
+
+    const summaryAsc = computeDebtsLedger(extraDebts, txsAsc, "2026-11-26");
+    const summaryDesc = computeDebtsLedger(extraDebts, [...txsAsc].reverse(), "2026-11-26");
+
+    expect(summaryDesc).toEqual(summaryAsc);
+    expect(summaryAsc.openCount).toBe(1);
+    expect(summaryAsc.closedCount).toBe(2);
+    expect(summaryAsc.overdueCount).toBe(0);
+    expect(summaryAsc.dueSoonCount).toBe(1);
+
+    const firstRow = summaryAsc.rows.find((r) => r.debtId === "debt-overdue")!;
+    expect(firstRow.status).toBe("closed");
+    expect(firstRow.repaymentTransactionIds).toEqual(["tx-repay-1", "tx-repay-2"]);
+
+    const secondRow = summaryAsc.rows.find((r) => r.debtId === "debt-soon")!;
+    expect(secondRow.remainingMinor).toBe(150000);
+    expect(secondRow.daysUntilDue).toBe(4);
+    expect(secondRow.isOverdue).toBe(false);
+    expect(secondRow.repaymentTransactionIds).toEqual(["tx-repay-2"]);
+
+    const borrowedRow = summaryAsc.rows.find((r) => r.debtId === "debt-borrowed")!;
+    expect(borrowedRow.manualRepaidMinor).toBe(1000000);
+    expect(borrowedRow.remainingMinor).toBe(0);
+    expect(borrowedRow.isOverdue).toBe(false);
+
+    // Verify overdue detection on an open debt
+    const overdueOnly = computeDebtsLedger([extraDebts[0]!], [], "2026-11-26");
+    expect(overdueOnly.overdueCount).toBe(1);
+    expect(overdueOnly.rows[0]?.isOverdue).toBe(true);
+    expect(overdueOnly.rows[0]?.daysUntilDue).toBe(-6);
   });
 
   it("computes accurate monthly series Net Worth matching current Net Worth in active month", () => {

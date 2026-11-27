@@ -46,7 +46,10 @@ Before making changes in any new chat or session:
 6. **i18n & No Personal Hardcoding:**
    - All UI copy must use `ru` and `en` translation dictionaries — no hardcoded personal accounts/categories for all users.
 7. **End-of-Task Rule:**
-   - After completing any feature or PR, ALWAYS update `docs/STATUS.md` with what was implemented, verified, and what comes next.
+   - After completing any feature or PR, ALWAYS update:
+     1. `docs/STATUS.md` with what was implemented, verified, and what comes next.
+     2. `CHANGELOG.md` with a concise [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) entry (`Added`, `Changed`, `Fixed`, `Security`).
+     3. `README.md` whenever meaningful user-facing capabilities, roadmap milestones, stack details, or badges change.
 8. **Prefer Proven, Secure Libraries (Do Not Reinvent the Wheel):**
    - Use popular, well-maintained, `npm audit`-clean open-source libraries instead of building complex primitives from scratch.
    - For UI/design: prefer Radix UI / shadcn/ui primitives, `lucide-react` icons, `vaul` mobile drawers, `sonner` toasts, `recharts` charts, and `motion`/`framer-motion` animations — wrapped in `apps/web/src/components/ui/` and themed exclusively via `--strata-*` semantic design tokens.

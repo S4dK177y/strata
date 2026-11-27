@@ -16,6 +16,7 @@ import {
   Eye,
   EyeOff,
   GripVertical,
+  Handshake,
   Plus,
   Repeat,
   RotateCcw,
@@ -168,7 +169,7 @@ export function OverviewClient({
     const coreMarks = recurringMarks.map(toCoreRecurringPaymentMark);
 
     const balances = computeAllAccountBalances(coreAccounts, coreTxs);
-    const debtLedger = computeDebtsLedger(coreDebts, coreTxs);
+    const debtLedger = computeDebtsLedger(coreDebts, coreTxs, asOfDate);
     const netWorth = computeNetWorth(
       coreAccounts,
       balances,
@@ -231,6 +232,7 @@ export function OverviewClient({
       recurringOverdueCount: recurringSummary.overdueCount,
       promoAlertCount: savingsSummary.alertCount,
       promoExpiredCount: savingsSummary.expiredCount,
+      debtOverdueCount: debtLedger.overdueCount,
       periodSummary,
       categoryBreakdown,
       monthlySeries,
@@ -764,7 +766,9 @@ export function OverviewClient({
           </Link>
         ) : null}
 
-        {metrics.promoAlertCount > 0 || metrics.recurringAlertCount > 0 ? (
+        {metrics.promoAlertCount > 0 ||
+        metrics.recurringAlertCount > 0 ||
+        metrics.debtOverdueCount > 0 ? (
           <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
             {metrics.promoAlertCount > 0 ? (
               <Link
@@ -819,6 +823,33 @@ export function OverviewClient({
                     {t.dashboard.recurringAlertStrip.replace(
                       "{count}",
                       String(metrics.recurringAlertCount)
+                    )}
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]"
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+              </Link>
+            ) : null}
+
+            {metrics.debtOverdueCount > 0 ? (
+              <Link
+                href="/plans?tab=debts"
+                className="flex min-w-0 flex-1 items-center justify-between gap-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/55 px-3.5 py-2.5 text-xs transition hover:border-[var(--strata-border-strong)]"
+              >
+                <span className="inline-flex min-w-0 items-center gap-2 text-[var(--strata-text-secondary)]">
+                  <Handshake
+                    className="h-3.5 w-3.5 shrink-0"
+                    style={{ color: "var(--strata-radar-expired)" }}
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate font-medium">
+                    {t.dashboard.debtOverdueStrip.replace(
+                      "{count}",
+                      String(metrics.debtOverdueCount)
                     )}
                   </span>
                 </span>

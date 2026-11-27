@@ -6,9 +6,14 @@ import {
   AdminTelemetryResponseSchema,
   CategoryCreateRequestSchema,
   CreateInviteCodeRequestSchema,
+  DebtCreateRequestSchema,
+  DebtUpdateRequestSchema,
   DeleteAccountRequestSchema,
   ExportCsvQuerySchema,
   ExportJsonResponseSchema,
+  GoalCreateRequestSchema,
+  GoalTransferCreateRequestSchema,
+  GoalUpdateRequestSchema,
   HealthResponseSchema,
   InviteCodeSchema,
   MeResponseSchema,
@@ -25,6 +30,7 @@ import {
   TransactionCreateRequestSchema,
   TransactionSourceSchema,
   TransactionTypeSchema,
+  TransactionsListQuerySchema,
   UpdateFeatureFlagRequestSchema,
   UpdateInviteCodeRequestSchema,
   VerifyPasswordRequestSchema,
@@ -555,5 +561,82 @@ describe("@strata/api-contract", () => {
     expect(
       RecurringPaymentMarkRequestSchema.safeParse({ period_key: "2026-13-01" }).success
     ).toBe(false);
+  });
+
+  it("validates PR 8 goals, goal transfers, and debts schemas", () => {
+    expect(
+      GoalCreateRequestSchema.safeParse({
+        name: "Emergency Fund",
+        priority: "high",
+        target_amount_minor: 10000000,
+        initial_amount_minor: 500000,
+        monthly_plan_minor: 1500000,
+        storage_account_id: UUID_1,
+      }).success
+    ).toBe(true);
+
+    expect(
+      GoalCreateRequestSchema.safeParse({
+        name: "Zero target",
+        target_amount_minor: 0,
+      }).success
+    ).toBe(false);
+
+    expect(GoalUpdateRequestSchema.safeParse({}).success).toBe(false);
+    expect(GoalUpdateRequestSchema.safeParse({ is_archived: true }).success).toBe(true);
+
+    expect(
+      GoalTransferCreateRequestSchema.safeParse({
+        from_goal_id: UUID_1,
+        to_goal_id: UUID_1,
+        amount_minor: 10000,
+      }).success
+    ).toBe(false);
+
+    expect(
+      GoalTransferCreateRequestSchema.safeParse({
+        from_goal_id: UUID_1,
+        to_goal_id: UUID_2,
+        amount_minor: 10000,
+        comment: "Rebalance",
+      }).success
+    ).toBe(true);
+
+    expect(
+      DebtCreateRequestSchema.safeParse({
+        direction: "lent",
+        counterparty: "Alex",
+        amount_minor: 50000,
+        manual_repaid_minor: 60000,
+        opened_at: "2026-11-26",
+      }).success
+    ).toBe(false);
+
+    expect(
+      DebtCreateRequestSchema.safeParse({
+        direction: "borrowed",
+        counterparty: "Mom",
+        amount_minor: 1000000,
+        manual_repaid_minor: 200000,
+        opened_at: "2026-11-26",
+        due_date: "2026-12-31",
+        comment: "Car repair",
+      }).success
+    ).toBe(true);
+
+    expect(DebtUpdateRequestSchema.safeParse({}).success).toBe(false);
+    expect(
+      DebtUpdateRequestSchema.safeParse({
+        amount_minor: 50000,
+        manual_repaid_minor: 60000,
+      }).success
+    ).toBe(false);
+
+    expect(
+      TransactionsListQuerySchema.safeParse({
+        goal_id: UUID_1,
+        debt_id: UUID_2,
+      }).success
+    ).toBe(true);
   });
 });

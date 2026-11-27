@@ -1714,4 +1714,222 @@ describe("Strata Hono OpenAPI 3.1 API & Sync", () => {
     expect(spec.paths["/api/v1/recurring-payments"]).toBeDefined();
     expect(spec.paths["/api/v1/recurring-payments/{id}/marks"]).toBeDefined();
   });
+
+  it("supports PR 8 Goals, Goal Transfers, Debts CRUD, reference checks, and OpenAPI registration", async () => {
+    const { app } = createTestHarness();
+
+    // Uninvited user blocked with 403 INVITE_REQUIRED
+    const uninvitedGoals = await app.request("http://localhost/api/v1/goals", {
+      headers: { Authorization: "Bearer token-uninvited" },
+    });
+    expect(uninvitedGoals.status).toBe(403);
+    expect(((await uninvitedGoals.json()) as { error: string }).error).toBe("INVITE_REQUIRED");
+
+    const uninvitedDebts = await app.request("http://localhost/api/v1/debts", {
+      headers: { Authorization: "Bearer token-uninvited" },
+    });
+    expect(uninvitedDebts.status).toBe(403);
+    expect(((await uninvitedDebts.json()) as { error: string }).error).toBe("INVITE_REQUIRED");
+
+    // Create savings account
+    const accRes = await app.request("http://localhost/api/v1/accounts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Savings Pot",
+        type: "savings",
+        currency: "RUB",
+        initial_balance_minor: 5000000,
+      }),
+    });
+    const accId = ((await accRes.json()) as { account: { id: string } }).account.id;
+
+    // Reject unknown storage_account_id
+    const badGoalRef = await app.request("http://localhost/api/v1/goals", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Bad Goal",
+        target_amount_minor: 100000,
+        storage_account_id: "99999999-9999-4999-8999-999999999999",
+      }),
+    });
+    expect(badGoalRef.status).toBe(400);
+    expect(((await badGoalRef.json()) as { error: string }).error).toBe("INVALID_REFERENCE");
+
+    // Create two goals
+    const g1Res = await app.request("http://localhost/api/v1/goals", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Emergency Fund",
+        priority: "high",
+        target_amount_minor: 10000000,
+        initial_amount_minor: 2000000,
+        monthly_plan_minor: 1000000,
+        storage_account_id: accId,
+      }),
+    });
+    expect(g1Res.status).toBe(201);
+    const goal1Id = ((await g1Res.json()) as { goal: { id: string } }).goal.id;
+
+    const g2Res = await app.request("http://localhost/api/v1/goals", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "Vacation",
+        priority: "medium",
+        target_amount_minor: 5000000,
+        storage_account_id: accId,
+      }),
+    });
+    expect(g2Res.status).toBe(201);
+    const goal2Id = ((await g2Res.json()) as { goal: { id: string } }).goal.id;
+
+    // Reject identical from_goal_id and to_goal_id
+    const sameGoalTransfer = await app.request("http://localhost/api/v1/goal-transfers", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from_goal_id: goal1Id,
+        to_goal_id: goal1Id,
+        amount_minor: 50000,
+      }),
+    });
+    expect(sameGoalTransfer.status).toBe(400);
+
+    // Create valid goal transfer
+    const gtRes = await app.request("http://localhost/api/v1/goal-transfers", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from_goal_id: goal1Id,
+        to_goal_id: goal2Id,
+        amount_minor: 500000,
+        comment: "Reallocate to trip",
+      }),
+    });
+    expect(gtRes.status).toBe(201);
+    const transferId = ((await gtRes.json()) as { goal_transfer: { id: string } }).goal_transfer.id;
+
+    // List goals returns both goals and transfer
+    const listGoalsRes = await app.request("http://localhost/api/v1/goals", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(listGoalsRes.status).toBe(200);
+    const listGoalsJson = (await listGoalsRes.json()) as {
+      goals: unknown[];
+      goal_transfers: unknown[];
+    };
+    expect(listGoalsJson.goals).toHaveLength(2);
+    expect(listGoalsJson.goal_transfers).toHaveLength(1);
+
+    // Patch & soft-delete goal transfer and goal
+    const delGtRes = await app.request(
+      `http://localhost/api/v1/goal-transfers/${transferId}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: "Bearer token-invited" },
+      }
+    );
+    expect(delGtRes.status).toBe(200);
+
+    const patchGoalRes = await app.request(`http://localhost/api/v1/goals/${goal2Id}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ is_archived: true }),
+    });
+    expect(patchGoalRes.status).toBe(200);
+
+    const delGoalRes = await app.request(`http://localhost/api/v1/goals/${goal2Id}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(delGoalRes.status).toBe(200);
+
+    // Debts CRUD + merged amount invariant
+    const createDebtRes = await app.request("http://localhost/api/v1/debts", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        direction: "lent",
+        counterparty: "Alex",
+        amount_minor: 300000,
+        manual_repaid_minor: 50000,
+        opened_at: "2026-11-15",
+        due_date: "2026-12-01",
+        comment: "Tickets",
+      }),
+    });
+    expect(createDebtRes.status).toBe(201);
+    const debtId = ((await createDebtRes.json()) as { debt: { id: string } }).debt.id;
+
+    const badPatchDebt = await app.request(`http://localhost/api/v1/debts/${debtId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ manual_repaid_minor: 400000 }),
+    });
+    expect(badPatchDebt.status).toBe(400);
+    expect(((await badPatchDebt.json()) as { error: string }).error).toBe("VALIDATION_ERROR");
+
+    const okPatchDebt = await app.request(`http://localhost/api/v1/debts/${debtId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer token-invited",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ manual_repaid_minor: 300000 }),
+    });
+    expect(okPatchDebt.status).toBe(200);
+
+    const listDebtsRes = await app.request("http://localhost/api/v1/debts?direction=lent", {
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(listDebtsRes.status).toBe(200);
+    expect(((await listDebtsRes.json()) as { debts: unknown[] }).debts).toHaveLength(1);
+
+    const delDebtRes = await app.request(`http://localhost/api/v1/debts/${debtId}`, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer token-invited" },
+    });
+    expect(delDebtRes.status).toBe(200);
+
+    // OpenAPI 3.1 exposes PR 8 routes
+    const specRes = await app.request("http://localhost/api/v1/openapi.json");
+    expect(specRes.status).toBe(200);
+    const spec = (await specRes.json()) as { paths: Record<string, unknown> };
+    expect(spec.paths["/api/v1/goals"]).toBeDefined();
+    expect(spec.paths["/api/v1/goals/{id}"]).toBeDefined();
+    expect(spec.paths["/api/v1/goal-transfers"]).toBeDefined();
+    expect(spec.paths["/api/v1/goal-transfers/{id}"]).toBeDefined();
+    expect(spec.paths["/api/v1/debts"]).toBeDefined();
+    expect(spec.paths["/api/v1/debts/{id}"]).toBeDefined();
+  });
 });

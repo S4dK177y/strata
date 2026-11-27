@@ -290,6 +290,8 @@ export function createTransactionsRouter(deps: ApiDependencies) {
     if (query.type) dbQuery = dbQuery.eq("type", query.type);
     if (query.status) dbQuery = dbQuery.eq("status", query.status);
     if (query.category_id) dbQuery = dbQuery.eq("category_id", query.category_id);
+    if (query.goal_id) dbQuery = dbQuery.eq("goal_id", query.goal_id);
+    if (query.debt_id) dbQuery = dbQuery.eq("debt_id", query.debt_id);
     if (query.account_id) {
       dbQuery = dbQuery.or(
         `account_from_id.eq.${query.account_id},account_to_id.eq.${query.account_id}`

@@ -5,6 +5,8 @@ export * from "./categories";
 export * from "./transactions";
 export * from "./savings-rules";
 export * from "./recurring-payments";
+export * from "./goals";
+export * from "./debts";
 export * from "./profile";
 export * from "./security";
 export * from "./sync";

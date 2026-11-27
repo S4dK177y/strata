@@ -2,15 +2,25 @@ import { redirect } from "next/navigation";
 import type {
   Account,
   Category,
+  Debt,
+  Goal,
+  GoalTransfer,
   RecurringPayment,
   RecurringPaymentMark,
   SavingsRule,
   Transaction,
 } from "@strata/api-contract";
-import { PlansClient } from "@/components/plans/plans-client";
+import { PlansClient, type PlansTab } from "@/components/plans/plans-client";
 import { getServerSessionGate } from "@/lib/auth/session-gate";
 
 export const dynamic = "force-dynamic";
+
+function resolveInitialTab(raw: unknown): PlansTab {
+  if (raw === "recurring" || raw === "goals" || raw === "debts") {
+    return raw;
+  }
+  return "savings";
+}
 
 export default async function PlansPage({
   searchParams,
@@ -24,7 +34,7 @@ export default async function PlansPage({
   }
 
   const resolvedParams = await searchParams;
-  const initialTab = resolvedParams.tab === "recurring" ? "recurring" : "savings";
+  const initialTab = resolveInitialTab(resolvedParams.tab);
 
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -33,48 +43,78 @@ export default async function PlansPage({
     now.getDate()
   ).padStart(2, "0")}`;
 
-  const [accountsRes, categoriesRes, rulesRes, recurringRes, marksRes, txRes] =
-    await Promise.all([
-      gate.supabase
-        .from("accounts")
-        .select("*")
-        .eq("user_id", gate.profile.id)
-        .is("deleted_at", null)
-        .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: true }),
-      gate.supabase
-        .from("categories")
-        .select("*")
-        .eq("user_id", gate.profile.id)
-        .is("deleted_at", null)
-        .order("kind", { ascending: true })
-        .order("sort_order", { ascending: true }),
-      gate.supabase
-        .from("savings_rules")
-        .select("*")
-        .eq("user_id", gate.profile.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true }),
-      gate.supabase
-        .from("recurring_payments")
-        .select("*")
-        .eq("user_id", gate.profile.id)
-        .is("deleted_at", null)
-        .order("day_of_month", { ascending: true })
-        .order("created_at", { ascending: true }),
-      gate.supabase
-        .from("recurring_payment_marks")
-        .select("*")
-        .eq("user_id", gate.profile.id)
-        .is("deleted_at", null),
-      gate.supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", gate.profile.id)
-        .eq("status", "confirmed")
-        .is("deleted_at", null)
-        .order("occurred_at", { ascending: false }),
-    ]);
+  const [
+    accountsRes,
+    categoriesRes,
+    rulesRes,
+    recurringRes,
+    marksRes,
+    goalsRes,
+    goalTransfersRes,
+    debtsRes,
+    txRes,
+  ] = await Promise.all([
+    gate.supabase
+      .from("accounts")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    gate.supabase
+      .from("categories")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("kind", { ascending: true })
+      .order("sort_order", { ascending: true }),
+    gate.supabase
+      .from("savings_rules")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
+    gate.supabase
+      .from("recurring_payments")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("day_of_month", { ascending: true })
+      .order("created_at", { ascending: true }),
+    gate.supabase
+      .from("recurring_payment_marks")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null),
+    gate.supabase
+      .from("goals")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    gate.supabase
+      .from("goal_transfers")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("occurred_at", { ascending: false })
+      .order("created_at", { ascending: false }),
+    gate.supabase
+      .from("debts")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .is("deleted_at", null)
+      .order("opened_at", { ascending: true })
+      .order("created_at", { ascending: true }),
+    gate.supabase
+      .from("transactions")
+      .select("*")
+      .eq("user_id", gate.profile.id)
+      .eq("status", "confirmed")
+      .is("deleted_at", null)
+      .order("occurred_at", { ascending: false }),
+  ]);
 
   const accounts = (accountsRes.data ?? []) as Account[];
   const categories = (categoriesRes.data ?? []) as Category[];
@@ -85,6 +125,9 @@ export default async function PlansPage({
   }));
   const recurringPayments = (recurringRes.data ?? []) as RecurringPayment[];
   const marks = (marksRes.data ?? []) as RecurringPaymentMark[];
+  const goals = (goalsRes.data ?? []) as Goal[];
+  const goalTransfers = (goalTransfersRes.data ?? []) as GoalTransfer[];
+  const debts = (debtsRes.data ?? []) as Debt[];
   const transactions = (txRes.data ?? []) as Transaction[];
   const promoWarningDays =
     typeof gate.profile.wrapped_settings?.promoWarningDays === "number"
@@ -101,6 +144,9 @@ export default async function PlansPage({
         initialSavingsRules={savingsRules}
         initialRecurringPayments={recurringPayments}
         initialMarks={marks}
+        initialGoals={goals}
+        initialGoalTransfers={goalTransfers}
+        initialDebts={debts}
         initialTransactions={transactions}
         initialPromoWarningDays={promoWarningDays}
         currentYear={currentYear}

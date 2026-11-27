@@ -44,7 +44,7 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
   test("auto-launches Spotlight Tour, records Quick Add math, exports CSV/JSON, enforces non-admin 404/403, and fits all viewports", async ({
     page,
   }) => {
-    test.setTimeout(60_000);
+    test.setTimeout(120_000);
     if (!user) return;
 
     await page.setViewportSize({ width: 1280, height: 800 });
@@ -255,6 +255,91 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await page.locator("dialog[open]").getByRole("button", { name: "coffee" }).click();
     await expect(page.locator("dialog[open]")).toHaveCount(0);
 
+    // 6.7 PR 8: Virtual Goal Envelopes (NPER) + Goal Transfers & 2-Way FIFO Debts
+    await page.evaluate(async () => {
+      await fetch("/api/v1/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "E2E Savings Pot",
+          type: "savings",
+          currency: "RUB",
+          initial_balance_minor: 1000000,
+        }),
+      });
+    });
+
+    await page.goto("/plans?tab=goals");
+    const goalsPanel = page.getByRole("tabpanel");
+    await page.getByRole("button", { name: /New goal|Новая цель/i }).first().click();
+    await page.locator("#goal-name").fill("E2E Pixel Goal");
+    await page.locator("#goal-target").fill("10000");
+    await page.locator("#goal-initial").fill("2000");
+    await page.locator("#goal-monthly").fill("2000");
+    await page.getByRole("button", { name: /Create goal|Создать цель/i }).click();
+    await expect(goalsPanel.getByText("E2E Pixel Goal")).toBeVisible({ timeout: 10_000 });
+    await expect(goalsPanel.getByText(/~4 mo\.|~4 мес\./i)).toBeVisible();
+
+    await page.getByRole("button", { name: /New goal|Новая цель/i }).first().click();
+    await page.locator("#goal-name").fill("E2E Vacation");
+    await page.locator("#goal-target").fill("5000");
+    await page.locator("#goal-monthly").fill("1000");
+    await page.getByRole("button", { name: /Create goal|Создать цель/i }).click();
+    await expect(goalsPanel.getByText("E2E Vacation")).toBeVisible({ timeout: 10_000 });
+
+    // Contribute 1000 RUB into E2E Pixel Goal via Quick Add transfer into savings
+    await goalsPanel.getByRole("button", { name: /Contribute|Пополнить/i }).first().click();
+    await expect(page.locator("#qa-amount")).toBeVisible();
+    await page.locator("#qa-amount").fill("1000");
+    await page
+      .getByRole("button", { name: /Save operation|Сохранить операцию/i })
+      .click();
+    await expect(page.locator("#qa-amount")).toBeHidden({ timeout: 10_000 });
+    await expect(goalsPanel.getByText(/30%/)).toBeVisible({ timeout: 10_000 });
+
+    // Reallocate 500 RUB virtually from E2E Pixel Goal to E2E Vacation
+    await goalsPanel.getByRole("button", { name: /Transfer|Перевести/i }).first().click();
+    await page.locator("#gt-amount").fill("500");
+    await page.locator("#gt-comment").fill("Rebalance E2E");
+    await page.locator("dialog[open]").getByRole("button", { name: /Transfer|Перевести/i }).click();
+    await expect(goalsPanel.getByText("Rebalance E2E")).toBeVisible({ timeout: 10_000 });
+
+    // Debts tab: create lent & borrowed debts, test linked + FIFO repayments & manual close
+    await page.getByRole("tab", { name: /Debts|Долги/i }).click();
+    const debtsPanel = page.getByRole("tabpanel");
+    await page.getByRole("button", { name: /New debt|Новый долг/i }).first().click();
+    await page.locator("#debt-counterparty").fill("Максим E2E");
+    await page.locator("#debt-amount").fill("3000");
+    await page.getByRole("button", { name: /Create debt|Создать долг/i }).click();
+    await expect(debtsPanel.getByText("Максим E2E").first()).toBeVisible({ timeout: 10_000 });
+
+    // Linked partial repayment (1000 RUB)
+    await debtsPanel.getByRole("button", { name: /Record repayment|Записать возврат/i }).first().click();
+    await expect(page.locator("#qa-amount")).toBeVisible();
+    await page.locator("#qa-amount").fill("1000");
+    await page
+      .getByRole("button", { name: /Save operation|Сохранить операцию/i })
+      .click();
+    await expect(page.locator("#qa-amount")).toBeHidden({ timeout: 10_000 });
+    await expect(debtsPanel.getByText(/33%/)).toBeVisible({ timeout: 10_000 });
+
+    // Unlinked FIFO repayment by counterparty keyword in Quick Add ("Максим E2E перевёл")
+    await page.keyboard.press("n");
+    await page.locator("dialog[open]").getByRole("button", { name: /All 11 types|Все 11 типов/i }).click();
+    await page
+      .locator("dialog[open]")
+      .getByRole("button", { name: /Repaid to me|Мне вернули/i })
+      .click();
+    await page.locator("#qa-amount").fill("2000");
+    await page.locator("#qa-comment").fill("Максим E2E перевёл");
+    await page
+      .getByRole("button", { name: /Save operation|Сохранить операцию/i })
+      .click();
+    await expect(page.locator("#qa-amount")).toBeHidden({ timeout: 10_000 });
+    await expect(debtsPanel.getByText(/Closed debts \(1\)|Закрытые долги \(1\)/i)).toBeVisible({
+      timeout: 10_000,
+    });
+
     await desktopNav.locator('[data-nav-key="/operations"]').click();
     await page.waitForURL("**/operations");
     await expect(desktopNav.locator('[data-nav-key="/operations"]')).toHaveAttribute(
@@ -262,7 +347,15 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
       "true"
     );
 
-    for (const route of ["/", "/operations", "/capital", "/plans", "/settings"]) {
+    for (const route of [
+      "/",
+      "/operations",
+      "/capital",
+      "/plans",
+      "/plans?tab=goals",
+      "/plans?tab=debts",
+      "/settings",
+    ]) {
       await page.goto(route);
       for (const vp of VIEWPORTS) {
         await page.setViewportSize({ width: vp.width, height: vp.height });

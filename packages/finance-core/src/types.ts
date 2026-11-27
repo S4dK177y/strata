@@ -75,6 +75,7 @@ export interface Goal {
   monthlyPlanMinor: number;
   storageAccountId: string | null;
   isArchived?: boolean;
+  sortOrder?: number;
   deletedAt?: string | null;
 }
 
@@ -94,6 +95,8 @@ export interface Debt {
   amountMinor: number;
   manualRepaidMinor: number;
   openedAt: string; // YYYY-MM-DD
+  dueDate?: string | null; // YYYY-MM-DD
+  comment?: string;
   deletedAt?: string | null;
 }
 

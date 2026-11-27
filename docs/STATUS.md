@@ -19,7 +19,9 @@
   - **PR 6.9 — Operations Redesign (`Variant A` + Zero-Truncation Mobile Cashflow)** *(Redesigned `/operations` to a compact Period + Cashflow Ratio card with full-width Mobile Period Saldo and spacious 2-column Income/Expense tiles so 5–6+ digit amounts never truncate on `360px`, unified search row + smooth collapsible advanced filter drawer + wrapping quick filter chips + clickable header drafts badge, and synced `operations/loading.tsx`)* ✅ **Completed & Verified**.
 - **Stage 2 (Smart Planning & Wealth Engine):**
   - **PR 7 — Savings Rules, Promo Radar & Recurring Payments** ✅ **Completed & Verified**.
-  - **PR 8 — Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts** *(Next Up)*.
+  - **PR 8 — Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts** ✅ **Completed & Verified**.
+- **Stage 3 (Stories, Yearly Wrapped & Native Android):**
+  - **PR 9 — Stories Engine, Yearly Wrapped & Native Android Client** *(Next Up)*.
 
 ## Completed
 - Architecture, DB schema, UX navigation, Expressive Neobank visual style, and brand **Strata** approved.
@@ -90,6 +92,12 @@
   - Built `/plans` (`PlansClient`, `SavingsRadarSection`, `SavingsRuleFormDialog`, `RecurringPaymentsSection`, `RecurringPaymentFormDialog`, `plans/loading.tsx`) with live forecast previews, configurable Promo Radar warning window (`7/14/30d` in `wrapped_settings.promoWarningDays`), 1-click Pay (`QuickAddDialog` `recurring_payment_id` prefill), and manual period marks.
   - Activated `/plans` across Desktop pill nav and Mobile bottom dock (`Overview | Operations | + | Capital | Plans`, moving `/settings` link to the mobile top bar and `ProfileQuickMenu` while preserving `[data-tour="settings-link"]`), wired live `unpaidActiveRecurringMinor` into Hero `Safe-to-Spend` + conditional Hero Promo Radar & Recurring alert strips on `/`, added effective rate badges on `/capital`, synced RU/EN i18n + Spotlight Tour copy, and verified end-to-end across Mobile (`360px`), Tablet (`768px`), and Desktop (`1280px`) via Playwright E2E (7/7 passing).
   - **PR 7.1 Polish:** Prevented `(RUB)` currency wrapping inside `SelectTrigger` controls and widened Quick Add account/goal/debt selectors; fixed partial recurring payments (`paidAmountMinor < amount_minor` stays partial and reserves only `remainingAmountMinor` until 100% covered); added 1-tap `monthlyInterestMinor` + passive category prefill on "Record interest"; expanded category icon registry to 36 icons with smart RU/EN keyword inference for legacy categories + 1-tap `CategoryIconPicker` on `/capital`; and switched `/plans` 3-column summary grids & mobile savings cards to overflow-free `360px` stacking.
+- **PR 8 (Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts):**
+  - Extended `@strata/finance-core` (`computeGoalsPortfolioSummary`, `GoalEnvelopeResult.effectiveRate`, `storageAllocation` per storage account, and `computeDebtsLedger(..., asOfDate?)` with deterministic `occurredAt ASC` FIFO sorting, `dueDate`, `daysUntilDue`, `isOverdue`, `repaymentTransactionIds`, `overdueCount`, `dueSoonCount`) + updated Golden Test Vectors (14 passing tests across `calculator.test.ts` and `golden.test.ts`).
+  - Added `@strata/api-contract` OpenAPI 3.1 schemas (`goals.ts`, `debts.ts`, `transactions.ts` `goal_id`/`debt_id` filters, 11 passing contract tests) and Hono REST endpoints `/api/v1/goals`, `/api/v1/goal-transfers`, and `/api/v1/debts` (with account/goal ownership checks `400 INVALID_REFERENCE`, merged `manual_repaid_minor <= amount_minor` validation, soft-delete, and 22 passing web Vitest tests).
+  - Expanded `/plans` with 4 responsive tabs (`Savings`, `Recurring bills`, `Goals`, `Debts`), `GoalsSection` (NPER timeline, storage account allocation, 1-click Contribute into savings, `GoalFormDialog` with live NPER preview, `GoalTransferDialog` for virtual envelope reallocations, collapsible archive), `DebtsSection` (`lent`/`borrowed` filters, FIFO auto-match hint, 1-click Record repayment, manual close/reopen, `DebtFormDialog` with optional linked account operation), and synced `plans/loading.tsx`.
+  - Wired `goals` & `debts` into `(app)/layout.tsx`, `QuickAddProvider`/`QuickAddDialog` (direction-filtered debts, `goalId`/`debtId`/`accountToId` presets), `/` Overview overdue-debt Hero strip, and RU/EN i18n + Spotlight Tour copy.
+  - Redesigned `README.md` with badges and updated roadmap, initialized `CHANGELOG.md` (Keep a Changelog), expanded `AGENTS.md` Rule 7 to keep `README.md` and `CHANGELOG.md` updated on every feature/PR, and verified end-to-end via Playwright E2E (7/7 passing across `360px`, `768px`, and `1280px`).
 
 ## Infrastructure
 - **GitHub:** `https://github.com/S4dK177y/strata`
@@ -97,4 +105,4 @@
 - **Vercel:** connected to `S4dK177y/strata` (`apps/web`)
 
 ## Next Up
-- **PR 8:** Virtual Goal Envelopes (NPER) & 2-Way FIFO Debts (`/plans` expansion + `/api/v1/goals`, `/api/v1/goal-transfers`, `/api/v1/debts`).
+- **PR 9:** Stories Engine (admin media editor + user feed), Yearly Wrapped, and native Android client foundation (`@strata/api-contract` + `StrataTokens.kt`).
