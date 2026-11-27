@@ -302,6 +302,8 @@
     "subtitle": "Полная история по всем счетам и 11 типам операций.",
     "quickAddTitle": "Новая операция",
     "editTitle": "Редактировать операцию",
+    "moreShort": "Ещё",
+    "calculatorToggle": "Калькулятор",
     "moreTypes": "Все 11 типов",
     "hideMoreTypes": "Скрыть доп. типы",
     "amountLabel": "Сумма",

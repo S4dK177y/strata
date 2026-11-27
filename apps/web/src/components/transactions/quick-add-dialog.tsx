@@ -3,12 +3,17 @@
 import { useId, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
-  ArrowUpDown,
+  ArrowLeftRight,
   Calculator,
+  Calendar,
   ChevronDown,
-  ChevronUp,
   Equal,
+  Handshake,
+  Pencil,
+  Tag,
+  Target,
   Trash2,
+  Wallet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { evaluateAmountExpression } from "@strata/finance-core";
@@ -160,6 +165,8 @@ function QuickAddFormBody({
   const [showExtendedTypes, setShowExtendedTypes] = useState(
     TRANSACTION_TYPE_META[initialType].group === "extended"
   );
+  const [showCalc, setShowCalc] = useState(false);
+  const [swapRotation, setSwapRotation] = useState(0);
   const [amountInput, setAmountInput] = useState(
     editingTx ? minorToEditableInput(editingTx.amount_minor) : ""
   );
@@ -189,6 +196,10 @@ function QuickAddFormBody({
   const typeMeta = TRANSACTION_TYPE_META[txType];
   const parsedMinor = useMemo(() => evaluateAmountExpression(amountInput), [amountInput]);
   const amountHasError = amountTouched && parsedMinor === null;
+  const hasMathOperator = useMemo(
+    () => /[+\-*/()]/.test(amountInput.replace(/^\s*-/, "")),
+    [amountInput]
+  );
 
   const filteredCategories = useMemo(() => {
     const filterMode = typeMeta.categoryFilter;
@@ -208,7 +219,21 @@ function QuickAddFormBody({
     return found?.currency ?? baseCurrency;
   }, [selectableAccounts, accountFromId, baseCurrency]);
 
+  const selectedCategoryName = useMemo(() => {
+    if (!categoryId) return t.transactions.noCategory;
+    return activeCategories.find((c) => c.id === categoryId)?.name ?? t.transactions.noCategory;
+  }, [activeCategories, categoryId, t.transactions.noCategory]);
+
+  const todayPrefix = useMemo(() => toLocalDateTimeInputValue(new Date()).slice(0, 10), []);
+  const yesterdayPrefix = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return toLocalDateTimeInputValue(d).slice(0, 10);
+  }, []);
+  const currentDatePrefix = occurredAtInput.slice(0, 10);
+
   const isDebtType = txType.startsWith("debt_");
+  const primaryIndex = (PRIMARY_TRANSACTION_TYPES as readonly TransactionType[]).indexOf(txType);
 
   function handleTypeChange(nextType: TransactionType) {
     setTxType(nextType);
@@ -265,6 +290,7 @@ function QuickAddFormBody({
     const prevTo = accountToId;
     setAccountFromId(prevTo);
     setAccountToId(prevFrom);
+    setSwapRotation((r) => r + 180);
   }
 
   function setQuickDate(daysAgo: number) {
@@ -369,53 +395,24 @@ function QuickAddFormBody({
       </div>
 
       <form onSubmit={handleFormSubmit} noValidate className="space-y-4">
-        <div className="space-y-2">
-          <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-1">
-            {PRIMARY_TRANSACTION_TYPES.map((key) => {
-              const Icon = TRANSACTION_TYPE_META[key].icon;
-              const active = txType === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleTypeChange(key)}
-                  aria-pressed={active}
-                  className={cn(
-                    "flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl px-2 text-xs font-semibold transition",
-                    active
-                      ? "bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)] shadow-sm"
-                      : "text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
-                  )}
-                >
-                  <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                  <span className="truncate">{t.transactions.types[key]}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => setShowExtendedTypes((v) => !v)}
-              className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-[var(--strata-text-secondary)] transition hover:bg-[var(--strata-bg-elevated)] hover:text-[var(--strata-text-primary)]"
-            >
-              {showExtendedTypes ? (
-                <ChevronUp className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
-              )}
-              {showExtendedTypes ? t.transactions.hideMoreTypes : t.transactions.moreTypes}
-            </button>
-
-            {typeMeta.group === "extended" ? (
-              <Badge tone="brand">{t.transactions.types[txType]}</Badge>
-            ) : null}
-          </div>
-
-          {showExtendedTypes ? (
-            <div className="grid grid-cols-2 gap-1.5 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)]/65 p-2 sm:grid-cols-4">
-              {EXTENDED_TRANSACTION_TYPES.map((key) => {
+        {/* Top Type Switcher + Centered Receipt Amount (with smooth ambient tint) */}
+        <div
+          className="space-y-3 rounded-2xl border border-[var(--strata-border-subtle)] p-3.5 transition-[background] duration-300"
+          style={{
+            background: `radial-gradient(90% 65% at 50% 0%, color-mix(in srgb, ${typeMeta.colorVar} 12%, transparent) 0%, transparent 72%), color-mix(in srgb, var(--strata-bg-elevated) 55%, transparent)`,
+          }}
+        >
+          <div className="flex items-center gap-1.5">
+            <div className="relative grid flex-1 grid-cols-3 rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/85 p-1">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-lg bg-[var(--strata-bg-elevated)] shadow-sm transition-[transform,opacity] duration-250 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                style={{
+                  transform: `translateX(${Math.max(0, primaryIndex) * 100}%)`,
+                  opacity: primaryIndex >= 0 ? 1 : 0,
+                }}
+              />
+              {PRIMARY_TRANSACTION_TYPES.map((key) => {
                 const Icon = TRANSACTION_TYPE_META[key].icon;
                 const active = txType === key;
                 return (
@@ -425,10 +422,10 @@ function QuickAddFormBody({
                     onClick={() => handleTypeChange(key)}
                     aria-pressed={active}
                     className={cn(
-                      "flex min-h-10 cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-left text-[11px] font-medium transition",
+                      "relative z-10 flex min-h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-semibold transition-colors duration-200",
                       active
-                        ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
-                        : "border-transparent text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-surface)]/70"
+                        ? "text-[var(--strata-text-primary)]"
+                        : "text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
@@ -437,255 +434,405 @@ function QuickAddFormBody({
                 );
               })}
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowExtendedTypes((v) => !v)}
+              aria-expanded={showExtendedTypes}
+              aria-label={
+                showExtendedTypes ? t.transactions.hideMoreTypes : t.transactions.moreTypes
+              }
+              className={cn(
+                "inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-1 rounded-xl border px-2.5 text-xs font-semibold transition-colors duration-200",
+                typeMeta.group === "extended" || showExtendedTypes
+                  ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                  : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/85 text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
+              )}
+            >
+              <span>{t.transactions.moreShort}</span>
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform duration-200",
+                  showExtendedTypes && "rotate-180"
+                )}
+                strokeWidth={1.75}
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+
+          <div
+            className="strata-collapsible"
+            data-open={showExtendedTypes ? "true" : "false"}
+            aria-hidden={!showExtendedTypes}
+          >
+            <div className="space-y-2 pt-0.5">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                {EXTENDED_TRANSACTION_TYPES.map((key) => {
+                  const Icon = TRANSACTION_TYPE_META[key].icon;
+                  const active = txType === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      tabIndex={showExtendedTypes ? 0 : -1}
+                      onClick={() => handleTypeChange(key)}
+                      aria-pressed={active}
+                      className={cn(
+                        "flex min-h-9 cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-left text-[11px] font-medium transition-colors duration-150",
+                        active
+                          ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                          : "border-transparent bg-[var(--strata-bg-surface)]/45 text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-surface)]/80"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                      <span className="truncate">{t.transactions.types[key]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {showExtendedTypes || typeMeta.group === "extended" ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--strata-text-muted)]">
+              <span className="min-w-0 flex-1">{t.transactions.typeDescriptions[txType]}</span>
+              {typeMeta.group === "extended" ? (
+                <Badge tone="brand">{t.transactions.types[txType]}</Badge>
+              ) : null}
+            </div>
           ) : null}
 
-          <p className="text-xs leading-relaxed text-[var(--strata-text-muted)]">
-            {t.transactions.typeDescriptions[txType]}
-          </p>
-        </div>
-
-        <div className="space-y-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)]/70 p-3.5">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="qa-amount" className="flex items-center gap-1.5">
-              <Calculator className="h-3.5 w-3.5 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+          {/* Centered Hero Amount */}
+          <div className="space-y-2 py-1 text-center">
+            <Label htmlFor="qa-amount" className="visually-hidden">
               {t.transactions.amountLabel} ({activeCurrency})
             </Label>
 
-            <div id={amountHintId} className="text-xs font-semibold">
-              {parsedMinor !== null ? (
-                <span style={{ color: typeMeta.colorVar }}>
-                  {t.transactions.amountPreview}:{" "}
-                  <AmountText
-                    minor={parsedMinor}
-                    currency={activeCurrency}
-                    mutedFraction={false}
-                  />
-                </span>
-              ) : (
-                <span className="text-[var(--strata-text-muted)]">
-                  {t.transactions.amountPlaceholder}
-                </span>
-              )}
+            <div className="flex items-baseline justify-center gap-1.5 px-2">
+              <span
+                aria-hidden="true"
+                className="text-2xl font-bold transition-colors duration-200 sm:text-3xl"
+                style={{ color: typeMeta.colorVar }}
+              >
+                {typeMeta.sign}
+              </span>
+              <input
+                ref={amountRef}
+                id="qa-amount"
+                autoFocus
+                inputMode="decimal"
+                value={amountInput}
+                aria-invalid={amountHasError ? "true" : "false"}
+                aria-describedby={describedByIds || undefined}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setAmountInput(next);
+                  if (/[+*/()]/.test(next)) {
+                    setShowCalc(true);
+                  }
+                  if (amountTouched && evaluateAmountExpression(next) !== null) {
+                    setLiveErrorAnnouncement("");
+                  }
+                }}
+                onBlur={() => {
+                  setAmountTouched(true);
+                  if (evaluateAmountExpression(amountInput) === null) {
+                    setLiveErrorAnnouncement(t.transactions.amountInvalid);
+                  }
+                }}
+                placeholder="0"
+                style={{
+                  color: amountInput ? typeMeta.colorVar : "var(--strata-text-primary)",
+                }}
+                className="strata-mono w-full max-w-[230px] min-w-0 bg-transparent text-center text-3xl font-extrabold tracking-tight placeholder:text-[var(--strata-text-muted)]/55 focus:outline-none sm:text-4xl"
+              />
+              <span className="strata-mono shrink-0 text-sm font-bold text-[var(--strata-text-muted)]">
+                {activeCurrency}
+              </span>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Input
-              ref={amountRef}
-              id="qa-amount"
-              autoFocus
-              inputMode="decimal"
-              value={amountInput}
-              aria-invalid={amountHasError ? "true" : "false"}
-              aria-describedby={describedByIds || undefined}
-              onChange={(e) => {
-                const next = e.target.value;
-                setAmountInput(next);
-                if (amountTouched && evaluateAmountExpression(next) !== null) {
-                  setLiveErrorAnnouncement("");
-                }
-              }}
-              onBlur={() => {
-                setAmountTouched(true);
-                if (evaluateAmountExpression(amountInput) === null) {
-                  setLiveErrorAnnouncement(t.transactions.amountInvalid);
-                }
-              }}
-              placeholder={t.transactions.amountPlaceholder}
+            <div
               className={cn(
-                "strata-mono bg-[var(--strata-bg-surface)] text-lg font-bold",
-                amountHasError && "border-[var(--strata-money-expense)]"
+                "mx-auto h-px w-44 transition-colors duration-200",
+                amountHasError
+                  ? "bg-[var(--strata-money-expense)]"
+                  : "bg-[var(--strata-border-strong)]"
               )}
             />
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleEvaluateInPlace}
-              aria-label={t.transactions.evalEquals}
-              title={t.transactions.evalEquals}
-            >
-              <Equal className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-            </Button>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {CALC_OPERATORS.map((op) => (
-              <button
-                key={op}
-                type="button"
-                onClick={() => handleAppendOperator(op)}
-                className="strata-mono flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-xl bg-[var(--strata-bg-surface)] px-2.5 text-sm font-semibold text-[var(--strata-text-secondary)] transition hover:text-[var(--strata-text-primary)]"
-              >
-                {OPERATOR_LABELS[op]}
-              </button>
-            ))}
-          </div>
-
-          {amountHasError ? (
-            <p id={amountErrorId} className="text-xs font-medium text-[var(--strata-money-expense)]">
-              {t.transactions.amountInvalid}
-            </p>
-          ) : null}
-        </div>
-
-        {selectableAccounts.length === 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] p-3 text-xs text-[var(--strata-text-secondary)]">
-            <span>{t.transactions.noAccountsHint}</span>
-            <Link
-              href="/capital"
-              onClick={onClose}
-              className="font-semibold text-[var(--strata-accent-brand)] hover:underline"
-            >
-              {t.transactions.openCapital}
-            </Link>
-          </div>
-        ) : typeMeta.accountDirection === "transfer" ? (
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
-            <div className="space-y-1.5">
-              <Label>{t.transactions.accountFromLabel}</Label>
-              <Select
-                value={accountFromId || "__none__"}
-                onValueChange={(val) => setAccountFromId(val === "__none__" ? "" : val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t.transactions.selectAccount} />
-                </SelectTrigger>
-                <SelectContent>
-                  {isDraft ? (
-                    <SelectItem value="__none__">{t.transactions.noAccountOption}</SelectItem>
-                  ) : null}
-                  {selectableAccounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name} ({acc.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={handleSwapAccounts}
-              aria-label={t.transactions.swapAccounts}
-              title={t.transactions.swapAccounts}
-              className="self-center sm:self-end"
-            >
-              <ArrowUpDown className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-            </Button>
-
-            <div className="space-y-1.5">
-              <Label>{t.transactions.accountToLabel}</Label>
-              <Select
-                value={accountToId || "__none__"}
-                onValueChange={(val) => setAccountToId(val === "__none__" ? "" : val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t.transactions.selectAccount} />
-                </SelectTrigger>
-                <SelectContent>
-                  {isDraft ? (
-                    <SelectItem value="__none__">{t.transactions.noAccountOption}</SelectItem>
-                  ) : null}
-                  {selectableAccounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.name} ({acc.currency})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <Label>
-              {typeMeta.accountDirection === "in"
-                ? t.transactions.accountTargetLabel
-                : t.transactions.accountFromLabel}
-            </Label>
-            <Select
-              value={accountFromId || "__none__"}
-              onValueChange={(val) => setAccountFromId(val === "__none__" ? "" : val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t.transactions.selectAccount} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">{t.transactions.noAccountOption}</SelectItem>
-                {selectableAccounts.map((acc) => (
-                  <SelectItem key={acc.id} value={acc.id}>
-                    {acc.name} ({acc.currency})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {typeMeta.categoryFilter ? (
-          <div className="space-y-2">
-            <Label>{t.transactions.categoryLabel}</Label>
-            <div className="flex flex-wrap gap-1.5">
+            <div id={amountHintId} className="flex flex-wrap items-center justify-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setCategoryId("")}
-                aria-pressed={categoryId === ""}
+                onClick={() => {
+                  setShowCalc((v) => !v);
+                  amountRef.current?.focus();
+                }}
+                aria-expanded={showCalc}
+                data-qa-calc-toggle
                 className={cn(
-                  "inline-flex min-h-10 cursor-pointer items-center rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                  categoryId === ""
-                    ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
-                    : "border-[var(--strata-border-subtle)] text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
+                  "inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors duration-150",
+                  showCalc
+                    ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                    : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)]/75 text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
                 )}
               >
-                {t.transactions.noCategory}
+                <Calculator className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                {parsedMinor !== null && hasMathOperator ? (
+                  <span style={{ color: typeMeta.colorVar }} className="font-semibold">
+                    = <AmountText minor={parsedMinor} currency={activeCurrency} mutedFraction={false} />
+                  </span>
+                ) : (
+                  <span>{t.transactions.calculatorToggle}</span>
+                )}
               </button>
-              {filteredCategories.map((cat) => {
-                const Icon = getCategoryIcon(cat.icon);
-                const selected = categoryId === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setCategoryId(selected ? "" : cat.id)}
-                    aria-pressed={selected}
-                    className={cn(
-                      "inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                      selected
-                        ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
-                        : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)] hover:border-[var(--strata-border-strong)]"
-                    )}
-                  >
-                    <Icon
-                      className="h-3.5 w-3.5 text-[var(--strata-text-muted)]"
-                      strokeWidth={1.75}
-                      aria-hidden="true"
-                    />
-                    <span>{cat.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
 
-        <div className="space-y-3.5">
-          <div className="space-y-1.5">
+              {parsedMinor !== null && hasMathOperator ? (
+                <button
+                  type="button"
+                  onClick={handleEvaluateInPlace}
+                  aria-label={t.transactions.evalEquals}
+                  title={t.transactions.evalEquals}
+                  className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)] transition hover:border-[var(--strata-border-strong)]"
+                >
+                  <Equal className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+
+            <div
+              className="strata-collapsible"
+              data-open={showCalc ? "true" : "false"}
+              data-qa-calc-drawer
+              aria-hidden={!showCalc}
+            >
+              <div className="flex items-center gap-1 pt-1">
+                {CALC_OPERATORS.map((op) => (
+                  <button
+                    key={op}
+                    type="button"
+                    tabIndex={showCalc ? 0 : -1}
+                    onClick={() => handleAppendOperator(op)}
+                    className="strata-mono flex h-9 flex-1 cursor-pointer items-center justify-center rounded-xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-sm font-semibold text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+                  >
+                    {OPERATOR_LABELS[op]}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  tabIndex={showCalc ? 0 : -1}
+                  onClick={handleEvaluateInPlace}
+                  aria-label={t.transactions.evalEquals}
+                  title={t.transactions.evalEquals}
+                  className="flex h-9 flex-1 cursor-pointer items-center justify-center rounded-xl border border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)] transition hover:brightness-110"
+                >
+                  <Equal className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            {amountHasError ? (
+              <p id={amountErrorId} className="text-xs font-medium text-[var(--strata-money-expense)]">
+                {t.transactions.amountInvalid}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Grouped Banking Receipt Card */}
+        <div className="divide-y divide-[var(--strata-border-subtle)] rounded-2xl border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)]/65">
+          {/* Account / Transfer Route Row */}
+          {selectableAccounts.length === 0 ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-3 text-xs text-[var(--strata-text-secondary)]">
+              <span>{t.transactions.noAccountsHint}</span>
+              <Link
+                href="/capital"
+                onClick={onClose}
+                className="font-semibold text-[var(--strata-accent-brand)] hover:underline"
+              >
+                {t.transactions.openCapital}
+              </Link>
+            </div>
+          ) : typeMeta.accountDirection === "transfer" ? (
+            <div className="grid grid-cols-1 gap-2 px-3.5 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
+              <div className="space-y-1">
+                <Label className="text-[11px]">{t.transactions.accountFromLabel}</Label>
+                <Select
+                  value={accountFromId || "__none__"}
+                  onValueChange={(val) => setAccountFromId(val === "__none__" ? "" : val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.transactions.selectAccount} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isDraft ? (
+                      <SelectItem value="__none__">{t.transactions.noAccountOption}</SelectItem>
+                    ) : null}
+                    {selectableAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.currency})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleSwapAccounts}
+                aria-label={t.transactions.swapAccounts}
+                title={t.transactions.swapAccounts}
+                className="self-center sm:self-end"
+              >
+                <ArrowLeftRight
+                  className="h-4 w-4 transition-transform duration-300 ease-out"
+                  style={{ transform: `rotate(${swapRotation}deg)` }}
+                  strokeWidth={1.75}
+                  aria-hidden="true"
+                />
+              </Button>
+
+              <div className="space-y-1">
+                <Label className="text-[11px]">{t.transactions.accountToLabel}</Label>
+                <Select
+                  value={accountToId || "__none__"}
+                  onValueChange={(val) => setAccountToId(val === "__none__" ? "" : val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.transactions.selectAccount} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isDraft ? (
+                      <SelectItem value="__none__">{t.transactions.noAccountOption}</SelectItem>
+                    ) : null}
+                    {selectableAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.currency})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <Label className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+                <Wallet className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                {typeMeta.accountDirection === "in"
+                  ? t.transactions.accountTargetLabel
+                  : t.transactions.accountFromLabel}
+              </Label>
+              <div className="w-full sm:w-56">
+                <Select
+                  value={accountFromId || "__none__"}
+                  onValueChange={(val) => setAccountFromId(val === "__none__" ? "" : val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t.transactions.selectAccount} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t.transactions.noAccountOption}</SelectItem>
+                    {selectableAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.name} ({acc.currency})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          {/* Category Horizontal Pill Rail Row */}
+          {typeMeta.categoryFilter ? (
+            <div className="space-y-2 px-3.5 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+                  <Tag className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                  {t.transactions.categoryLabel}
+                </span>
+                <span className="truncate text-xs font-semibold text-[var(--strata-text-primary)]">
+                  {selectedCategoryName}
+                </span>
+              </div>
+
+              <div className="strata-no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-0.5">
+                <button
+                  type="button"
+                  onClick={() => setCategoryId("")}
+                  aria-pressed={categoryId === ""}
+                  className={cn(
+                    "inline-flex min-h-9 shrink-0 cursor-pointer items-center rounded-full border px-3 text-xs font-medium transition-colors duration-150",
+                    categoryId === ""
+                      ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                      : "border-[var(--strata-border-subtle)] text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
+                  )}
+                >
+                  {t.transactions.noCategory}
+                </button>
+                {filteredCategories.map((cat) => {
+                  const Icon = getCategoryIcon(cat.icon);
+                  const selected = categoryId === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategoryId(selected ? "" : cat.id)}
+                      aria-pressed={selected}
+                      className={cn(
+                        "inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors duration-150",
+                        selected
+                          ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)] shadow-xs"
+                          : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)] hover:border-[var(--strata-border-strong)]"
+                      )}
+                    >
+                      <Icon
+                        className="h-3.5 w-3.5 text-[var(--strata-text-muted)]"
+                        strokeWidth={1.75}
+                        aria-hidden="true"
+                      />
+                      <span>{cat.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Date & Quick Day Chips Row */}
+          <div className="space-y-2 px-3.5 py-3">
             <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="qa-date">{t.transactions.dateLabel}</Label>
+              <Label
+                htmlFor="qa-date"
+                className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]"
+              >
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                {t.transactions.dateLabel}
+              </Label>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => setQuickDate(0)}
-                  className="cursor-pointer rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+                  className={cn(
+                    "cursor-pointer rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors duration-150",
+                    currentDatePrefix === todayPrefix
+                      ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                      : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
+                  )}
                 >
                   {t.transactions.today}
                 </button>
                 <button
                   type="button"
                   onClick={() => setQuickDate(1)}
-                  className="cursor-pointer rounded-full border border-[var(--strata-border-subtle)] bg-[var(--strata-bg-elevated)] px-2.5 py-1 text-[11px] font-medium text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+                  className={cn(
+                    "cursor-pointer rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors duration-150",
+                    currentDatePrefix === yesterdayPrefix
+                      ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-primary)]"
+                      : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)] hover:text-[var(--strata-text-primary)]"
+                  )}
                 >
                   {t.transactions.yesterday}
                 </button>
@@ -696,13 +843,21 @@ function QuickAddFormBody({
               type="datetime-local"
               value={occurredAtInput}
               onChange={(e) => setOccurredAtInput(e.target.value)}
-              className="min-w-0 max-w-full"
+              className="h-10 min-w-0 max-w-full bg-[var(--strata-bg-surface)]"
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="qa-comment">{t.transactions.commentLabel}</Label>
-            <Input
+          {/* Comment Row */}
+          <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+            <Label htmlFor="qa-comment" className="visually-hidden">
+              {t.transactions.commentLabel}
+            </Label>
+            <Pencil
+              className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]"
+              strokeWidth={1.75}
+              aria-hidden="true"
+            />
+            <input
               id="qa-comment"
               type="text"
               maxLength={1000}
@@ -713,15 +868,18 @@ function QuickAddFormBody({
                   ? t.transactions.commentDebtPlaceholder
                   : t.transactions.commentPlaceholder
               }
+              className="h-9 w-full min-w-0 bg-transparent text-sm text-[var(--strata-text-primary)] placeholder:text-[var(--strata-text-muted)] focus:outline-none"
             />
           </div>
-        </div>
 
-        {activeGoals.length > 0 || activeDebts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {activeGoals.length > 0 ? (
-              <div className="space-y-1.5">
-                <Label>{t.transactions.goalLabel}</Label>
+          {/* Optional Goal & Debt Rows */}
+          {activeGoals.length > 0 ? (
+            <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <Label className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+                <Target className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                {t.transactions.goalLabel}
+              </Label>
+              <div className="w-full sm:w-56">
                 <Select
                   value={goalId || "__none__"}
                   onValueChange={(val) => setGoalId(val === "__none__" ? "" : val)}
@@ -739,11 +897,16 @@ function QuickAddFormBody({
                   </SelectContent>
                 </Select>
               </div>
-            ) : null}
+            </div>
+          ) : null}
 
-            {activeDebts.length > 0 && isDebtType ? (
-              <div className="space-y-1.5">
-                <Label>{t.transactions.debtLabel}</Label>
+          {activeDebts.length > 0 && isDebtType ? (
+            <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <Label className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+                <Handshake className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
+                {t.transactions.debtLabel}
+              </Label>
+              <div className="w-full sm:w-56">
                 <Select
                   value={debtId || "__none__"}
                   onValueChange={(val) => setDebtId(val === "__none__" ? "" : val)}
@@ -761,51 +924,52 @@ function QuickAddFormBody({
                   </SelectContent>
                 </Select>
               </div>
-            ) : null}
-          </div>
-        ) : null}
-
-        <div className="flex items-center justify-between gap-4 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
-          <div className="space-y-0.5">
-            <Label htmlFor="qa-draft" className="text-sm font-semibold">
-              {t.transactions.draftToggleLabel}
-            </Label>
-            <p className="text-xs text-[var(--strata-text-muted)]">
-              {t.transactions.draftToggleHint}
-            </p>
-          </div>
-          <Switch id="qa-draft" checked={isDraft} onCheckedChange={setIsDraft} />
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-          {isEditing && editingTx ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={submitting || deleting}
-              onClick={() => onRequestDelete(editingTx)}
-              className="text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)]"
+        {/* Receipt Footer Bar */}
+        <div className="flex flex-col gap-3 pt-0.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-3 sm:justify-start">
+            <div
+              className="flex items-center gap-2.5"
+              title={t.transactions.draftToggleHint}
             >
-              <Trash2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-              {t.common.delete}
-            </Button>
-          ) : (
-            <span />
-          )}
+              <Switch id="qa-draft" checked={isDraft} onCheckedChange={setIsDraft} />
+              <Label htmlFor="qa-draft" className="cursor-pointer text-xs font-semibold">
+                {t.transactions.draftBadge}
+              </Label>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+            {isEditing && editingTx ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={submitting || deleting}
+                onClick={() => onRequestDelete(editingTx)}
+                className="text-[var(--strata-money-expense)] hover:text-[var(--strata-money-expense)]"
+              >
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+                {t.common.delete}
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             {isEditing && editingTx?.status === "draft" && isDraft ? (
               <Button
                 type="button"
                 variant="secondary"
                 disabled={submitting}
                 onClick={() => void submitTransaction("confirmed")}
+                className="w-full sm:w-auto"
               >
                 {t.transactions.confirmAndSave}
               </Button>
             ) : null}
 
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
               {submitting
                 ? t.common.saving
                 : isEditing
@@ -867,7 +1031,7 @@ export function QuickAddDialog({
         onOpenChange={onOpenChange}
         title={preset?.transaction ? t.transactions.editTitle : t.transactions.quickAddTitle}
         dismissible={!submitting && !deleting}
-        maxWidthClassName="sm:max-w-[540px]"
+        maxWidthClassName="sm:max-w-[490px]"
       >
         <QuickAddFormBody
           key={formKey}

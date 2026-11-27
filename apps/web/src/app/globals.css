@@ -325,6 +325,40 @@ dialog[open].strata-dialog[data-closing]::backdrop {
   opacity: 0.22;
 }
 
+/* Smooth collapsible accordions & scrollbar utilities */
+.strata-collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease;
+}
+
+.strata-collapsible[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.strata-collapsible > div {
+  overflow: hidden;
+}
+
+.strata-no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.strata-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strata-collapsible {
+    transition: none;
+  }
+}
+
 .strata-curtain-layer {
   position: fixed;
   inset: -28%;

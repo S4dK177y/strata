@@ -155,22 +155,22 @@ export function LiquidNavIndicator({
       const dt = Math.min(0.032, Math.max(0.004, (now - s.lastTs) / 1000));
       s.lastTs = now;
 
-      const [hx, hvx] = stepSpring(s.head.x, s.head.vx, s.target.x, 330, 18, dt);
-      const [hw, hvw] = stepSpring(s.head.w, s.head.vw, s.target.w, 330, 18, dt);
+      const [hx, hvx] = stepSpring(s.head.x, s.head.vx, s.target.x, 420, 43, dt);
+      const [hw, hvw] = stepSpring(s.head.w, s.head.vw, s.target.w, 420, 43, dt);
       s.head = { x: hx, w: hw, vx: hvx, vw: hvw };
 
-      const [tx, tvx] = stepSpring(s.tail.x, s.tail.vx, s.target.x, 155, 14, dt);
-      const [tw, tvw] = stepSpring(s.tail.w, s.tail.vw, s.target.w, 155, 14, dt);
+      const [tx, tvx] = stepSpring(s.tail.x, s.tail.vx, s.target.x, 220, 32, dt);
+      const [tw, tvw] = stepSpring(s.tail.w, s.tail.vw, s.target.w, 220, 32, dt);
       s.tail = { x: tx, w: tw, vx: tvx, vw: tvw };
 
       const headCenter = s.head.x + s.head.w / 2;
       const tailCenter = s.tail.x + s.tail.w / 2;
       const sep = Math.abs(headCenter - tailCenter);
-      const stretch = Math.min(1, sep / 85);
+      const stretch = Math.min(1, sep / 90);
 
       const centerY = s.target.y + s.target.h / 2;
-      const headH = s.target.h * (1 - stretch * 0.13);
-      const tailH = s.target.h * (1 - stretch * 0.24);
+      const headH = s.target.h * (1 - stretch * 0.06);
+      const tailH = s.target.h * (1 - stretch * 0.12);
       const headY = centerY - headH / 2;
       const tailY = centerY - tailH / 2;
 
@@ -181,7 +181,7 @@ export function LiquidNavIndicator({
         if (sep > 6) {
           const left = Math.min(headCenter, tailCenter);
           const right = Math.max(headCenter, tailCenter);
-          const bridgeH = s.target.h * Math.max(0.42, 0.72 - stretch * 0.26);
+          const bridgeH = s.target.h * Math.max(0.56, 0.78 - stretch * 0.18);
           const bridgeY = centerY - bridgeH / 2;
           setRectAttrs(
             bridgeRef.current,
@@ -310,7 +310,7 @@ export function LiquidNavIndicator({
         >
           <feGaussianBlur
             in="SourceGraphic"
-            stdDeviation={variant === "desktop" ? 5.5 : 6.5}
+            stdDeviation={variant === "desktop" ? 4.5 : 5.5}
             result="blur"
           />
           <feColorMatrix

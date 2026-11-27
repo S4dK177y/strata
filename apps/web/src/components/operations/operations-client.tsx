@@ -320,18 +320,11 @@ export function OperationsClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--strata-text-primary)]">
-            {t.transactions.title}
-          </h1>
-          <p className="text-sm text-[var(--strata-text-muted)]">{t.transactions.subtitle}</p>
-        </div>
-
-        <Button type="button" onClick={() => openQuickAdd()}>
-          <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-          {t.nav.addOperation}
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--strata-text-primary)]">
+          {t.transactions.title}
+        </h1>
+        <p className="text-sm text-[var(--strata-text-muted)]">{t.transactions.subtitle}</p>
       </div>
 
       {/* Period & KPI Strip */}

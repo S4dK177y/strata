@@ -302,6 +302,8 @@
     "subtitle": "Full history across all accounts and 11 operation types.",
     "quickAddTitle": "New operation",
     "editTitle": "Edit operation",
+    "moreShort": "More",
+    "calculatorToggle": "Calculator",
     "moreTypes": "All 11 types",
     "hideMoreTypes": "Hide extra types",
     "amountLabel": "Amount",

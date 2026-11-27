@@ -406,17 +406,14 @@ function AppShellInner({
                     }
                   }}
                   className={cn(
-                    "strata-liquid-item relative z-10 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors duration-200 active:scale-95",
+                    "strata-liquid-item relative z-10 inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold transition-colors duration-200",
                     item.active
                       ? "text-[var(--strata-text-onAccent)]"
                       : "text-[var(--strata-text-secondary)] hover:bg-[var(--strata-bg-elevated)]/70 hover:text-[var(--strata-text-primary)]"
                   )}
                 >
                   <Icon
-                    className={cn(
-                      "h-3.5 w-3.5 transition-transform duration-300 ease-out",
-                      item.active && "scale-105"
-                    )}
+                    className="h-3.5 w-3.5"
                     strokeWidth={1.75}
                     aria-hidden="true"
                   />
@@ -493,17 +490,14 @@ function AppShellInner({
             if (pathname !== "/") setPendingHref("/");
           }}
           className={cn(
-            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200",
             activeMobileKey === "/"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
           <LayoutDashboard
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
-              activeMobileKey === "/" && "-translate-y-0.5 scale-110"
-            )}
+            className="h-4 w-4 shrink-0"
             strokeWidth={1.75}
             aria-hidden="true"
           />
@@ -518,17 +512,14 @@ function AppShellInner({
             if (!pathname.startsWith("/operations")) setPendingHref("/operations");
           }}
           className={cn(
-            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200",
             activeMobileKey === "/operations"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
           <ArrowLeftRight
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
-              activeMobileKey === "/operations" && "-translate-y-0.5 scale-110"
-            )}
+            className="h-4 w-4 shrink-0"
             strokeWidth={1.75}
             aria-hidden="true"
           />
@@ -554,17 +545,14 @@ function AppShellInner({
             if (!pathname.startsWith("/capital")) setPendingHref("/capital");
           }}
           className={cn(
-            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200",
             activeMobileKey === "/capital"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
           <Wallet
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
-              activeMobileKey === "/capital" && "-translate-y-0.5 scale-110"
-            )}
+            className="h-4 w-4 shrink-0"
             strokeWidth={1.75}
             aria-hidden="true"
           />
@@ -580,17 +568,14 @@ function AppShellInner({
             if (pathname !== "/settings") setPendingHref("/settings");
           }}
           className={cn(
-            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200 active:scale-95",
+            "strata-liquid-item relative z-10 flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[11px] font-semibold transition-colors duration-200",
             activeMobileKey === "/settings"
               ? "text-[var(--strata-accent-brand)]"
               : "text-[var(--strata-text-muted)]"
           )}
         >
           <Settings
-            className={cn(
-              "h-4 w-4 shrink-0 transition-transform duration-300 ease-out",
-              activeMobileKey === "/settings" && "-translate-y-0.5 scale-110"
-            )}
+            className="h-4 w-4 shrink-0"
             strokeWidth={1.75}
             aria-hidden="true"
           />

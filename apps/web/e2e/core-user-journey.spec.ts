@@ -105,10 +105,12 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
       sectionOrder.indexOf("category_breakdown")
     );
 
-    // 3. Quick Add via "N" shortcut with calculator expression "=150+50"
+    // 3. Quick Add via "N" shortcut with calculator toggle & expression "=150+50"
     await page.keyboard.press("n");
     const qaAmount = page.locator("#qa-amount");
     await expect(qaAmount).toBeVisible();
+    await page.locator("[data-qa-calc-toggle]").click();
+    await expect(page.locator("[data-qa-calc-drawer]")).toHaveAttribute("data-open", "true");
     await qaAmount.fill("=150+50");
     await page.locator("#qa-comment").fill("E2E Coffee");
     await page
@@ -120,6 +122,9 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await page.goto("/operations");
     await expect(page.getByText("E2E Coffee")).toBeVisible();
     await expect(page.getByRole("button", { name: /Export CSV|Экспорт CSV/i })).toHaveCount(0);
+    await expect(
+      page.locator("main").getByRole("button", { name: /Add operation|Новая операция/i })
+    ).toHaveCount(0);
 
     // 5. Settings CSV + JSON backup + Replay Tour
     await page.goto("/settings");
@@ -205,6 +210,13 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
           const mobileNav = page.locator('nav[aria-label="Mobile navigation"]');
           await expect(mobileNav).toHaveAttribute("data-liquid-ready", "true");
           await expect(mobileNav.locator(".strata-liquid-svg")).toBeVisible();
+
+          // Open Receipt Card Quick Add on Mobile 360px and verify zero overflow
+          await mobileNav.locator('[data-tour="quick-add"]').click();
+          await expect(page.locator("#qa-amount")).toBeVisible();
+          await assertNoHorizontalOverflow(page);
+          await page.keyboard.press("Escape");
+          await expect(page.locator("#qa-amount")).toBeHidden();
         }
 
         if (route === "/settings" && vp.name === "mobile") {
