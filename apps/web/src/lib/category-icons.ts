@@ -2,18 +2,24 @@ import {
   ArrowDownLeft,
   ArrowLeftRight,
   ArrowUpRight,
+  Baby,
   Banknote,
+  BookOpen,
   Briefcase,
+  Building2,
+  Bus,
   Car,
   Coffee,
   Coins,
   CreditCard,
   Dumbbell,
   Film,
+  Fuel,
   Gamepad2,
   Gift,
   GraduationCap,
   Handshake,
+  Heart,
   HeartPulse,
   Home,
   Landmark,
@@ -24,16 +30,22 @@ import {
   PiggyBank,
   Plane,
   RotateCcw,
+  Scissors,
+  Shield,
   ShoppingBag,
   ShoppingCart,
   Smartphone,
+  Stethoscope,
   Tag,
+  TrainFront,
   TrendingDown,
   TrendingUp,
   Undo2,
   Utensils,
   Wallet,
+  Wifi,
   Wrench,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import type { AccountType, TransactionType } from "@strata/api-contract";
@@ -43,17 +55,29 @@ export const CATEGORY_ICON_LIST = [
   { key: "utensils", icon: Utensils },
   { key: "coffee", icon: Coffee },
   { key: "car", icon: Car },
+  { key: "bus", icon: Bus },
+  { key: "train-front", icon: TrainFront },
+  { key: "fuel", icon: Fuel },
   { key: "home", icon: Home },
+  { key: "building-2", icon: Building2 },
+  { key: "zap", icon: Zap },
+  { key: "wifi", icon: Wifi },
   { key: "smartphone", icon: Smartphone },
   { key: "heart-pulse", icon: HeartPulse },
+  { key: "stethoscope", icon: Stethoscope },
+  { key: "heart", icon: Heart },
   { key: "shopping-bag", icon: ShoppingBag },
+  { key: "scissors", icon: Scissors },
   { key: "plane", icon: Plane },
   { key: "briefcase", icon: Briefcase },
   { key: "laptop", icon: Laptop },
   { key: "percent", icon: Percent },
   { key: "landmark", icon: Landmark },
+  { key: "shield", icon: Shield },
   { key: "gift", icon: Gift },
   { key: "graduation-cap", icon: GraduationCap },
+  { key: "book-open", icon: BookOpen },
+  { key: "baby", icon: Baby },
   { key: "gamepad-2", icon: Gamepad2 },
   { key: "dumbbell", icon: Dumbbell },
   { key: "paw-print", icon: PawPrint },
@@ -69,9 +93,64 @@ const CATEGORY_ICON_MAP = new Map<string, LucideIcon>(
   CATEGORY_ICON_LIST.map((item) => [item.key, item.icon])
 );
 
-export function getCategoryIcon(iconKey: string | null | undefined): LucideIcon {
-  if (!iconKey) return Tag;
-  return CATEGORY_ICON_MAP.get(iconKey) ?? Tag;
+const CATEGORY_KEYWORD_ICONS: ReadonlyArray<{ keywords: readonly string[]; iconKey: string }> = [
+  { keywords: ["продукт", "супермарк", "магазин", "еда", "grocer", "supermarket"], iconKey: "shopping-cart" },
+  { keywords: ["кафе", "ресторан", "доставка ед", "обед", "ужин", "dining", "restaurant", "food"], iconKey: "utensils" },
+  { keywords: ["кофе", "кофейн", "чай", "coffee"], iconKey: "coffee" },
+  { keywords: ["топлив", "бензин", "азс", "заправ", "fuel", "gas"], iconKey: "fuel" },
+  { keywords: ["автобус", "метро", "обществен", "bus", "transit"], iconKey: "bus" },
+  { keywords: ["поезд", "электрич", "ржд", "train"], iconKey: "train-front" },
+  { keywords: ["транспорт", "такси", "авто", "машин", "парков", "transport", "taxi", "uber", "car"], iconKey: "car" },
+  { keywords: ["интернет", "wifi", "wi-fi", "роутер", "internet"], iconKey: "wifi" },
+  { keywords: ["электр", "свет", "энерг", "electric", "utility"], iconKey: "zap" },
+  { keywords: ["жиль", "жку", "аренд", "коммунал", "кварт", "дом", "housing", "rent", "home"], iconKey: "home" },
+  { keywords: ["подпис", "связ", "телефон", "мобиль", "сотов", "subscrip", "mobile", "phone"], iconKey: "smartphone" },
+  { keywords: ["здоров", "аптек", "лекар", "клиник", "медиц", "health", "pharmacy", "medic"], iconKey: "heart-pulse" },
+  { keywords: ["врач", "стоматолог", "анализ", "doctor", "dentist"], iconKey: "stethoscope" },
+  { keywords: ["красот", "стриж", "салон", "барбер", "уход", "beauty", "salon", "hair"], iconKey: "scissors" },
+  { keywords: ["покуп", "одежд", "обув", "маркет", "озон", "вайлдбер", "wb", "shopping", "cloth"], iconKey: "shopping-bag" },
+  { keywords: ["путешест", "отпуск", "билет", "отель", "перелет", "авиа", "travel", "flight", "hotel"], iconKey: "plane" },
+  { keywords: ["зарплат", "оклад", "аванс", "работ", "salary", "payroll"], iconKey: "briefcase" },
+  { keywords: ["подработ", "фриланс", "проект", "it", "софт", "freelance", "software"], iconKey: "laptop" },
+  { keywords: ["кэшбэк", "кешбэк", "cashback", "бонус"], iconKey: "percent" },
+  { keywords: ["процент", "вклад", "дивиденд", "инвест", "накоп", "interest", "dividend", "bank"], iconKey: "landmark" },
+  { keywords: ["страхов", "налог", "штраф", "insurance", "tax"], iconKey: "shield" },
+  { keywords: ["подар", "цвет", "праздник", "gift"], iconKey: "gift" },
+  { keywords: ["спорт", "фитнес", "зал", "трениров", "sport", "gym", "fitness"], iconKey: "dumbbell" },
+  { keywords: ["учеб", "образован", "курс", "универ", "education", "course"], iconKey: "graduation-cap" },
+  { keywords: ["книг", "book"], iconKey: "book-open" },
+  { keywords: ["дет", "ребен", "ребён", "садик", "baby", "kids"], iconKey: "baby" },
+  { keywords: ["игр", "steam", "ps", "развлеч", "game", "entertainment"], iconKey: "gamepad-2" },
+  { keywords: ["животн", "питом", "кот", "собак", "корм", "pet", "vet"], iconKey: "paw-print" },
+  { keywords: ["ремонт", "инструм", "строит", "repair", "tools"], iconKey: "wrench" },
+  { keywords: ["музык", "спотифай", "яндекс музык", "music"], iconKey: "music" },
+  { keywords: ["кино", "театр", "фильм", "movie", "cinema"], iconKey: "film" },
+];
+
+export function inferCategoryIconKey(categoryName: string | null | undefined): string | null {
+  if (!categoryName) return null;
+  const lower = categoryName.trim().toLowerCase();
+  if (!lower) return null;
+  for (const entry of CATEGORY_KEYWORD_ICONS) {
+    if (entry.keywords.some((kw) => lower.includes(kw))) {
+      return entry.iconKey;
+    }
+  }
+  return null;
+}
+
+export function getCategoryIcon(
+  iconKey: string | null | undefined,
+  categoryName?: string | null
+): LucideIcon {
+  if (iconKey && CATEGORY_ICON_MAP.has(iconKey)) {
+    return CATEGORY_ICON_MAP.get(iconKey)!;
+  }
+  const inferred = inferCategoryIconKey(categoryName);
+  if (inferred && CATEGORY_ICON_MAP.has(inferred)) {
+    return CATEGORY_ICON_MAP.get(inferred)!;
+  }
+  return Tag;
 }
 
 export const ACCOUNT_TYPE_ICONS: Record<AccountType, LucideIcon> = {

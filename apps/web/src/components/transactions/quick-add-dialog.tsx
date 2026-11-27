@@ -478,7 +478,7 @@ function QuickAddFormBody({
             aria-hidden={!showExtendedTypes}
           >
             <div className="space-y-2 pt-0.5">
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                 {EXTENDED_TRANSACTION_TYPES.map((key) => {
                   const Icon = TRANSACTION_TYPE_META[key].icon;
                   const active = txType === key;
@@ -689,8 +689,8 @@ function QuickAddFormBody({
               </Link>
             </div>
           ) : typeMeta.accountDirection === "transfer" ? (
-            <div className="grid grid-cols-1 gap-2 px-3.5 py-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
-              <div className="space-y-1">
+            <div className="grid grid-cols-1 gap-2 px-3.5 py-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-end">
+              <div className="min-w-0 space-y-1">
                 <Label className="text-[11px]">{t.transactions.accountFromLabel}</Label>
                 <Select
                   value={accountFromId || "__none__"}
@@ -729,7 +729,7 @@ function QuickAddFormBody({
                 />
               </Button>
 
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <Label className="text-[11px]">{t.transactions.accountToLabel}</Label>
                 <Select
                   value={accountToId || "__none__"}
@@ -753,13 +753,13 @@ function QuickAddFormBody({
             </div>
           ) : (
             <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <Label className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+              <Label className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
                 <Wallet className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
                 {typeMeta.accountDirection === "in"
                   ? t.transactions.accountTargetLabel
                   : t.transactions.accountFromLabel}
               </Label>
-              <div className="w-full sm:w-56">
+              <div className="w-full min-w-0 sm:w-72 sm:max-w-[68%]">
                 <Select
                   value={accountFromId || "__none__"}
                   onValueChange={(val) => setAccountFromId(val === "__none__" ? "" : val)}
@@ -808,7 +808,7 @@ function QuickAddFormBody({
                   {t.transactions.noCategory}
                 </button>
                 {filteredCategories.map((cat) => {
-                  const Icon = getCategoryIcon(cat.icon);
+                  const Icon = getCategoryIcon(cat.icon, cat.name);
                   const selected = categoryId === cat.id;
                   return (
                     <button
@@ -910,11 +910,11 @@ function QuickAddFormBody({
           {/* Optional Goal & Debt Rows */}
           {activeGoals.length > 0 ? (
             <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <Label className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+              <Label className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
                 <Target className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
                 {t.transactions.goalLabel}
               </Label>
-              <div className="w-full sm:w-56">
+              <div className="w-full min-w-0 sm:w-72 sm:max-w-[68%]">
                 <Select
                   value={goalId || "__none__"}
                   onValueChange={(val) => setGoalId(val === "__none__" ? "" : val)}
@@ -937,11 +937,11 @@ function QuickAddFormBody({
 
           {activeDebts.length > 0 && isDebtType ? (
             <div className="flex flex-col gap-2 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <Label className="flex items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
+              <Label className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--strata-text-secondary)]">
                 <Handshake className="h-3.5 w-3.5 shrink-0 text-[var(--strata-text-muted)]" strokeWidth={1.75} aria-hidden="true" />
                 {t.transactions.debtLabel}
               </Label>
-              <div className="w-full sm:w-56">
+              <div className="w-full min-w-0 sm:w-72 sm:max-w-[68%]">
                 <Select
                   value={debtId || "__none__"}
                   onValueChange={(val) => setDebtId(val === "__none__" ? "" : val)}

@@ -36,9 +36,8 @@ All calculations live in `packages/finance-core` and operate on **integer minor 
 - **Monthly Equivalent Reserve (`cadence`):** `monthly = amountMinor`, `weekly = round(amountMinor * 52 / 12)`, `quarterly = round(amountMinor / 3)`, `yearly = round(amountMinor / 12)`.
 - **Period Match Priority (`YYYY-MM`):**
   1. Active manual mark in `recurring_payment_marks` (`paidVia = 'mark'`).
-  2. Confirmed active transaction in the same month with `tx.recurringPaymentId === payment.id` (`paidVia = 'transaction'`).
-  3. Confirmed active `expense` in the same month whose `tx.comment` contains `payment.matchKeyword` case-insensitively (`paidVia = 'keyword'`).
-- **Safe-to-Spend Reserve (`unpaidActiveRecurringMinor`):** Sum of `monthlyEquivalentMinor` across all active (`isActive = true`) unpaid payments in the current month.
+  2. Cumulative confirmed transactions in the same month matching `tx.recurringPaymentId === payment.id` or `tx.type === 'expense'` containing `payment.matchKeyword` case-insensitively (`paidVia = 'transaction' | 'keyword'`). A payment is marked `isPaid = true` ONLY when `sum(matched.amountMinor) >= payment.amountMinor`; otherwise `isPartial = true` and `remainingAmountMinor = payment.amountMinor - paidAmountMinor`.
+- **Safe-to-Spend Reserve (`unpaidActiveRecurringMinor`):** Sum of `max(0, monthlyEquivalentMinor - paidAmountMinor)` across all active (`isActive = true`) unpaid or partially paid payments in the current month.
 - **Feb / Short-Month Clamping:** `dueDate` clamps `dayOfMonth` to `getDaysInMonth(year, month)`.
 
 ## 4. Virtual Goal Envelopes (`NPER`)

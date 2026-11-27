@@ -8,7 +8,7 @@ import { ModalDialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CATEGORY_ICON_LIST } from "@/lib/category-icons";
+import { CATEGORY_ICON_LIST, inferCategoryIconKey } from "@/lib/category-icons";
 import { useI18n } from "@/lib/i18n/client";
 import { cn, minorToEditableInput, parseAmountInputToMinor } from "@/lib/utils";
 
@@ -52,7 +52,9 @@ function CategoryFormBody({
       : ""
   );
   const [iconKey, setIconKey] = useState<string>(
-    category?.icon ?? (defaultKind === "income" ? "wallet" : "shopping-cart")
+    category?.icon ??
+      inferCategoryIconKey(category?.name) ??
+      (defaultKind === "income" ? "wallet" : "shopping-cart")
   );
   const [hint, setHint] = useState(category?.hint ?? "");
 

@@ -468,6 +468,9 @@
     "categoryCreatedToast": "Category created.",
     "categoryUpdatedToast": "Category updated.",
     "categoryDeletedToast": "Category deleted.",
+    "changeIcon": "Change icon",
+    "iconPickerTitle": "Category icon",
+    "iconUpdatedToast": "Category icon updated.",
     "savingsRateBadgeHint": "Open savings rules & Promo Radar"
   },
   "plans": {
@@ -552,6 +555,10 @@
       "dayOfMonth": "Day {day}",
       "keywordTag": "Auto: \"{kw}\"",
       "payButton": "Pay",
+      "payRemainingButton": "Pay remaining",
+      "partialBadge": "Partial",
+      "partialProgress": "Paid",
+      "remainingShort": "Left",
       "markPaid": "Mark paid",
       "unmarkPaid": "Unmark",
       "viewTx": "View operation",

@@ -25,7 +25,7 @@ import { AmountText } from "@/components/ui/amount-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ConfirmDialog } from "@/components/ui/dialog";
+import { ConfirmDialog, ModalDialog } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ACCOUNT_TYPE_ICONS, getCategoryIcon } from "@/lib/category-icons";
+import {
+  ACCOUNT_TYPE_ICONS,
+  CATEGORY_ICON_LIST,
+  getCategoryIcon,
+  inferCategoryIconKey,
+} from "@/lib/category-icons";
 import {
   toCoreAccount,
   toCoreCategory,
@@ -65,8 +70,10 @@ interface CategoryActionsMenuProps {
   category: Category;
   actionsLabel: string;
   editLabel: string;
+  changeIconLabel: string;
   deleteLabel: string;
   onEdit: (cat: Category) => void;
+  onChangeIcon: (cat: Category) => void;
   onDelete: (cat: Category) => void;
 }
 
@@ -74,8 +81,10 @@ function CategoryActionsMenu({
   category,
   actionsLabel,
   editLabel,
+  changeIconLabel,
   deleteLabel,
   onEdit,
+  onChangeIcon,
   onDelete,
 }: CategoryActionsMenuProps) {
   return (
@@ -95,6 +104,10 @@ function CategoryActionsMenu({
         <DropdownMenuItem onSelect={() => onEdit(category)}>
           <Pencil className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]" strokeWidth={1.75} aria-hidden="true" />
           <span>{editLabel}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onChangeIcon(category)}>
+          <Wallet className="h-3.5 w-3.5 text-[var(--strata-text-secondary)]" strokeWidth={1.75} aria-hidden="true" />
+          <span>{changeIconLabel}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -146,6 +159,8 @@ export function CapitalClient({
   );
   const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [deletingCategoryBusy, setDeletingCategoryBusy] = useState(false);
+  const [iconPickerCategory, setIconPickerCategory] = useState<Category | null>(null);
+  const [savingIcon, setSavingIcon] = useState(false);
 
   const openAccountForm = (acc: Account | null) => {
     setEditingAccount(acc);
@@ -411,6 +426,28 @@ export function CapitalClient({
       toast.error(t.errors.generic);
     } finally {
       setDeletingAccountBusy(false);
+    }
+  }
+
+  async function handleQuickIconChange(cat: Category, nextIconKey: string) {
+    setSavingIcon(true);
+    try {
+      const res = await fetch(`/api/v1/categories/${cat.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ icon: nextIconKey }),
+      });
+      if (!res.ok) {
+        toast.error(t.errors.generic);
+        return;
+      }
+      toast.success(t.capital.iconUpdatedToast);
+      setIconPickerCategory(null);
+      await refreshData();
+    } catch {
+      toast.error(t.errors.generic);
+    } finally {
+      setSavingIcon(false);
     }
   }
 
@@ -869,7 +906,7 @@ export function CapitalClient({
               ) : (
                 <div className="space-y-2.5">
                   {expenseCategories.map((cat) => {
-                    const Icon = getCategoryIcon(cat.icon);
+                    const Icon = getCategoryIcon(cat.icon, cat.name);
                     const stats = categoryBreakdownMap.get(cat.id);
                     const spentMinor = stats?.netSpentMinor ?? 0;
                     const limitMinor = cat.monthly_limit_minor;
@@ -887,9 +924,15 @@ export function CapitalClient({
                       >
                         <div className="flex items-center justify-between gap-2.5">
                           <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-surface)] text-[var(--strata-text-secondary)]">
+                            <button
+                              type="button"
+                              onClick={() => setIconPickerCategory(cat)}
+                              aria-label={`${t.capital.changeIcon}: ${cat.name}`}
+                              title={t.capital.changeIcon}
+                              className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[13px] border border-transparent bg-[var(--strata-bg-surface)] text-[var(--strata-text-secondary)] transition hover:border-[var(--strata-accent-brand)] hover:text-[var(--strata-text-primary)]"
+                            >
                               <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                            </div>
+                            </button>
                             <div className="min-w-0">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
@@ -935,8 +978,10 @@ export function CapitalClient({
                               category={cat}
                               actionsLabel={t.capital.actionsLabel}
                               editLabel={t.common.edit}
+                              changeIconLabel={t.capital.changeIcon}
                               deleteLabel={t.common.delete}
                               onEdit={(c) => openCategoryForm(c)}
+                              onChangeIcon={(c) => setIconPickerCategory(c)}
                               onDelete={setDeletingCategory}
                             />
                           </div>
@@ -977,16 +1022,22 @@ export function CapitalClient({
               ) : (
                 <div className="space-y-2.5">
                   {incomeCategories.map((cat) => {
-                    const Icon = getCategoryIcon(cat.icon);
+                    const Icon = getCategoryIcon(cat.icon, cat.name);
                     return (
                       <div
                         key={cat.id}
                         className="flex items-center justify-between gap-2.5 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5"
                       >
                         <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[var(--strata-bg-surface)] text-[var(--strata-money-income)]">
+                          <button
+                            type="button"
+                            onClick={() => setIconPickerCategory(cat)}
+                            aria-label={`${t.capital.changeIcon}: ${cat.name}`}
+                            title={t.capital.changeIcon}
+                            className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-[13px] border border-transparent bg-[var(--strata-bg-surface)] text-[var(--strata-money-income)] transition hover:border-[var(--strata-accent-brand)]"
+                          >
                             <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
-                          </div>
+                          </button>
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span className="truncate text-sm font-semibold text-[var(--strata-text-primary)]">
@@ -1008,8 +1059,10 @@ export function CapitalClient({
                           category={cat}
                           actionsLabel={t.capital.actionsLabel}
                           editLabel={t.common.edit}
+                          changeIconLabel={t.capital.changeIcon}
                           deleteLabel={t.common.delete}
                           onEdit={(c) => openCategoryForm(c)}
+                          onChangeIcon={(c) => setIconPickerCategory(c)}
                           onDelete={setDeletingCategory}
                         />
                       </div>
@@ -1064,6 +1117,47 @@ export function CapitalClient({
         busy={deletingCategoryBusy}
         onConfirm={handleDeleteCategory}
       />
+
+      <ModalDialog
+        open={Boolean(iconPickerCategory)}
+        onOpenChange={(next) => {
+          if (!next && !savingIcon) setIconPickerCategory(null);
+        }}
+        title={
+          iconPickerCategory
+            ? `${t.capital.iconPickerTitle}: ${iconPickerCategory.name}`
+            : t.capital.iconPickerTitle
+        }
+        dismissible={!savingIcon}
+      >
+        {iconPickerCategory ? (
+          <div className="grid grid-cols-6 gap-2 sm:grid-cols-9">
+            {CATEGORY_ICON_LIST.map(({ key, icon: Icon }) => {
+              const currentIconKey =
+                iconPickerCategory.icon ?? inferCategoryIconKey(iconPickerCategory.name) ?? "tag";
+              const active = currentIconKey === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={savingIcon}
+                  onClick={() => void handleQuickIconChange(iconPickerCategory, key)}
+                  aria-label={key}
+                  aria-pressed={active}
+                  className={cn(
+                    "flex h-11 cursor-pointer items-center justify-center rounded-2xl border transition disabled:opacity-60",
+                    active
+                      ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                      : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-text-muted)] hover:border-[var(--strata-border-strong)] hover:text-[var(--strata-text-primary)]"
+                  )}
+                >
+                  <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </ModalDialog>
     </div>
   );
 }

@@ -286,7 +286,7 @@ export function RecurringPaymentsSection({
           ) : null}
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 border-t border-[var(--strata-border-subtle)] pt-3.5 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 border-t border-[var(--strata-border-subtle)] pt-3.5 sm:grid-cols-3 sm:gap-4">
           <div className="min-w-0">
             <div className="truncate text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
               {t.plans.recurring.unpaidLabel}
@@ -317,7 +317,7 @@ export function RecurringPaymentsSection({
             </div>
           </div>
 
-          <div className="min-w-0">
+          <div className="col-span-2 min-w-0 sm:col-span-1">
             <div className="truncate text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
               {t.plans.recurring.monthlyLoadLabel}
             </div>
@@ -377,12 +377,30 @@ export function RecurringPaymentsSection({
             const matchedTx = item.matchedTransactionId
               ? txMap.get(item.matchedTransactionId)
               : null;
-            const Icon = category ? getCategoryIcon(category.icon) : Repeat;
-            const tone = getStatusBadgeTone(item.status);
+            const Icon = category
+              ? getCategoryIcon(category.icon, category.name)
+              : Repeat;
+            const tone = item.isPartial
+              ? item.status === "overdue"
+                ? "danger"
+                : "warn"
+              : getStatusBadgeTone(item.status);
             const displayCurrency = account?.currency ?? baseCurrency;
+            const partialPct =
+              item.isPartial && item.targetAmountMinor > 0 && item.paidAmountMinor !== null
+                ? Math.min(100, Math.round((item.paidAmountMinor / item.targetAmountMinor) * 100))
+                : 0;
 
             let badgeLabel = t.plans.recurring.status[item.status];
-            if (item.status === "paid" && item.paidVia) {
+            if (item.isPartial) {
+              badgeLabel =
+                item.status === "overdue"
+                  ? `${t.plans.recurring.partialBadge} · ${t.plans.recurring.overdueDays.replace(
+                      "{days}",
+                      String(Math.abs(item.daysUntilDue))
+                    )}`
+                  : t.plans.recurring.partialBadge;
+            } else if (item.status === "paid" && item.paidVia) {
               badgeLabel = `${t.plans.recurring.status.paid} · ${t.plans.recurring.paidVia[item.paidVia]}`;
             } else if (item.status === "overdue") {
               badgeLabel = t.plans.recurring.overdueDays.replace(
@@ -512,11 +530,62 @@ export function RecurringPaymentsSection({
                   </div>
                 </div>
 
+                {/* Partial Payment Progress */}
+                {item.isPartial && item.paidAmountMinor !== null ? (
+                  <div className="space-y-1.5 rounded-2xl bg-[var(--strata-bg-elevated)]/75 px-3 py-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <span className="text-[var(--strata-text-secondary)]">
+                        {t.plans.recurring.partialProgress}:{" "}
+                        <strong className="font-semibold text-[var(--strata-text-primary)]">
+                          <AmountText
+                            minor={item.paidAmountMinor}
+                            currency={displayCurrency}
+                          />
+                        </strong>{" "}
+                        {t.capital.ofLimit}{" "}
+                        <AmountText
+                          minor={item.targetAmountMinor}
+                          currency={displayCurrency}
+                        />
+                      </span>
+                      <span className="font-semibold text-[var(--strata-radar-warn)]">
+                        {t.plans.recurring.remainingShort}:{" "}
+                        <AmountText
+                          minor={item.remainingAmountMinor}
+                          currency={displayCurrency}
+                        />
+                      </span>
+                    </div>
+                    <div
+                      aria-hidden="true"
+                      className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--strata-bg-surface)]"
+                    >
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${partialPct}%`,
+                          backgroundColor: "var(--strata-radar-warn)",
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
                 {/* Action Row */}
                 {payment.isActive ? (
                   <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--strata-border-subtle)] pt-2.5">
                     {!item.isPaid ? (
                       <>
+                        {item.isPartial && matchedTx ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openQuickAdd({ transaction: matchedTx })}
+                          >
+                            <span>{t.plans.recurring.viewTx}</span>
+                          </Button>
+                        ) : null}
                         <Button
                           type="button"
                           variant="secondary"
@@ -533,7 +602,7 @@ export function RecurringPaymentsSection({
                           onClick={() =>
                             openQuickAdd({
                               type: "expense",
-                              amountMinor: payment.amountMinor,
+                              amountMinor: item.remainingAmountMinor,
                               accountFromId: payment.accountId ?? undefined,
                               categoryId: payment.categoryId ?? undefined,
                               comment: payment.name,
@@ -547,7 +616,11 @@ export function RecurringPaymentsSection({
                             strokeWidth={1.75}
                             aria-hidden="true"
                           />
-                          <span>{t.plans.recurring.payButton}</span>
+                          <span>
+                            {item.isPartial
+                              ? t.plans.recurring.payRemainingButton
+                              : t.plans.recurring.payButton}
+                          </span>
                         </Button>
                       </>
                     ) : item.paidVia === "mark" ? (

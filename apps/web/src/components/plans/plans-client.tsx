@@ -281,6 +281,7 @@ export function PlansClient({
           <SavingsRadarSection
             baseCurrency={baseCurrency}
             accounts={accounts}
+            categories={categories}
             savingsRules={savingsRules}
             balances={balances}
             summary={savingsSummary}

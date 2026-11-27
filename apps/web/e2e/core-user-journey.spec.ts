@@ -106,10 +106,15 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
       sectionOrder.indexOf("category_breakdown")
     );
 
-    // 3. Quick Add via "N" shortcut with calculator toggle & expression "=150+50"
+    // 3. Quick Add via "N" shortcut with calculator toggle & expression "=150+50" + single-line account select
     await page.keyboard.press("n");
     const qaAmount = page.locator("#qa-amount");
     await expect(qaAmount).toBeVisible();
+    const desktopSelectHeight = await page
+      .locator("dialog[open] button[role='combobox']")
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().height);
+    expect(desktopSelectHeight).toBeLessThanOrEqual(52);
     await page.locator("[data-qa-calc-toggle]").click();
     await expect(page.locator("[data-qa-calc-drawer]")).toHaveAttribute("data-open", "true");
     await qaAmount.fill("abc=150+50xyz");
@@ -214,8 +219,22 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
     await page.getByRole("button", { name: /New bill|Новый платёж/i }).first().click();
     await page.locator("#rp-name").fill("E2E Fiber Internet");
     await page.locator("#rp-amount").fill("1000");
+    await page.locator("#rp-keyword").fill("E2EFiber");
     await page.getByRole("button", { name: /Create bill|Создать платёж/i }).click();
     await expect(page.getByText("E2E Fiber Internet")).toBeVisible();
+
+    // Partial payment (500 out of 1000) must NOT close the bill
+    await page.keyboard.press("n");
+    await page.locator("#qa-amount").fill("500");
+    await page.locator("#qa-comment").fill("E2EFiber part 1");
+    await page
+      .getByRole("button", { name: /Save operation|Сохранить операцию/i })
+      .click();
+    await expect(page.locator("#qa-amount")).toBeHidden();
+    await expect(page.getByText(/Partial|Частично/i)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Pay remaining|Доплатить/i })
+    ).toBeVisible();
 
     await page.goto("/");
     await expect(page.getByText(/Incl\. bills|Учтены платежи/i)).toBeVisible();
@@ -227,6 +246,14 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
 
     await page.goto("/");
     await expect(page.getByText(/Incl\. bills|Учтены платежи/i)).toHaveCount(0);
+
+    // 6.6 Capital: 1-tap category icon picker
+    await page.goto("/capital?tab=categories");
+    await page
+      .getByRole("button", { name: /Change icon: Продукты E2E|Сменить иконку: Продукты E2E/i })
+      .click();
+    await page.locator("dialog[open]").getByRole("button", { name: "coffee" }).click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
 
     await desktopNav.locator('[data-nav-key="/operations"]').click();
     await page.waitForURL("**/operations");
@@ -249,9 +276,14 @@ test.describe("Core user journey (Dashboard Analytics, Spotlight Tour, Quick Add
           await expect(mobileNav.locator('[data-nav-key="/plans"]')).toBeVisible();
           await expect(page.locator('[data-tour="settings-link"]:visible').first()).toBeVisible();
 
-          // Open Receipt Card Quick Add on Mobile 360px and verify zero overflow
+          // Open Receipt Card Quick Add on Mobile 360px and verify zero overflow + single-line select
           await mobileNav.locator('[data-tour="quick-add"]').click();
           await expect(page.locator("#qa-amount")).toBeVisible();
+          const mobileSelectHeight = await page
+            .locator("dialog[open] button[role='combobox']")
+            .first()
+            .evaluate((el) => el.getBoundingClientRect().height);
+          expect(mobileSelectHeight).toBeLessThanOrEqual(52);
           await assertNoHorizontalOverflow(page);
           await page.keyboard.press("Escape");
           await expect(page.locator("#qa-amount")).toBeHidden();

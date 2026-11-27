@@ -16,10 +16,14 @@ export interface EvaluatedRecurringPayment {
   dueDate: string;
   daysUntilDue: number;
   isPaid: boolean;
+  isPartial: boolean;
   paidVia: RecurringPaidVia;
   markId: string | null;
   matchedTransactionId: string | null;
+  matchedTransactionIds: string[];
   paidAmountMinor: number | null;
+  targetAmountMinor: number;
+  remainingAmountMinor: number;
   monthlyEquivalentMinor: number;
   periodReserveMinor: number;
   status: RecurringItemStatus;
@@ -112,40 +116,49 @@ export function evaluateRecurringPayments(params: {
     const dueDate = `${periodKey}-${String(clampedDay).padStart(2, "0")}`;
     const daysUntilDue = diffCalendarDays(dueDate, asOfDate);
     const monthlyEquivalentMinor = getMonthlyEquivalentMinor(payment.amountMinor, payment.cadence);
+    const targetAmountMinor = payment.amountMinor;
+
+    const keywordNeedle = payment.matchKeyword?.trim().toLowerCase() ?? "";
+    const matchedTxs = periodConfirmedTxs.filter(
+      (tx) =>
+        tx.recurringPaymentId === payment.id ||
+        (keywordNeedle.length > 0 &&
+          tx.type === "expense" &&
+          tx.comment.toLowerCase().includes(keywordNeedle)),
+    );
+    const matchedTotalMinor = matchedTxs.reduce((sum, tx) => sum + tx.amountMinor, 0);
+    const matchedTransactionIds = matchedTxs.map((tx) => tx.id);
 
     let isPaid = false;
+    let isPartial = false;
     let paidVia: RecurringPaidVia = null;
     let markId: string | null = null;
-    let matchedTransactionId: string | null = null;
-    let paidAmountMinor: number | null = null;
+    let matchedTransactionId: string | null = matchedTransactionIds[0] ?? null;
+    let paidAmountMinor: number | null = matchedTotalMinor > 0 ? matchedTotalMinor : null;
+    let remainingAmountMinor = targetAmountMinor;
+    let periodReserveMinor = payment.isActive ? monthlyEquivalentMinor : 0;
 
     const directMark = activeMarksByPaymentId.get(payment.id);
     if (directMark) {
       isPaid = true;
+      isPartial = false;
       paidVia = "mark";
       markId = directMark.id;
-    } else {
-      const linkedTx = periodConfirmedTxs.find((tx) => tx.recurringPaymentId === payment.id);
-      if (linkedTx) {
-        isPaid = true;
-        paidVia = "transaction";
-        matchedTransactionId = linkedTx.id;
-        paidAmountMinor = linkedTx.amountMinor;
-      } else if (payment.matchKeyword && payment.matchKeyword.trim().length > 0) {
-        const needle = payment.matchKeyword.trim().toLowerCase();
-        const keywordTx = periodConfirmedTxs.find(
-          (tx) => tx.type === "expense" && tx.comment.toLowerCase().includes(needle),
-        );
-        if (keywordTx) {
-          isPaid = true;
-          paidVia = "keyword";
-          matchedTransactionId = keywordTx.id;
-          paidAmountMinor = keywordTx.amountMinor;
-        }
-      }
+      remainingAmountMinor = 0;
+      periodReserveMinor = 0;
+    } else if (matchedTxs.length > 0) {
+      const hasDirectLink = matchedTxs.some((tx) => tx.recurringPaymentId === payment.id);
+      paidVia = hasDirectLink ? "transaction" : "keyword";
+      matchedTransactionId = matchedTxs[0]!.id;
+      paidAmountMinor = matchedTotalMinor;
+      isPaid = matchedTotalMinor >= targetAmountMinor;
+      isPartial = !isPaid && matchedTotalMinor > 0;
+      remainingAmountMinor = Math.max(0, targetAmountMinor - matchedTotalMinor);
+      periodReserveMinor =
+        payment.isActive && !isPaid
+          ? Math.max(0, monthlyEquivalentMinor - matchedTotalMinor)
+          : 0;
     }
-
-    const periodReserveMinor = payment.isActive && !isPaid ? monthlyEquivalentMinor : 0;
 
     let status: RecurringItemStatus;
     if (!payment.isActive) {
@@ -180,10 +193,14 @@ export function evaluateRecurringPayments(params: {
       dueDate,
       daysUntilDue,
       isPaid,
+      isPartial,
       paidVia,
       markId,
       matchedTransactionId,
+      matchedTransactionIds,
       paidAmountMinor,
+      targetAmountMinor,
+      remainingAmountMinor,
       monthlyEquivalentMinor,
       periodReserveMinor,
       status,

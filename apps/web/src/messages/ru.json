@@ -468,6 +468,9 @@
     "categoryCreatedToast": "Категория создана.",
     "categoryUpdatedToast": "Категория обновлена.",
     "categoryDeletedToast": "Категория удалена.",
+    "changeIcon": "Сменить иконку",
+    "iconPickerTitle": "Иконка категории",
+    "iconUpdatedToast": "Иконка категории обновлена.",
     "savingsRateBadgeHint": "Открыть правила доходности и Промо-радар"
   },
   "plans": {
@@ -552,6 +555,10 @@
       "dayOfMonth": "{day}-го числа",
       "keywordTag": "Авто: «{kw}»",
       "payButton": "Оплатить",
+      "payRemainingButton": "Доплатить",
+      "partialBadge": "Частично",
+      "partialProgress": "Оплачено",
+      "remainingShort": "Осталось",
       "markPaid": "Отметить",
       "unmarkPaid": "Снять отметку",
       "viewTx": "Открыть операцию",

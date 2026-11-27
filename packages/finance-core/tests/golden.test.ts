@@ -177,6 +177,77 @@ describe("Strata Golden Test Vectors", () => {
     expect(getMonthlyEquivalentMinor(10000, "weekly")).toBe(43333);
   });
 
+  it("treats partial recurring payments as unpaid until total matched >= target amount", () => {
+    const bill: RecurringPayment = {
+      id: "rec-test-1000",
+      name: "Тестовый платёж",
+      categoryId: "cat-cafe",
+      accountId: "acc-sber",
+      amountMinor: 100000,
+      dayOfMonth: 28,
+      cadence: "monthly",
+      matchKeyword: "Тест",
+      isActive: true,
+    };
+
+    const txHalf: Transaction = {
+      id: "tx-half-1",
+      occurredAt: "2026-11-10T10:00:00Z",
+      type: "expense",
+      amountMinor: 50000,
+      categoryId: "cat-cafe",
+      accountFromId: "acc-sber",
+      accountToId: null,
+      goalId: null,
+      comment: "Тест часть 1",
+      status: "confirmed",
+    };
+
+    const partial = evaluateRecurringPayments({
+      payments: [bill],
+      marks: [],
+      transactions: [txHalf],
+      year: 2026,
+      month: 11,
+      asOfDate: "2026-11-26",
+    });
+
+    expect(partial.paidCount).toBe(0);
+    expect(partial.unpaidCount).toBe(1);
+    expect(partial.unpaidActiveRecurringMinor).toBe(50000);
+    expect(partial.items[0]?.isPaid).toBe(false);
+    expect(partial.items[0]?.isPartial).toBe(true);
+    expect(partial.items[0]?.paidAmountMinor).toBe(50000);
+    expect(partial.items[0]?.remainingAmountMinor).toBe(50000);
+    expect(partial.items[0]?.status).toBe("due_soon");
+
+    const txRest: Transaction = {
+      ...txHalf,
+      id: "tx-half-2",
+      amountMinor: 50000,
+      comment: "Тест часть 2",
+    };
+
+    const completed = evaluateRecurringPayments({
+      payments: [bill],
+      marks: [],
+      transactions: [txHalf, txRest],
+      year: 2026,
+      month: 11,
+      asOfDate: "2026-11-26",
+    });
+
+    expect(completed.paidCount).toBe(1);
+    expect(completed.unpaidCount).toBe(0);
+    expect(completed.unpaidActiveRecurringMinor).toBe(0);
+    expect(completed.items[0]?.isPaid).toBe(true);
+    expect(completed.items[0]?.isPartial).toBe(false);
+    expect(completed.items[0]?.paidAmountMinor).toBe(100000);
+    expect(completed.items[0]?.remainingAmountMinor).toBe(0);
+    expect(completed.items[0]?.matchedTransactionIds).toEqual(["tx-half-1", "tx-half-2"]);
+    expect(completed.items[0]?.status).toBe("paid");
+  });
+
   it("computes virtual goal envelopes with NPER and preserves balance on savings-to-savings transfer", () => {
     for (const goal of goals) {
       const env = computeGoalEnvelope(

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { PromoRadarStatus, SavingsPortfolioSummary } from "@strata/finance-core";
-import type { Account, SavingsRule } from "@strata/api-contract";
+import type { Account, Category, SavingsRule } from "@strata/api-contract";
 import { useQuickAdd } from "@/components/transactions/quick-add-provider";
 import { AmountText } from "@/components/ui/amount-text";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 interface SavingsRadarSectionProps {
   baseCurrency: string;
   accounts: Account[];
+  categories: Category[];
   savingsRules: SavingsRule[];
   balances: Record<string, number>;
   summary: SavingsPortfolioSummary;
@@ -63,6 +64,7 @@ function getRadarBadgeTone(
 export function SavingsRadarSection({
   baseCurrency,
   accounts,
+  categories,
   savingsRules,
   balances,
   summary,
@@ -77,6 +79,21 @@ export function SavingsRadarSection({
   const [deletingRule, setDeletingRule] = useState<SavingsRule | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [savingWindow, setSavingWindow] = useState(false);
+
+  const defaultInterestCategoryId = useMemo(() => {
+    const passiveCats = categories.filter(
+      (c) => !c.deleted_at && c.kind === "income" && c.is_passive
+    );
+    const interestCat = passiveCats.find((c) => {
+      const lower = c.name.toLowerCase();
+      return (
+        lower.includes("процент") ||
+        lower.includes("вклад") ||
+        lower.includes("interest")
+      );
+    });
+    return interestCat?.id ?? passiveCats[0]?.id ?? undefined;
+  }, [categories]);
 
   const apiRuleMap = useMemo(
     () => new Map(savingsRules.map((r) => [r.id, r])),
@@ -213,7 +230,7 @@ export function SavingsRadarSection({
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 border-t border-[var(--strata-border-subtle)] pt-3.5 sm:gap-4">
+        <div className="grid grid-cols-2 gap-3 border-t border-[var(--strata-border-subtle)] pt-3.5 sm:grid-cols-3 sm:gap-4">
           <div className="min-w-0">
             <div className="truncate text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
               {t.plans.savings.annualForecast}
@@ -236,7 +253,7 @@ export function SavingsRadarSection({
             </div>
           </div>
 
-          <div className="min-w-0">
+          <div className="col-span-2 min-w-0 sm:col-span-1">
             <div className="truncate text-[11px] text-[var(--strata-text-muted)] sm:text-xs">
               {t.plans.savings.trackedBalance}
             </div>
@@ -360,7 +377,9 @@ export function SavingsRadarSection({
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1.5">
-                    <Badge tone={radarTone}>{radarLabel}</Badge>
+                    <Badge tone={radarTone} className="hidden sm:inline-flex">
+                      {radarLabel}
+                    </Badge>
                     {apiRule ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -384,6 +403,11 @@ export function SavingsRadarSection({
                               openQuickAdd({
                                 type: "passive_income",
                                 accountFromId: account.id,
+                                categoryId: defaultInterestCategoryId,
+                                amountMinor:
+                                  forecast.monthlyInterestMinor > 0
+                                    ? forecast.monthlyInterestMinor
+                                    : undefined,
                                 comment: account.name,
                               })
                             }
@@ -427,12 +451,17 @@ export function SavingsRadarSection({
                     </span>
                   </div>
 
-                  <div className="text-right text-xs text-[var(--strata-text-muted)]">
-                    {rule.promoRate > 0 && rule.promoEndDate
-                      ? t.plans.savings.promoUntil
-                          .replace("{rate}", formatRate(rule.promoRate))
-                          .replace("{date}", formatShortDate(rule.promoEndDate))
-                      : `${t.plans.savings.baseRateLabel}: ${formatRate(rule.baseRate)}`}
+                  <div className="flex flex-wrap items-center gap-1.5 text-right text-xs text-[var(--strata-text-muted)]">
+                    <Badge tone={radarTone} className="sm:hidden">
+                      {radarLabel}
+                    </Badge>
+                    <span>
+                      {rule.promoRate > 0 && rule.promoEndDate
+                        ? t.plans.savings.promoUntil
+                            .replace("{rate}", formatRate(rule.promoRate))
+                            .replace("{date}", formatShortDate(rule.promoEndDate))
+                        : `${t.plans.savings.baseRateLabel}: ${formatRate(rule.baseRate)}`}
+                    </span>
                   </div>
                 </div>
 

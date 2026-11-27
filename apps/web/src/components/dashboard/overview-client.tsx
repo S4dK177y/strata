@@ -548,7 +548,7 @@ export function OverviewClient({
                   const category = tx.category_id ? categoryMap.get(tx.category_id) : null;
                   const fromAcc = tx.account_from_id ? accountMap.get(tx.account_from_id) : null;
                   const toAcc = tx.account_to_id ? accountMap.get(tx.account_to_id) : null;
-                  const Icon = category ? getCategoryIcon(category.icon) : meta.icon;
+                  const Icon = category ? getCategoryIcon(category.icon, category.name) : meta.icon;
                   const signedMinor = meta.sign === "-" ? -tx.amount_minor : tx.amount_minor;
                   const displayCurrency = fromAcc?.currency ?? profile.base_currency;
 

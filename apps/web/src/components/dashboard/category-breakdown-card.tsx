@@ -203,7 +203,7 @@ export function CategoryBreakdownCard({
           <div className="min-w-0 divide-y divide-[var(--strata-border-subtle)] md:pl-2 lg:ml-auto lg:w-full lg:max-w-[500px] lg:pl-4">
             {ranked.map((item, idx) => {
               const cat = categoryMap.get(item.categoryId);
-              const Icon = getCategoryIcon(cat?.icon ?? null);
+              const Icon = getCategoryIcon(cat?.icon ?? null, item.categoryName);
               const dotColor =
                 idx < 6 ? SLICE_COLORS[idx] : SLICE_COLORS[6];
               const pct = Math.round(item.share * 100);
