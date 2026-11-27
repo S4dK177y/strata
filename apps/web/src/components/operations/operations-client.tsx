@@ -6,9 +6,11 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Plus,
   RotateCcw,
   Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { computePeriodSummary } from "@strata/finance-core";
@@ -105,6 +107,11 @@ export function OperationsClient({
   const [accountFilter, setAccountFilter] = useState(initialAccountFilter);
   const [categoryFilter, setCategoryFilter] = useState(initialCategoryFilter);
   const [statusFilter, setStatusFilter] = useState<TransactionStatus | "">(initialStatusFilter);
+  const [filtersOpen, setFiltersOpen] = useState(
+    Boolean(
+      initialAccountFilter || initialCategoryFilter || initialTypeFilter || initialStatusFilter
+    )
+  );
 
   const isFirstMountRef = useRef(true);
 
@@ -212,6 +219,22 @@ export function OperationsClient({
     return computePeriodSummary(coreTxs, periodYear, periodMonth);
   }, [transactions, allTime, periodYear, periodMonth]);
 
+  const cashflowRatio = useMemo(() => {
+    const totalFlow = periodSummary.totalIncomeMinor + periodSummary.netExpenseMinor;
+    if (totalFlow <= 0) return { hasData: false, incomePct: 0, expensePct: 0 };
+    const incomePct = Math.round((periodSummary.totalIncomeMinor / totalFlow) * 100);
+    return {
+      hasData: true,
+      incomePct,
+      expensePct: Math.max(0, 100 - incomePct),
+    };
+  }, [periodSummary]);
+
+  const draftsCount = useMemo(
+    () => transactions.filter((tx) => tx.status === "draft").length,
+    [transactions]
+  );
+
   const groupedByDay = useMemo(() => {
     const groups: Array<{
       dateKey: string;
@@ -263,7 +286,9 @@ export function OperationsClient({
     const formatted = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
       month: "long",
       year: "numeric",
-    }).format(new Date(periodYear, periodMonth - 1, 1));
+    })
+      .format(new Date(periodYear, periodMonth - 1, 1))
+      .replace(/\s*г\.$/i, "");
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }, [allTime, locale, periodYear, periodMonth, t.transactions.filters.allTime]);
 
@@ -314,35 +339,117 @@ export function OperationsClient({
     }
   }
 
+  const activeAdvancedCount = [typeFilter, accountFilter, categoryFilter, statusFilter].filter(
+    Boolean
+  ).length;
   const hasActiveFilters = Boolean(
-    debouncedSearch || typeFilter || accountFilter || categoryFilter || statusFilter || allTime
+    debouncedSearch || activeAdvancedCount > 0 || allTime
   );
 
+  const quickChips: Array<{
+    key: "all" | "expense" | "income" | "transfer" | "draft";
+    label: string;
+    active: boolean;
+    onClick: () => void;
+  }> = [
+    {
+      key: "all",
+      label: t.transactions.filters.quickAll,
+      active: typeFilter === "" && statusFilter === "",
+      onClick: () => {
+        setTypeFilter("");
+        setStatusFilter("");
+      },
+    },
+    {
+      key: "expense",
+      label: t.transactions.filters.quickExpenses,
+      active: typeFilter === "expense" && statusFilter !== "draft",
+      onClick: () => {
+        setStatusFilter("");
+        setTypeFilter((prev) => (prev === "expense" ? "" : "expense"));
+      },
+    },
+    {
+      key: "income",
+      label: t.transactions.filters.quickIncome,
+      active: typeFilter === "income" && statusFilter !== "draft",
+      onClick: () => {
+        setStatusFilter("");
+        setTypeFilter((prev) => (prev === "income" ? "" : "income"));
+      },
+    },
+    {
+      key: "transfer",
+      label: t.transactions.filters.quickTransfers,
+      active: typeFilter === "transfer" && statusFilter !== "draft",
+      onClick: () => {
+        setStatusFilter("");
+        setTypeFilter((prev) => (prev === "transfer" ? "" : "transfer"));
+      },
+    },
+    {
+      key: "draft",
+      label: t.transactions.filters.quickDrafts,
+      active: statusFilter === "draft",
+      onClick: () => {
+        setTypeFilter("");
+        setStatusFilter((prev) => (prev === "draft" ? "" : "draft"));
+      },
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--strata-text-primary)]">
-          {t.transactions.title}
-        </h1>
-        <p className="text-sm text-[var(--strata-text-muted)]">{t.transactions.subtitle}</p>
+    <div className="space-y-5 sm:space-y-6">
+      {/* Compact Header with Optional Drafts Pill */}
+      <div className="flex items-start justify-between gap-3 sm:items-center">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--strata-text-primary)]">
+            {t.transactions.title}
+          </h1>
+          <p className="text-sm text-[var(--strata-text-muted)]">
+            {t.transactions.filters.showingCount
+              .replace("{shown}", String(transactions.length))
+              .replace("{total}", String(total))}
+          </p>
+        </div>
+
+        {draftsCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => setStatusFilter((prev) => (prev === "draft" ? "" : "draft"))}
+            aria-pressed={statusFilter === "draft"}
+            className={cn(
+              "inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+              statusFilter === "draft"
+                ? "border-[var(--strata-radar-warn)] bg-[var(--strata-bg-elevated)] text-[var(--strata-radar-warn)]"
+                : "border-[var(--strata-border-subtle)] bg-[var(--strata-bg-surface)] text-[var(--strata-radar-warn)] hover:border-[var(--strata-border-strong)]"
+            )}
+          >
+            <Clock className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+            <span>
+              {t.transactions.filters.draftsBadge.replace("{count}", String(draftsCount))}
+            </span>
+          </button>
+        ) : null}
       </div>
 
-      {/* Period & KPI Strip */}
-      <Card className="space-y-4">
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+      {/* Unified Period & Zero-Truncation Cashflow Summary Card */}
+      <Card className="space-y-3.5 p-4 sm:p-5">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
             <Button
               type="button"
               variant="secondary"
               size="icon"
               aria-label={t.transactions.filters.prevMonth}
               onClick={() => shiftMonth(-1)}
+              className="h-8 w-8 shrink-0 rounded-full sm:h-9 sm:w-9"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             </Button>
 
-            <span className="min-w-28 truncate px-2 text-center text-sm font-bold text-[var(--strata-text-primary)] sm:min-w-36">
+            <span className="whitespace-nowrap px-1 text-center text-xs font-bold text-[var(--strata-text-primary)] sm:min-w-32 sm:text-sm">
               {periodLabel}
             </span>
 
@@ -352,6 +459,7 @@ export function OperationsClient({
               size="icon"
               aria-label={t.transactions.filters.nextMonth}
               onClick={() => shiftMonth(1)}
+              className="h-8 w-8 shrink-0 rounded-full sm:h-9 sm:w-9"
             >
               <ChevronRight className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             </Button>
@@ -362,7 +470,7 @@ export function OperationsClient({
             onClick={() => setAllTime((v) => !v)}
             aria-pressed={allTime}
             className={cn(
-              "min-h-10 w-full shrink-0 cursor-pointer rounded-full border px-3.5 text-xs font-semibold transition sm:w-auto",
+              "min-h-8 shrink-0 cursor-pointer rounded-full border px-2.5 text-xs font-semibold transition sm:min-h-9 sm:px-3.5",
               allTime
                 ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
                 : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)] hover:border-[var(--strata-border-strong)]"
@@ -372,12 +480,56 @@ export function OperationsClient({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
+        {/* Mobile (< sm): Full-width Period Saldo + 2 Spacious Income/Expense Tiles (Zero Truncation) */}
+        <div className="space-y-2.5 sm:hidden">
+          <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-[var(--strata-bg-elevated)] px-3.5 py-2.5">
+            <span className="text-xs font-medium text-[var(--strata-text-muted)]">
+              {t.transactions.filters.periodSaldo}
+            </span>
+            <span className="whitespace-nowrap text-lg font-extrabold text-[var(--strata-text-primary)]">
+              <AmountText
+                minor={periodSummary.netBalanceMinor}
+                currency={baseCurrency}
+                showSign
+              />
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] px-3.5 py-2.5">
+              <div className="text-[11px] font-medium text-[var(--strata-text-muted)]">
+                {t.dashboard.monthIncome}
+              </div>
+              <div className="mt-0.5 whitespace-nowrap text-[15px] font-bold text-[var(--strata-money-income)]">
+                <AmountText
+                  minor={periodSummary.totalIncomeMinor}
+                  currency={baseCurrency}
+                  showSign
+                />
+              </div>
+            </div>
+
+            <div className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] px-3.5 py-2.5">
+              <div className="text-[11px] font-medium text-[var(--strata-text-muted)]">
+                {t.dashboard.monthExpense}
+              </div>
+              <div className="mt-0.5 whitespace-nowrap text-[15px] font-bold text-[var(--strata-money-expense)]">
+                <AmountText
+                  minor={periodSummary.netExpenseMinor > 0 ? -periodSummary.netExpenseMinor : 0}
+                  currency={baseCurrency}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tablet & Desktop (sm+): Clean 3-Column KPI Tiles */}
+        <div className="hidden sm:grid sm:grid-cols-3 sm:gap-3">
           <div className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
             <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthIncome}
             </div>
-            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-income)] sm:text-lg">
+            <div className="mt-1 whitespace-nowrap text-lg font-bold text-[var(--strata-money-income)]">
               <AmountText
                 minor={periodSummary.totalIncomeMinor}
                 currency={baseCurrency}
@@ -390,7 +542,7 @@ export function OperationsClient({
             <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthExpense}
             </div>
-            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-money-expense)] sm:text-lg">
+            <div className="mt-1 whitespace-nowrap text-lg font-bold text-[var(--strata-money-expense)]">
               <AmountText
                 minor={periodSummary.netExpenseMinor > 0 ? -periodSummary.netExpenseMinor : 0}
                 currency={baseCurrency}
@@ -398,11 +550,11 @@ export function OperationsClient({
             </div>
           </div>
 
-          <div className="col-span-2 min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5 sm:col-span-1">
+          <div className="min-w-0 rounded-2xl bg-[var(--strata-bg-elevated)] p-3.5">
             <div className="truncate text-xs font-medium text-[var(--strata-text-muted)]">
               {t.dashboard.monthSaldo}
             </div>
-            <div className="mt-1 overflow-visible text-base font-bold text-[var(--strata-text-primary)] sm:text-lg">
+            <div className="mt-1 whitespace-nowrap text-lg font-bold text-[var(--strata-text-primary)]">
               <AmountText
                 minor={periodSummary.netBalanceMinor}
                 currency={baseCurrency}
@@ -411,12 +563,41 @@ export function OperationsClient({
             </div>
           </div>
         </div>
+
+        {/* Two-tone Cashflow Ratio Bar */}
+        <div
+          aria-hidden="true"
+          className="flex h-1.5 w-full gap-0.5 overflow-hidden rounded-full bg-[var(--strata-bg-elevated)]"
+        >
+          {cashflowRatio.hasData ? (
+            <>
+              {cashflowRatio.incomePct > 0 ? (
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${cashflowRatio.incomePct}%`,
+                    backgroundColor: "var(--strata-money-income)",
+                  }}
+                />
+              ) : null}
+              {cashflowRatio.expensePct > 0 ? (
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${cashflowRatio.expensePct}%`,
+                    backgroundColor: "var(--strata-money-expense)",
+                  }}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </div>
       </Card>
 
-      {/* Filters */}
-      <Card className="space-y-3">
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative">
+      {/* Compact Search Bar + Collapsible Filters Drawer + Quick Chips */}
+      <Card className="space-y-2.5 p-3.5 sm:p-4">
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
             <Search
               className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[var(--strata-text-muted)]"
               strokeWidth={1.75}
@@ -427,107 +608,149 @@ export function OperationsClient({
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t.transactions.filters.searchPlaceholder}
-              className="pl-10"
+              className="h-10 pl-10"
             />
           </div>
 
-          <Select
-            value={typeFilter || "__all__"}
-            onValueChange={(val) =>
-              setTypeFilter(val === "__all__" ? "" : (val as TransactionType))
-            }
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-expanded={filtersOpen}
+            className={cn(
+              "h-10 shrink-0 gap-1.5 rounded-2xl border px-3 text-xs font-semibold",
+              filtersOpen || activeAdvancedCount > 0
+                ? "border-[var(--strata-accent-brand)] text-[var(--strata-accent-brand)]"
+                : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)]"
+            )}
           >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t.transactions.filters.allTypes}</SelectItem>
-              {ALL_TRANSACTION_TYPES.map((key) => (
-                <SelectItem key={key} value={key}>
-                  {t.transactions.types[key]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={accountFilter || "__all__"}
-            onValueChange={(val) => setAccountFilter(val === "__all__" ? "" : val)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t.transactions.filters.allAccounts}</SelectItem>
-              {accounts.map((acc) => (
-                <SelectItem key={acc.id} value={acc.id}>
-                  {acc.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={categoryFilter || "__all__"}
-            onValueChange={(val) => setCategoryFilter(val === "__all__" ? "" : val)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">{t.transactions.filters.allCategories}</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
+            <span>{t.transactions.filters.filtersButton}</span>
+            {activeAdvancedCount > 0 ? (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--strata-accent-brand)] px-1 text-[10px] font-bold text-[var(--strata-text-onAccent)]">
+                {activeAdvancedCount}
+              </span>
+            ) : null}
+          </Button>
         </div>
 
+        {/* Collapsible Select Filters */}
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
+            filtersOpen
+              ? "grid-rows-[1fr] opacity-100"
+              : "pointer-events-none grid-rows-[0fr] opacity-0"
+          )}
+          aria-hidden={!filtersOpen}
+        >
+          <div className="overflow-hidden">
+            <div className="grid grid-cols-1 gap-2.5 pt-1 sm:grid-cols-2 lg:grid-cols-4">
+              <Select
+                value={typeFilter || "__all__"}
+                onValueChange={(val) =>
+                  setTypeFilter(val === "__all__" ? "" : (val as TransactionType))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t.transactions.filters.allTypes}</SelectItem>
+                  {ALL_TRANSACTION_TYPES.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {t.transactions.types[key]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={accountFilter || "__all__"}
+                onValueChange={(val) => setAccountFilter(val === "__all__" ? "" : val)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t.transactions.filters.allAccounts}</SelectItem>
+                  {accounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      {acc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={categoryFilter || "__all__"}
+                onValueChange={(val) => setCategoryFilter(val === "__all__" ? "" : val)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t.transactions.filters.allCategories}</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={statusFilter || "__all__"}
+                onValueChange={(val) =>
+                  setStatusFilter(val === "__all__" ? "" : (val as TransactionStatus))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">{t.transactions.filters.statusAll}</SelectItem>
+                  <SelectItem value="confirmed">
+                    {t.transactions.filters.statusConfirmed}
+                  </SelectItem>
+                  <SelectItem value="draft">{t.transactions.filters.statusDraft}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Wrapping Quick Chips + Reset */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
-            {(
-              [
-                { value: "", label: t.transactions.filters.statusAll },
-                { value: "confirmed", label: t.transactions.filters.statusConfirmed },
-                { value: "draft", label: t.transactions.filters.statusDraft },
-              ] as const
-            ).map((opt) => (
+            {quickChips.map((chip) => (
               <button
-                key={opt.value || "all"}
+                key={chip.key}
                 type="button"
-                onClick={() => setStatusFilter(opt.value)}
-                aria-pressed={statusFilter === opt.value}
+                onClick={chip.onClick}
+                aria-pressed={chip.active}
                 className={cn(
-                  "min-h-9 cursor-pointer rounded-full border px-3 text-xs font-medium transition",
-                  statusFilter === opt.value
-                    ? "border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
+                  "min-h-8 cursor-pointer rounded-full border px-3 text-xs font-medium transition",
+                  chip.active
+                    ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
                     : "border-[var(--strata-border-subtle)] text-[var(--strata-text-muted)] hover:text-[var(--strata-text-primary)]"
                 )}
               >
-                {opt.label}
+                {chip.label}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--strata-text-muted)]">
-            <span>
-              {t.transactions.filters.showingCount
-                .replace("{shown}", String(transactions.length))
-                .replace("{total}", String(total))}
-            </span>
-            {hasActiveFilters ? (
-              <button
-                type="button"
-                onClick={resetFilters}
-                className="inline-flex cursor-pointer items-center gap-1 font-semibold text-[var(--strata-accent-brand)] hover:underline"
-              >
-                <RotateCcw className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
-                {t.transactions.filters.resetFilters}
-              </button>
-            ) : null}
-          </div>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-[var(--strata-accent-brand)] hover:underline"
+            >
+              <RotateCcw className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+              {t.transactions.filters.resetFilters}
+            </button>
+          ) : null}
         </div>
       </Card>
 
@@ -552,7 +775,7 @@ export function OperationsClient({
           </div>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {groupedByDay.map((group) => (
             <Card key={group.dateKey} className="space-y-3 p-4 sm:p-5">
               <div className="flex items-center justify-between gap-2 border-b border-[var(--strata-border-subtle)] pb-2.5">
@@ -647,6 +870,8 @@ export function OperationsClient({
                             disabled={confirmingId === tx.id}
                             onClick={() => void handleConfirmDraft(tx)}
                             title={t.transactions.confirmDraft}
+                            aria-label={t.transactions.confirmDraft}
+                            className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                           >
                             <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
                             <span className="hidden sm:inline">{t.transactions.confirmDraft}</span>
