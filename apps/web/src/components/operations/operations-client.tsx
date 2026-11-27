@@ -260,10 +260,11 @@ export function OperationsClient({
 
   const periodLabel = useMemo(() => {
     if (allTime) return t.transactions.filters.allTime;
-    return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+    const formatted = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
       month: "long",
       year: "numeric",
     }).format(new Date(periodYear, periodMonth - 1, 1));
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }, [allTime, locale, periodYear, periodMonth, t.transactions.filters.allTime]);
 
   function shiftMonth(delta: number) {
@@ -329,8 +330,8 @@ export function OperationsClient({
 
       {/* Period & KPI Strip */}
       <Card className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
             <Button
               type="button"
               variant="secondary"
@@ -341,7 +342,7 @@ export function OperationsClient({
               <ChevronLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
             </Button>
 
-            <span className="min-w-28 px-2 text-center text-sm font-bold capitalize text-[var(--strata-text-primary)] sm:min-w-36">
+            <span className="min-w-28 truncate px-2 text-center text-sm font-bold text-[var(--strata-text-primary)] sm:min-w-36">
               {periodLabel}
             </span>
 
@@ -361,7 +362,7 @@ export function OperationsClient({
             onClick={() => setAllTime((v) => !v)}
             aria-pressed={allTime}
             className={cn(
-              "min-h-10 cursor-pointer rounded-full border px-3.5 text-xs font-semibold transition",
+              "min-h-10 w-full shrink-0 cursor-pointer rounded-full border px-3.5 text-xs font-semibold transition sm:w-auto",
               allTime
                 ? "border-[var(--strata-accent-brand)] bg-[var(--strata-bg-elevated)] text-[var(--strata-text-primary)]"
                 : "border-[var(--strata-border-subtle)] text-[var(--strata-text-secondary)] hover:border-[var(--strata-border-strong)]"

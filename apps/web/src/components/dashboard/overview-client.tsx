@@ -689,10 +689,6 @@ export function OverviewClient({
               <RotateCcw className="h-3.5 w-3.5" strokeWidth={1.75} aria-hidden="true" />
               {t.dashboard.layout.reset}
             </Button>
-            <Button type="button" size="sm" onClick={() => setEditingLayout(false)}>
-              <Check className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-              {t.dashboard.layout.done}
-            </Button>
           </div>
         </Card>
       ) : null}

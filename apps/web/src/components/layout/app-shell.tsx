@@ -274,13 +274,34 @@ function AppShellInner({
   const { t, setLocale } = useI18n();
   const { setTheme, setAccent } = useTheme();
   const { setPrivacyBlur } = usePrivacy();
-  const { openQuickAdd } = useQuickAdd();
+  const { isOpen: isQuickAddOpen, openQuickAdd } = useQuickAdd();
   const hydratedProfileIdRef = useRef<string | null>(null);
   const prevPathnameRef = useRef<string>(pathname);
   const mainRef = useRef<HTMLElement>(null);
   const desktopNavRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLElement>(null);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [fabPulsing, setFabPulsing] = useState(false);
+  const fabPulseTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (fabPulseTimerRef.current !== null) {
+        window.clearTimeout(fabPulseTimerRef.current);
+      }
+    };
+  }, []);
+
+  function handleQuickAddPress() {
+    setFabPulsing(true);
+    if (fabPulseTimerRef.current !== null) {
+      window.clearTimeout(fabPulseTimerRef.current);
+    }
+    fabPulseTimerRef.current = window.setTimeout(() => {
+      setFabPulsing(false);
+    }, 450);
+    openQuickAdd();
+  }
 
   useEffect(() => {
     if (hydratedProfileIdRef.current === profile.id) return;
@@ -427,10 +448,19 @@ function AppShellInner({
             <button
               type="button"
               data-tour="quick-add"
-              onClick={() => openQuickAdd()}
-              className="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full bg-[var(--strata-bg-elevated)] px-3.5 text-xs font-semibold text-[var(--strata-text-primary)] transition hover:brightness-110 active:scale-95"
+              onClick={handleQuickAddPress}
+              className="group inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border border-[var(--strata-border-strong)] bg-[var(--strata-bg-elevated)]/90 pl-1.5 pr-3 text-xs font-semibold text-[var(--strata-text-primary)] shadow-xs transition duration-200 hover:border-[var(--strata-accent-brand)]/55 hover:brightness-105 active:scale-[0.96]"
             >
-              <Plus className="h-3.5 w-3.5 text-[var(--strata-accent-brand)]" strokeWidth={2.25} aria-hidden="true" />
+              <span className="strata-fab-badge flex h-7 w-7 items-center justify-center rounded-full text-[var(--strata-text-onAccent)]">
+                <Plus
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:rotate-90",
+                    isQuickAddOpen && "rotate-45"
+                  )}
+                  strokeWidth={2.4}
+                  aria-hidden="true"
+                />
+              </span>
               <span>{t.nav.quickAdd}</span>
               <kbd className="strata-mono rounded bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--strata-text-muted)] dark:bg-white/10">
                 N
@@ -529,12 +559,21 @@ function AppShellInner({
         <button
           type="button"
           data-tour="quick-add"
-          onClick={() => openQuickAdd()}
+          data-pulsing={fabPulsing ? "true" : "false"}
+          data-open={isQuickAddOpen ? "true" : "false"}
+          onClick={handleQuickAddPress}
           aria-label={t.nav.addOperation}
           title={t.nav.addOperation}
-          className="relative z-20 mx-auto flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[var(--strata-accent-brand)] text-[var(--strata-text-onAccent)] shadow-[var(--strata-shadow-neon)] transition hover:brightness-110 active:scale-95"
+          className="strata-fab-plus relative z-20 mx-auto flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-[18px] text-[var(--strata-text-onAccent)]"
         >
-          <Plus className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+          <Plus
+            className={cn(
+              "relative z-10 h-5 w-5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              isQuickAddOpen && "rotate-45"
+            )}
+            strokeWidth={2.25}
+            aria-hidden="true"
+          />
         </button>
 
         <TransitionLink

@@ -81,10 +81,30 @@ export function LiquidNavIndicator({
   const filterId = `strata-nav-goo-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const svgRef = useRef<SVGSVGElement>(null);
+  const blurRef = useRef<SVGFEGaussianBlurElement>(null);
+  const matrixRef = useRef<SVGFEColorMatrixElement>(null);
   const groupRef = useRef<SVGGElement>(null);
   const bridgeRef = useRef<SVGRectElement>(null);
   const tailRef = useRef<SVGRectElement>(null);
   const headRef = useRef<SVGRectElement>(null);
+
+  const setGooStrength = useCallback(
+    (strength: number) => {
+      const clamped = Math.min(1, Math.max(0, strength));
+      const s = clamped * clamped * (3 - 2 * clamped);
+      const maxBlur = variant === "desktop" ? 4.5 : 5.5;
+      const blur = maxBlur * s;
+      const slope = 1 + 21 * s;
+      const intercept = -0.5 * (slope - 1);
+
+      blurRef.current?.setAttribute("stdDeviation", blur.toFixed(3));
+      matrixRef.current?.setAttribute(
+        "values",
+        `1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 ${slope.toFixed(3)} ${intercept.toFixed(3)}`
+      );
+    },
+    [variant]
+  );
 
   const physicsRef = useRef<PhysicsState>({
     initialized: false,
@@ -173,9 +193,11 @@ export function LiquidNavIndicator({
       const tailH = s.target.h * (1 - stretch * 0.12);
       const headY = centerY - headH / 2;
       const tailY = centerY - tailH / 2;
+      const pillRx = Math.min(headH / 2, s.target.rx);
+      const tailRx = Math.min(tailH / 2, s.target.rx);
 
-      setRectAttrs(headRef.current, s.head.x, headY, s.head.w, headH, headH / 2);
-      setRectAttrs(tailRef.current, s.tail.x, tailY, s.tail.w, tailH, tailH / 2);
+      setRectAttrs(headRef.current, s.head.x, headY, s.head.w, headH, pillRx);
+      setRectAttrs(tailRef.current, s.tail.x, tailY, s.tail.w, tailH, tailRx);
 
       if (bridgeRef.current) {
         if (sep > 6) {
@@ -200,16 +222,20 @@ export function LiquidNavIndicator({
       const speed =
         Math.abs(s.head.vx) + Math.abs(s.tail.vx) + Math.abs(s.head.vw) + Math.abs(s.tail.vw);
 
-      if (sep > 0.6 || speed > 1.5) {
+      const gooT = Math.min(1, Math.max(0, (sep - 0.8) / 14));
+      if (gooT > 0.005) {
+        setGooStrength(gooT);
         groupRef.current?.setAttribute("filter", `url(#${filterId})`);
+      } else {
+        groupRef.current?.removeAttribute("filter");
       }
 
       const settled =
-        Math.abs(s.head.x - s.target.x) < 0.25 &&
-        Math.abs(s.tail.x - s.target.x) < 0.25 &&
-        Math.abs(s.head.w - s.target.w) < 0.25 &&
-        Math.abs(s.tail.w - s.target.w) < 0.25 &&
-        speed < 0.8;
+        Math.abs(s.head.x - s.target.x) < 0.08 &&
+        Math.abs(s.tail.x - s.target.x) < 0.08 &&
+        Math.abs(s.head.w - s.target.w) < 0.08 &&
+        Math.abs(s.tail.w - s.target.w) < 0.08 &&
+        speed < 0.3;
 
       if (settled) {
         snapToBox(s.target);
@@ -220,7 +246,7 @@ export function LiquidNavIndicator({
     };
 
     state.rafId = requestAnimationFrame(step);
-  }, [filterId, snapToBox]);
+  }, [filterId, setGooStrength, snapToBox]);
 
   useLayoutEffect(() => {
     const state = physicsRef.current;
@@ -309,14 +335,16 @@ export function LiquidNavIndicator({
           colorInterpolationFilters="sRGB"
         >
           <feGaussianBlur
+            ref={blurRef}
             in="SourceGraphic"
             stdDeviation={variant === "desktop" ? 4.5 : 5.5}
             result="blur"
           />
           <feColorMatrix
+            ref={matrixRef}
             in="blur"
             mode="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -9"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10.5"
             result="goo"
           />
         </filter>

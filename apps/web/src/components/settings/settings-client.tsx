@@ -246,11 +246,9 @@ export function SettingsClient({
             />
           </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={saving}>
-              {saving ? t.common.saving : t.settings.saveProfile}
-            </Button>
-          </div>
+          <Button type="submit" disabled={saving} className="w-full">
+            {saving ? t.common.saving : t.settings.saveProfile}
+          </Button>
         </Card>
       </form>
 

@@ -15,6 +15,7 @@ import type { Account, Category, Debt, Goal } from "@strata/api-contract";
 import { QuickAddDialog, type QuickAddPreset } from "./quick-add-dialog";
 
 interface QuickAddContextValue {
+  isOpen: boolean;
   openQuickAdd: (preset?: QuickAddPreset) => void;
   closeQuickAdd: () => void;
   registerOnMutated: (listener: () => void) => () => void;
@@ -151,12 +152,13 @@ export function QuickAddProvider({
 
   const value = useMemo<QuickAddContextValue>(
     () => ({
+      isOpen: open,
       openQuickAdd,
       closeQuickAdd,
       registerOnMutated,
       setReferenceData,
     }),
-    [openQuickAdd, closeQuickAdd, registerOnMutated, setReferenceData]
+    [open, openQuickAdd, closeQuickAdd, registerOnMutated, setReferenceData]
   );
 
   return (
